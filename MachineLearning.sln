@@ -1,0 +1,42 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34804.81
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj", "{65C0B18E-5633-4629-A3DE-CEFE564D6837}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarionGPT", "BarionGPT\BarionGPT.csproj", "{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Simple", "Simple\Simple.csproj", "{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Common", "MachineLearning.Common\MachineLearning.Common.csproj", "{EE9EA1F3-B205-4BB5-8865-BD9737435339}"
+EndProject
+Global
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {20CDD983-F803-4C9D-BDA5-0F6B202B92E9}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Release|Any CPU.Build.0 = Release|Any CPU
+		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
