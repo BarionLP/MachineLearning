@@ -1,44 +1,52 @@
-﻿using Simple;
+﻿using Simple.Network;
+using Simple.Network.Activation;
+using Simple.Training;
+using Simple.Training.Cost;
+using Simple.Training.Data;
+using System.IO.Compression;
 
-var network = new Network(2, 4, 4, 2);
 
-var trainingContext = new NetworkLearningContext(network);
+var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\NeuralNetwork\MNIST_ORG.zip"));
 
-
-
-//Console.WriteLine(data.Replace("\r", "").Replace("\n", "").Length);
-//Console.WriteLine(trainingData.Length);
-
-var viewSize = 32;
-
-var trainingData = ConstructTrainingData(1024*8).ToArray();
-Console.WriteLine(trainingContext.Cost(trainingData)/trainingData.Length);
-//Console.WriteLine();
-//WriteModelView(viewSize);
-
-//trainingContext.LearnBatched(trainingData, .1, 128, 128);
-
-var learnRate = .25;
-var learnRateDecay = .7;
-
-foreach(var _ in ..1024) {
-    //trainingData = ConstructTrainingData(128).ToArray();
-    trainingContext.LearnBatched(trainingData, learnRate, 128, 64);
-    learnRateDecay *= learnRateDecay;
-    //ReconstructView();
-
-    if(_ % 128 == 0) {
-
-        Console.WriteLine();
-        Console.WriteLine(trainingContext.Cost(trainingData) / trainingData.Length);
-        Console.WriteLine($"Model Succeeded in {trainingContext.Test(trainingData.GetRandomElements(128))*100:F1}% cases");
-        Console.WriteLine();
-    }
-
-    //Console.WriteLine();
+foreach(var _ in ..100) {
+    Console.WriteLine(mnistDataSource.TrainingSet[_].DumpImage());
+    Console.WriteLine(mnistDataSource.TrainingSet[_].Digit);
+    Console.WriteLine();
 }
 
-//Console.WriteLine(network.Process([6, 1]).Select(d=>d.ToString("F4")).Dump(' '));
+
+
+return;
+
+var network = new RecordingNetwork(2, 6, 4, 2) { ActivationMethod = SigmoidActivation.Instance };
+
+var config = new TrainingConfig() {
+    TrainingSet = ConstructTrainingData(1028*2).ToArray(),
+    TestSet = ConstructTrainingData(512).ToArray(),
+    LearnRate = .25,
+    LearnRateMultiplier = 0.99997,
+    BatchSize = 128,
+    Iterations = 1028*(64+16),
+    DumpEvaluationAfterIterations = 1028*2,
+    CostFunction = CrossEntropyCost.Instance,
+};
+
+
+var trainer = new NetworkTrainer(config, network);
+
+var viewSize = 48;
+
+//WriteActualView(viewSize);
+//return;
+
+Console.WriteLine("Starting Training...");
+
+var trainingResult = trainer.Train();
+
+
+Console.WriteLine("After Training:");
+Console.WriteLine($"Average Costs: {trainingResult.After.TrainingSetResult.AverageCost} | {trainingResult.After.TestSetResult.AverageCost}");
+Console.WriteLine($"Correct: {trainingResult.After.TrainingSetResult.CorrectPercentage:P} | {trainingResult.After.TestSetResult.CorrectPercentage:P}");
 
 Console.WriteLine();
 Console.WriteLine("Trained Model:");
@@ -71,8 +79,8 @@ void WriteActualView(int size) {
 
 static bool IsInsideShapes(double x, double y) {
     // Normalize inputs to the range [-1, 1] for both x and y
-    //x = 2 * (x - 0.5);
-    //y = 2 * (y - 0.5);
+    x = 2 * (x - 0.5);
+    y = 2 * (y - 0.5);
 
     y = -y;
 
@@ -80,13 +88,13 @@ static bool IsInsideShapes(double x, double y) {
     bool insideCircle = Math.Pow(x, 2) + Math.Pow(y, 2) <= Math.Pow(0.5, 2);
 
     // Check if inside rectangle from (-0.5, -0.5) to (0.5, 0.5)
-    //bool insideRectangle = (x >= -1.0 && x <= 0.0) && (y >= -0.0 && y <= 1.0);
+    bool insideRectangle = (x >= -1.0 && x <= 0.5) && (y >= -0.0 && y <= 0.5);
 
-    return insideCircle /*|| insideRectangle*/;
+    return insideCircle || insideRectangle;
 }
 
 
-IEnumerable<DataPoint<Number[]>> ConstructTrainingData(int count) {
+IEnumerable<DataPoint> ConstructTrainingData(int count) {
     foreach(var _ in ..count) {
         var x = Random.Shared.NextDouble();
         var y = Random.Shared.NextDouble();
