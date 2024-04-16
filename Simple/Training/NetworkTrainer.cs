@@ -30,7 +30,7 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
 
     public NetworkEvaluationResult Evaluate() => new() {
         TrainingSetResult = Evaluate(Config.GetNextTrainingBatch()),
-        TestSetResult = Evaluate(Config.TestSet),
+        TestSetResult = Evaluate(Config.GetNextTestBatch()),
     };
     public DataSetEvaluationResult Evaluate(IEnumerable<DataPoint<TInput, TOutput>> dataSet) {
         int correctCounter = 0;

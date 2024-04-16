@@ -11,32 +11,35 @@ var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\Neura
 
 var config = new TrainingConfig<Number[], int>() {
     TrainingSet = mnistDataSource.TrainingSet,
-    TestSet = mnistDataSource.TestingSet.Take(512).ToArray(),
-    LearnRate = .25,
-    LearnRateMultiplier = 0.999,
-    BatchSize = 256,
-    Iterations = 1028 * (2),
+    TestSet = mnistDataSource.TestingSet.Take(128+64).ToArray(),
+    LearnRate = .1,
+    LearnRateMultiplier = 0.998,
+    TrainingBatchSize = 256,
+    Iterations = 128*4,
     DumpEvaluationAfterIterations = 32,
     CostFunction = CrossEntropyCost.Instance,
     OutputResolver = new MNISTOutputResolver(),
+    RandomSource = new Random(42),
 };
 
-var network = new NetworkBuilder<RecordingNetwork<Number[], int>, Number[], int, RecordingLayer>(784)
-    .SetEmbedder(MNISTEmbedder.Instance)
-    .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
-    .AddRandomizedLayer(128)
-    .AddRandomizedLayer(10)
-    .Build();
-
-//var trainer = new NetworkTrainer<Number[], int>(config, network);
-
-//trainer.Train();
-
 var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\test.nnw"));
-serializer.Save(network);
+//var setupRandom = new Random(69);
 
-var deserializer = new NetworkSerializer<Number[], int, SimpleLayer>(new FileInfo(@"C:\Users\Barion\Downloads\test.nnw"));
-var newNet = deserializer.Load<SimpleNetwork<Number[], int, SimpleLayer>>(network.ActivationMethod);
+var network = serializer.Load<RecordingNetwork<Number[], int>>(SigmoidActivation.Instance, MNISTEmbedder.Instance).ReduceOrThrow();
+
+//var network = NetworkBuilder.Recorded<Number[], int>(784)
+//    .SetEmbedder(MNISTEmbedder.Instance)
+//    .SetDefaultActivationMethod(SigmoidActivation.Instance)
+//    .AddRandomizedLayer(128, setupRandom)
+//    .AddRandomizedLayer(10, setupRandom)
+//    .Build();
+
+var trainer = new NetworkTrainer<Number[], int>(config, network);
+
+var trainingResults = trainer.Train();
+Console.WriteLine($"Iteration {trainingResults.IterationCount} {trainingResults.After.DumpShort()}");
+
+//serializer.Save(network);
 
 return;
 

@@ -33,11 +33,11 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
         Layers.Add(layerBuilder.Build());
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddRandomizedLayer(int nodeCount) {
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddRandomizedLayer(int nodeCount, Random? random = null) {
         Layers.Add(
             new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
             .SetActivationMethod(DefaultActivationMethod)
-            .InitializeRandom().Build()
+            .InitializeRandom(random).Build()
         );
         return this;
     }
@@ -45,4 +45,9 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
     public TNetwork Build() {
         return (TNetwork) TNetwork.Create([.. Layers], Embedder ?? throw new NullReferenceException("NetworkBuilder needs an embedder!"));
     }
+}
+
+public static class NetworkBuilder {
+    public static NetworkBuilder<RecordingNetwork<TInput, TOutput>, TInput, TOutput, RecordingLayer> Recorded<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
+    public static NetworkBuilder<SimpleNetwork<TInput, TOutput, SimpleLayer>, TInput, TOutput, SimpleLayer> Simple<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
 }

@@ -31,5 +31,5 @@ public sealed class RecordingLayer(Number[,] Weights, Number[] Biases, IActivati
         return LastActivatedWeights;
     }
 
-    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod activationMethod) => new SimpleLayer(weights, biases, activationMethod);
+    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod activationMethod) => new RecordingLayer(weights, biases, activationMethod);
 }

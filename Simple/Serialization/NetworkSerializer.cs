@@ -1,6 +1,7 @@
 ﻿using Ametrin.Utils.Optional;
 using Simple.Network;
 using Simple.Network.Activation;
+using Simple.Network.Embedding;
 using Simple.Network.Layer;
 
 namespace Simple;
@@ -41,7 +42,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
     }
 
     //TODO: Serialize Activation Method
-    public Result<TNetwork> Load<TNetwork>(IActivationMethod activationMethod) where TNetwork : INetwork<TInput, double, TOutput, TLayer>{
+    public Result<TNetwork> Load<TNetwork>(IActivationMethod activationMethod, IEmbedder<TInput, double[], TOutput> embedder) where TNetwork : INetwork<TInput, double, TOutput, TLayer>{
         using var reader = new BinaryReader(Stream);
         var version = reader.ReadUInt32BigEndian();
         var layerCount = reader.ReadInt32BigEndian();
@@ -62,7 +63,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
             layers[layerIndex] = layerBuilder.Build();
         }
 
-        return ResultFlag.Failed;
+        return (TNetwork) TNetwork.Create(layers, embedder);
     }
 
     private void Dispose(bool disposing){

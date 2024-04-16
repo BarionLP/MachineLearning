@@ -1,5 +1,6 @@
 ﻿namespace Simple.Network.Activation;
 /// <summary>
+/// use learn rate below 0.1
 /// helps with death neurons in <see cref="ReLUActivation"/>
 /// </summary>
 /// <param name="alpha">slope for x &lt; 0</param>
