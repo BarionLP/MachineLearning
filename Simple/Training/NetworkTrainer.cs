@@ -28,12 +28,10 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
         };
     }
 
-    public NetworkEvaluationResult Evaluate() {
-        return new() {
-            TrainingSetResult = Evaluate(Config.TrainingSet),
-            TestSetResult = Evaluate(Config.TestSet),
-        };
-    }
+    public NetworkEvaluationResult Evaluate() => new() {
+        TrainingSetResult = Evaluate(Config.GetNextTrainingBatch()),
+        TestSetResult = Evaluate(Config.TestSet),
+    };
     public DataSetEvaluationResult Evaluate(IEnumerable<DataPoint<TInput, TOutput>> dataSet) {
         int correctCounter = 0;
         Number totalCost = 0;

@@ -1,31 +1,35 @@
-﻿using Simple.Network;
+﻿using Simple;
+using Simple.Network;
 using Simple.Network.Embedding;
 using Simple.Training;
 using Simple.Training.Cost;
 using Simple.Training.Data;
 
-var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\NeuralNetwork\MNIST_ORG.zip"));
+var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
 
 var config = new TrainingConfig<Number[], int>() {
     TrainingSet = mnistDataSource.TrainingSet,
-    TestSet = mnistDataSource.TestingSet.Take(1028).ToArray(),
+    TestSet = mnistDataSource.TestingSet.Take(512).ToArray(),
     LearnRate = .25,
-    LearnRateMultiplier = 0.99997,
-    BatchSize = 512,
-    Iterations = 1028 * (1),
+    LearnRateMultiplier = 0.999,
+    BatchSize = 256,
+    Iterations = 1028 * (2),
     DumpEvaluationAfterIterations = 32,
     CostFunction = CrossEntropyCost.Instance,
     OutputResolver = new MNISTOutputResolver(),
 };
 
-var network = new RecordingNetwork<Number[], int>(784, 10) { 
+var network = new RecordingNetwork<Number[], int>(784, 128, 10) { 
     Embedder = MNISTEmbedder.Instance,
 };
 
 var trainer = new NetworkTrainer<Number[], int>(config, network);
 
-trainer.Train();
+//trainer.Train();
 
+var serializer = new NetworkSerializer<Number[], int>(new FileInfo(@"C:\Users\Nation\Downloads\test.nnw"));
+
+serializer.Save(network);
 
 return;
 
@@ -112,4 +116,3 @@ return;
 //        yield return new DataPoint([x, y],  IsInsideShapes(x, y) ? [1, 0] : [0, 1]);
 //    }
 //}
-
