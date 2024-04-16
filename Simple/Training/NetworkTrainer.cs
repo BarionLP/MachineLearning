@@ -2,10 +2,10 @@
 
 namespace Simple.Training;
 
-public sealed class NetworkTrainer(TrainingConfig config, RecordingNetwork network) {
-    public TrainingConfig Config { get; } = config;
-    public RecordingNetwork Network { get; } = network;
-    internal NetworkTrainingContext Context { get; } = new(network, config.CostFunction);
+public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network) where TInput : notnull where TOutput : notnull{
+    public TrainingConfig<TInput, TOutput> Config { get; } = config;
+    public RecordingNetwork<TInput, TOutput> Network { get; } = network;
+    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.CostFunction, config.OutputResolver);
 
     public NetworkTrainingResult Train() {
         var before = Evaluate();
@@ -34,7 +34,7 @@ public sealed class NetworkTrainer(TrainingConfig config, RecordingNetwork netwo
             TestSetResult = Evaluate(Config.TestSet),
         };
     }
-    public DataSetEvaluationResult Evaluate(IEnumerable<DataPoint> dataSet) {
+    public DataSetEvaluationResult Evaluate(IEnumerable<DataPoint<TInput, TOutput>> dataSet) {
         int correctCounter = 0;
         Number totalCost = 0;
         int totalCounter = 0;
@@ -42,13 +42,11 @@ public sealed class NetworkTrainer(TrainingConfig config, RecordingNetwork netwo
             totalCounter++;
             var output = Network.Process(entry.Input);
 
-            //TODO: define for all model types (using embedder)
-            if(output[0] > output[1] && entry.Expected[0] > entry.Expected[1]) {
-                correctCounter++;
-            } else if(output[0] < output[1] && entry.Expected[0] < entry.Expected[1]) {
+            if(output.Equals(entry.Expected)) {
                 correctCounter++;
             }
-            totalCost += Config.CostFunction.TotalCost(output, entry.Expected);
+            
+            totalCost += Config.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(entry.Expected));
         }
 
         return new() {

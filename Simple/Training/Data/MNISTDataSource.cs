@@ -6,6 +6,7 @@ namespace Simple.Training.Data;
 
 public sealed class MNISTDataSource {
     public MNISTDataPoint[] TrainingSet { get; }
+    public MNISTDataPoint[] TestingSet { get; }
     
     public MNISTDataSource(FileInfo mnistFileInfo) {
         using var mnistStream = mnistFileInfo.OpenRead();
@@ -17,6 +18,14 @@ public sealed class MNISTDataSource {
         TrainingSet = new MNISTDataPoint[trainingImages.Length];
         foreach(var i in ..trainingImages.Length) {
             TrainingSet[i] = MNISTDataPoint.FromRaw(trainingImages[i], trainingLabels[i]);
+        }
+        
+        var testingImages = ReadImages(mnistArchive.GetEntry("t10k-images.idx3-ubyte")!);
+        var testingLabels = ReadLabels(mnistArchive.GetEntry("t10k-labels.idx1-ubyte")!);
+
+        TestingSet = new MNISTDataPoint[testingImages.Length];
+        foreach(var i in ..testingImages.Length) {
+            TestingSet[i] = MNISTDataPoint.FromRaw(testingImages[i], testingLabels[i]);
         }
     }
 

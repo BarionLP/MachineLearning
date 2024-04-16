@@ -18,12 +18,12 @@ internal sealed class LayerLearningContext {
     public void UpdateGradients(Number[] nodeValues) {
         foreach(int outputNodeIndex in ..Layer.OutputNodeCount) {
             foreach(int inputNodeIndex in ..Layer.InputNodeCount) {
-                // partial derivative cost / weight of current connection
+                // partial derivative cost with respect to weight of current connection
                 var derivativeCostWrtWeight = Layer.LastInput[inputNodeIndex] * nodeValues[outputNodeIndex];
                 CostGradientWeights[inputNodeIndex, outputNodeIndex] += derivativeCostWrtWeight;
             }
 
-            // derivative cost / bias (bias' = 1)
+            // derivative cost with respect to bias (bias' = 1)
             var derivativeCostWrtBias = 1 * nodeValues[outputNodeIndex];
             CostGradientBiases[outputNodeIndex] += derivativeCostWrtBias;
         }
@@ -33,7 +33,7 @@ internal sealed class LayerLearningContext {
         foreach(int outputNodeIndex in ..Layer.OutputNodeCount) {
             Layer.Biases[outputNodeIndex] -= CostGradientBiases[outputNodeIndex] * learnRate;
             foreach(int inputNodeIndex in ..Layer.InputNodeCount) {
-                Layer.Weights[inputNodeIndex, outputNodeIndex] -= CostGradientWeights[inputNodeIndex, outputNodeIndex] * learnRate; //was assignment in video! mistake?
+                Layer.Weights[inputNodeIndex, outputNodeIndex] -= CostGradientWeights[inputNodeIndex, outputNodeIndex] * learnRate;
             }
         }
     }
