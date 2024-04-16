@@ -1,11 +1,12 @@
 ﻿using Simple;
 using Simple.Network;
 using Simple.Network.Embedding;
+using Simple.Network.Layer;
 using Simple.Training;
 using Simple.Training.Cost;
 using Simple.Training.Data;
 
-var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
+var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\NeuralNetwork\MNIST_ORG.zip"));
 
 var config = new TrainingConfig<Number[], int>() {
     TrainingSet = mnistDataSource.TrainingSet,
@@ -23,11 +24,11 @@ var network = new RecordingNetwork<Number[], int>(784, 128, 10) {
     Embedder = MNISTEmbedder.Instance,
 };
 
-var trainer = new NetworkTrainer<Number[], int>(config, network);
+//var trainer = new NetworkTrainer<Number[], int>(config, network);
 
 //trainer.Train();
 
-var serializer = new NetworkSerializer<Number[], int>(new FileInfo(@"C:\Users\Nation\Downloads\test.nnw"));
+var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\test.nnw"));
 
 serializer.Save(network);
 

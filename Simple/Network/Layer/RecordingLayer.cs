@@ -2,59 +2,32 @@
 
 namespace Simple.Network.Layer;
 
-public sealed class RecordingLayer : ILayer<Number> {
-    public int InputNodeCount { get; }
-    public int OutputNodeCount { get; }
-    public Number[,] Weights { get; }
-    public Number[] Biases { get; }
+public sealed class RecordingLayer(Number[,] Weights, Number[] Biases, IActivationMethod ActivationMethod) : ILayer<Number> {
+    public int InputNodeCount { get; } = Weights.GetLength(0);
+    public int OutputNodeCount { get; } = Biases.Length;
+    public Number[,] Weights { get; } = Weights;
+    public Number[] Biases { get; } = Biases;
 
-    public Number[] WeightedInput { get; }
-    public Number[] ActivatedWeights = [];
-    public Number[] LastInput = [];
+    public IActivationMethod ActivationMethod { get; } = ActivationMethod;
 
-    public IActivation ActivationMethod { get; init; } = SigmoidActivation.Instance;
+    public Number[] LastRawInput = [];
+    public readonly Number[] LastWeightedInput = new Number[Biases.Length]; // OutputNodeCount
+    public Number[] LastActivatedWeights = [];
 
-    public RecordingLayer(int inputNodeCount, int outputNodeCount){
-        InputNodeCount = inputNodeCount;
-        OutputNodeCount = outputNodeCount;
-        Weights = new Number[inputNodeCount, outputNodeCount];
-        Biases = new Number[outputNodeCount];
-
-        WeightedInput = new Number[outputNodeCount];
-
-        InitializeRandomWeights();
-    }
 
     public Number[] Process(Number[] input){
-        LastInput = input;
+        LastRawInput = input;
 
         //for each output node sum up the products of each input node times the weight assigned to that connection, finally add the bias of the output node
         foreach(int outputNodeIndex in ..OutputNodeCount){
-            WeightedInput[outputNodeIndex] = Biases[outputNodeIndex];
+            LastWeightedInput[outputNodeIndex] = Biases[outputNodeIndex];
             foreach (int inputNodeIndex in ..InputNodeCount){
-                WeightedInput[outputNodeIndex] += input[inputNodeIndex] * Weights[inputNodeIndex, outputNodeIndex];
+                LastWeightedInput[outputNodeIndex] += input[inputNodeIndex] * Weights[inputNodeIndex, outputNodeIndex];
             }
         }
 
-        ActivatedWeights = ActivationMethod.Activate(WeightedInput);
+        LastActivatedWeights = ActivationMethod.Activate(LastWeightedInput);
 
-        return ActivatedWeights;
-    }
-
-    private void InitializeRandomWeights(){
-        foreach (int outputNodeIndex in ..OutputNodeCount){
-            foreach (int inputNodeIndex in ..InputNodeCount){
-                Weights[inputNodeIndex, outputNodeIndex] = RandomInNormalDistribution(Random.Shared, 0, 1) / Math.Sqrt(InputNodeCount);
-            }
-            Biases[outputNodeIndex] = RandomInNormalDistribution(Random.Shared, 0, 0.1);
-        }
-
-        static Number RandomInNormalDistribution(Random rng, Number mean, Number standardDeviation){
-            var x1 = 1 - rng.NextDouble();
-            var x2 = 1 - rng.NextDouble();
-
-            var y1 = Math.Sqrt(-2.0 * Math.Log(x1)) * Math.Cos(2.0 * Math.PI * x2);
-            return y1 * standardDeviation + mean;
-        }
+        return LastActivatedWeights;
     }
 }

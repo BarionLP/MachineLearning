@@ -19,7 +19,7 @@ internal sealed class LayerLearningContext {
         foreach(int outputNodeIndex in ..Layer.OutputNodeCount) {
             foreach(int inputNodeIndex in ..Layer.InputNodeCount) {
                 // partial derivative cost with respect to weight of current connection
-                var derivativeCostWrtWeight = Layer.LastInput[inputNodeIndex] * nodeValues[outputNodeIndex];
+                var derivativeCostWrtWeight = Layer.LastRawInput[inputNodeIndex] * nodeValues[outputNodeIndex];
                 CostGradientWeights[inputNodeIndex, outputNodeIndex] += derivativeCostWrtWeight;
             }
 
@@ -51,8 +51,8 @@ internal sealed class LayerLearningContext {
         var nodeValues = new Number[expected.Length];
 
         foreach(int i in ..expected.Length) {
-            var costDerivative = CostFunction.Derivative(Layer.ActivatedWeights[i], expected[i]);
-            var activationDerivative = Layer.ActivationMethod.Derivative(Layer.WeightedInput[i]);
+            var costDerivative = CostFunction.Derivative(Layer.LastActivatedWeights[i], expected[i]);
+            var activationDerivative = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput[i]);
             nodeValues[i] = costDerivative * activationDerivative;
         }
 
@@ -71,7 +71,7 @@ internal sealed class LayerLearningContext {
                 newNodeValue += weightedInputDerivative * oldNodeValues[oldNodeIndex];
             }
 
-            newNodeValue *= Layer.ActivationMethod.Derivative(Layer.WeightedInput[newNodeIndex]);
+            newNodeValue *= Layer.ActivationMethod.Derivative(Layer.LastWeightedInput[newNodeIndex]);
             newNodeValues[newNodeIndex] = newNodeValue;
         }
 

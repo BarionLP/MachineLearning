@@ -7,7 +7,7 @@ namespace Simple.Network;
 public sealed class RecordingNetwork<TInput, TOutput> : INetwork<TInput, Number, TOutput, RecordingLayer>{
     public RecordingLayer[] Layers { get;  }
     public RecordingLayer OutputLayer => Layers[^1];
-    public IActivation ActivationMethod { get; init; } = SigmoidActivation.Instance;
+    public IActivationMethod ActivationMethod { get; init; } = SigmoidActivation.Instance;
     public required IEmbedder<TInput, Number[], TOutput> Embedder { get; init; }
 
     public Number[] LastOutputWeights { get; private set; } = []; 

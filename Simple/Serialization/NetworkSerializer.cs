@@ -5,11 +5,11 @@ using Simple.Network.Layer;
 namespace Simple;
 
 /// <summary>
-/// Serializer for <see cref="INetwork{TInput, TData, TOutput, TLayer}"/> using <see cref="Number"/> as weight type
+/// Serializer for <see cref="INetwork{TInput, TData, TOutput, TLayer}"/> using <see cref="double"/> as weight type
 /// </summary>
 /// <typeparam name="TInput">network input type</typeparam>
 /// <typeparam name="TOutput">network output type</typeparam>
-public sealed class NetworkSerializer<TInput, TOutput>(Stream stream) : IDisposable{
+public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : IDisposable where TLayer : ILayer<double>{
     public Stream Stream { get; } = stream;
     private bool isDisposed;
     private readonly bool isStreamOwned = false;
@@ -18,16 +18,20 @@ public sealed class NetworkSerializer<TInput, TOutput>(Stream stream) : IDisposa
         isStreamOwned = true;
     }
 
-    public ResultFlag Save(RecordingNetwork<TInput, TOutput> network){
+    public ResultFlag Save(INetwork<TInput, double, TOutput, TLayer> network){
         using var writer = new BinaryWriter(Stream);
-        writer.Write(1u); // version
-        writer.Write(network.Layers.Length);
-        foreach(var item in network.Layers){
-            writer.Write(item.InputNodeCount);
-            writer.Write(item.OutputNodeCount);
-            // encode weigths
-            foreach(var inputIndex in ..item.InputNodeCount){
-                
+        writer.WriteBigEndian(1u); // version
+        writer.WriteBigEndian(network.Layers.Length);
+        foreach(var layer in network.Layers){
+            writer.WriteBigEndian(layer.InputNodeCount);
+            writer.WriteBigEndian(layer.OutputNodeCount);
+
+            // encode weights & biases
+            foreach(var outputIndex in ..layer.OutputNodeCount) {
+                writer.WriteBigEndian(layer.Biases[outputIndex]);
+                foreach(var inputIndex in ..layer.InputNodeCount) {
+                    writer.WriteBigEndian(layer.Weights[inputIndex, outputIndex]);
+                }
             }
         }
 
@@ -36,15 +40,25 @@ public sealed class NetworkSerializer<TInput, TOutput>(Stream stream) : IDisposa
 
     public Result<RecordingNetwork<TInput, TOutput>> Load(){
         using var reader = new BinaryReader(Stream);
-        var version = reader.ReadUInt32();
-        var layerCount = reader.ReadInt32();
+        var version = reader.ReadUInt32BigEndian();
+        var layerCount = reader.ReadInt32BigEndian();
         var layers = new RecordingLayer[layerCount];
         //TODO: properly allow layer serialization
         foreach(var layerIndex in ..layerCount){
-            var inputNodeCount = reader.ReadInt32();
-            var outputNodeCount = reader.ReadInt32();
+            var inputNodeCount = reader.ReadInt32BigEndian();
+            var outputNodeCount = reader.ReadInt32BigEndian();
             layers[layerIndex] = new RecordingLayer(inputNodeCount, outputNodeCount);
+
+            // decode weights & biases
+            foreach(var outputIndex in ..outputNodeCount) {
+                layers[layerIndex].Biases[outputIndex] = reader.ReadDouble();
+                foreach(var inputIndex in ..inputNodeCount) {
+                    layers[layerIndex].Weights[inputIndex, outputIndex] = reader.ReadDoubleBigEndian();
+                }
+            }
         }
+
+        return ResultFlag.Failed;
     }
 
     private void Dispose(bool disposing){
