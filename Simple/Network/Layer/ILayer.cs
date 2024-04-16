@@ -10,4 +10,6 @@ public interface ILayer<TData> {
     public IActivationMethod ActivationMethod { get; }
 
     public TData[] Process(TData[] input);
+
+    public virtual static ILayer<TData> Create(TData[,] weights, TData[] biases, IActivationMethod activationMethod) => throw new NotImplementedException();
 }

@@ -1,5 +1,6 @@
 ﻿using Simple;
 using Simple.Network;
+using Simple.Network.Activation;
 using Simple.Network.Embedding;
 using Simple.Network.Layer;
 using Simple.Training;
@@ -20,17 +21,22 @@ var config = new TrainingConfig<Number[], int>() {
     OutputResolver = new MNISTOutputResolver(),
 };
 
-var network = new RecordingNetwork<Number[], int>(784, 128, 10) { 
-    Embedder = MNISTEmbedder.Instance,
-};
+var network = new NetworkBuilder<RecordingNetwork<Number[], int>, Number[], int, RecordingLayer>(784)
+    .SetEmbedder(MNISTEmbedder.Instance)
+    .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
+    .AddRandomizedLayer(128)
+    .AddRandomizedLayer(10)
+    .Build();
 
 //var trainer = new NetworkTrainer<Number[], int>(config, network);
 
 //trainer.Train();
 
 var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\test.nnw"));
-
 serializer.Save(network);
+
+var deserializer = new NetworkSerializer<Number[], int, SimpleLayer>(new FileInfo(@"C:\Users\Barion\Downloads\test.nnw"));
+var newNet = deserializer.Load<SimpleNetwork<Number[], int, SimpleLayer>>(network.ActivationMethod);
 
 return;
 

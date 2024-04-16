@@ -1,5 +1,6 @@
 ﻿using Ametrin.Utils.Optional;
 using Simple.Network;
+using Simple.Network.Activation;
 using Simple.Network.Layer;
 
 namespace Simple;
@@ -9,6 +10,7 @@ namespace Simple;
 /// </summary>
 /// <typeparam name="TInput">network input type</typeparam>
 /// <typeparam name="TOutput">network output type</typeparam>
+/// <typeparam name="TLayer">layer type</typeparam>
 public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : IDisposable where TLayer : ILayer<double>{
     public Stream Stream { get; } = stream;
     private bool isDisposed;
@@ -38,24 +40,26 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
         return ResultFlag.Succeeded;
     }
 
-    public Result<RecordingNetwork<TInput, TOutput>> Load(){
+    //TODO: Serialize Activation Method
+    public Result<TNetwork> Load<TNetwork>(IActivationMethod activationMethod) where TNetwork : INetwork<TInput, double, TOutput, TLayer>{
         using var reader = new BinaryReader(Stream);
         var version = reader.ReadUInt32BigEndian();
         var layerCount = reader.ReadInt32BigEndian();
-        var layers = new RecordingLayer[layerCount];
-        //TODO: properly allow layer serialization
+        var layers = new TLayer[layerCount];
+
         foreach(var layerIndex in ..layerCount){
             var inputNodeCount = reader.ReadInt32BigEndian();
             var outputNodeCount = reader.ReadInt32BigEndian();
-            layers[layerIndex] = new RecordingLayer(inputNodeCount, outputNodeCount);
+            var layerBuilder = new LayerBuilder<TLayer>(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
 
             // decode weights & biases
             foreach(var outputIndex in ..outputNodeCount) {
-                layers[layerIndex].Biases[outputIndex] = reader.ReadDouble();
+                layerBuilder.Biases[outputIndex] = reader.ReadDoubleBigEndian();
                 foreach(var inputIndex in ..inputNodeCount) {
-                    layers[layerIndex].Weights[inputIndex, outputIndex] = reader.ReadDoubleBigEndian();
+                    layerBuilder.Weights[inputIndex, outputIndex] = reader.ReadDoubleBigEndian();
                 }
             }
+            layers[layerIndex] = layerBuilder.Build();
         }
 
         return ResultFlag.Failed;
@@ -65,8 +69,11 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
         if (isDisposed) return;
         
         if (disposing){
+            // managed
             if(isStreamOwned) Stream.Dispose();
         }
+
+        //unmanaged (implement Finalizer if exists)
 
         isDisposed = true;
     }

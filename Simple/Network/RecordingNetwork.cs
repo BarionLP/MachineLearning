@@ -4,20 +4,12 @@ using Simple.Network.Layer;
 
 namespace Simple.Network;
 
-public sealed class RecordingNetwork<TInput, TOutput> : INetwork<TInput, Number, TOutput, RecordingLayer>{
-    public RecordingLayer[] Layers { get;  }
+public sealed class RecordingNetwork<TInput, TOutput>(RecordingLayer[] layers, IEmbedder<TInput, Number[], TOutput> embedder) : INetwork<TInput, Number, TOutput, RecordingLayer>{
+    public RecordingLayer[] Layers { get;  } = layers;
     public RecordingLayer OutputLayer => Layers[^1];
-    public IActivationMethod ActivationMethod { get; init; } = SigmoidActivation.Instance;
-    public required IEmbedder<TInput, Number[], TOutput> Embedder { get; init; }
+    public IEmbedder<TInput, Number[], TOutput> Embedder { get; } = embedder;
 
-    public Number[] LastOutputWeights { get; private set; } = []; 
-
-    public RecordingNetwork(params int[] layerSizes){
-        Layers = new RecordingLayer[layerSizes.Length - 1]; // no need to define the input layer
-        foreach (var i in ..Layers.Length){
-            Layers[i] = new RecordingLayer(layerSizes[i], layerSizes[i + 1]) { ActivationMethod = ActivationMethod };
-        }
-    }
+    public Number[] LastOutputWeights { get; private set; } = [];
 
     public TOutput Process(TInput input) {
         var weights = Embedder.Embed(input);
@@ -27,4 +19,7 @@ public sealed class RecordingNetwork<TInput, TOutput> : INetwork<TInput, Number,
         LastOutputWeights = weights;
         return Embedder.UnEmbed(weights);
     }
+
+    public static INetwork<TInput, Number, TOutput, RecordingLayer> Create(RecordingLayer[] layers, IEmbedder<TInput, Number[], TOutput> embedder)
+        => new RecordingNetwork<TInput, TOutput>(layers, embedder);
 }

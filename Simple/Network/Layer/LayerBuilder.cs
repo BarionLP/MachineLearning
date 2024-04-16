@@ -2,26 +2,28 @@
 
 namespace Simple.Network.Layer;
 
-public sealed class LayerBuilder(int inputNodeCount, int outputNodeCount) {
+public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount) where TLayer : ILayer<Number>{
     public Number[,] Weights { get; } = new Number[inputNodeCount, outputNodeCount];
     public Number[] Biases { get; } = new Number[outputNodeCount];
     public IActivationMethod ActivationMethod { get; set; } = SigmoidActivation.Instance;
-    public bool IsRecorded { get; set; } = false;
-    
-    public LayerBuilder SetActivationMethod(IActivationMethod activationMethod) { 
+
+    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod activationMethod) { 
         ActivationMethod = activationMethod;
         return this;
     }
-    public LayerBuilder Initialize(int defaultValue) {
+    
+    public LayerBuilder<TLayer> Initialize(int defaultValue) => Initialize(defaultValue, defaultValue);
+    public LayerBuilder<TLayer> Initialize(int weightDefault, int biasDefault) {
         foreach(int outputNodeIndex in ..Biases.Length) {
             foreach(int inputNodeIndex in ..Weights.GetLength(0)) {
-                Weights[inputNodeIndex, outputNodeIndex] = defaultValue;
+                Weights[inputNodeIndex, outputNodeIndex] = weightDefault;
             }
-            Biases[outputNodeIndex] = defaultValue;
+            Biases[outputNodeIndex] = biasDefault;
         }
         return this;
     }
-    public LayerBuilder InitializeRandom(Random? random = null) {
+
+    public LayerBuilder<TLayer> InitializeRandom(Random? random = null) {
         var sqrtInputNodeCount = Math.Sqrt(Weights.GetLength(0));
         random ??= Random.Shared;
         foreach(int outputNodeIndex in ..Biases.Length) {
@@ -41,23 +43,5 @@ public sealed class LayerBuilder(int inputNodeCount, int outputNodeCount) {
         }
     }
 
-    public LayerBuilder Record() => SetRecorded(true);
-    public LayerBuilder SetRecorded(bool isRecorded) {
-        IsRecorded = isRecorded;
-        return this;
-    }
-
-    public ILayer<Number> Build() => IsRecorded switch {
-        false => new SimpleLayer(Weights, Biases, ActivationMethod),
-        true => new RecordingLayer(Weights, Biases, ActivationMethod),
-    };
-
-    public static LayerBuilder Of(ILayer<Number> layer) {
-        var builder = new LayerBuilder(layer.InputNodeCount, layer.OutputNodeCount)
-            .SetActivationMethod(layer.ActivationMethod);
-        
-        if(layer is RecordingLayer) builder.Record();
-        
-        return builder;
-    }
+    public TLayer Build() => (TLayer) TLayer.Create(Weights, Biases, ActivationMethod);
 }

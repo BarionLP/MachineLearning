@@ -23,4 +23,6 @@ public sealed class SimpleLayer(Number[,] Weights, Number[] Biases, IActivationM
 
         return ActivationMethod.Activate(weighted); //TODO: operate on weighted directly instead of creating a copy
     }
+
+    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod activationMethod) => new SimpleLayer(weights, biases, activationMethod);
 }
