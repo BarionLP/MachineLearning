@@ -6,7 +6,7 @@ public sealed class TrainingConfig<TInput, TOutput> {
     public required DataPoint<TInput, TOutput>[] TrainingSet { get; init; }
     public required DataPoint<TInput, TOutput>[] TestSet { get; init; }
     public required int Iterations { get; init; }
-    public required int DumpEvaluationAfterIterations { get; init; }
+    public int DumpEvaluationAfterIterations { get; init; } = -1;
     public int TrainingBatchSize { get; init; } = -1;
     public int TestBatchSize { get; init; } = -1;
     public required Number LearnRate { get; init; }

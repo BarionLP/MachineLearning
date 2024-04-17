@@ -1,4 +1,5 @@
-﻿using Simple.Network;
+﻿using System.Text;
+using Simple.Network;
 
 namespace Simple.Training;
 
@@ -11,13 +12,13 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
         var before = Evaluate();
 
         var learnRate = Config.LearnRate;
-        Console.WriteLine($"Iteration 0 (learnRate: {learnRate:P}): {before.DumpShort()}");
+        if(Config.DumpEvaluationAfterIterations > 0) Console.WriteLine($"Starting Training (learnRate: {learnRate:P}): {before.DumpShort()}");
         foreach(var iteration in ..Config.Iterations) {
-            Context.Learn(Config.GetNextTrainingBatch(), learnRate);
-            learnRate *= Config.LearnRateMultiplier;
-            if(iteration > 0 && iteration % Config.DumpEvaluationAfterIterations == 0) {
+            if(iteration > 0 && Config.DumpEvaluationAfterIterations > 0 && iteration % Config.DumpEvaluationAfterIterations == 0) {
                 Console.WriteLine($"Iteration {iteration} (learnRate: {learnRate:P}): {Evaluate().DumpShort()}");
             }
+            Context.Learn(Config.GetNextTrainingBatch(), learnRate);
+            learnRate *= Config.LearnRateMultiplier;
         }
 
         var after = Evaluate();
@@ -66,6 +67,7 @@ public sealed class DataSetEvaluationResult {
 public sealed class NetworkEvaluationResult {
     public required DataSetEvaluationResult TrainingSetResult { get; init; }
     public required DataSetEvaluationResult TestSetResult { get; init; }
+    public void DumpCorrectPrecentages(StringBuilder sb) => sb.Append($"{TrainingSetResult.CorrectPercentage:P} | {TestSetResult.CorrectPercentage:P}");
     public string DumpShort() => $"Correct: {TrainingSetResult.CorrectPercentage:P} | {TestSetResult.CorrectPercentage:P}";
 }
 
@@ -73,4 +75,12 @@ public sealed class NetworkTrainingResult {
     public required int IterationCount { get; init; }
     public required NetworkEvaluationResult Before { get; init; }
     public required NetworkEvaluationResult After { get; init; }
+    public string DumpShort(){
+        var sb = new StringBuilder();
+        sb.Append("Training Results: ");
+        Before.DumpCorrectPrecentages(sb);
+        sb.Append(" -> ");
+        After.DumpCorrectPrecentages(sb);
+        return sb.ToString();
+    }
 }
