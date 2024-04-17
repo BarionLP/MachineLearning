@@ -12,6 +12,7 @@ public sealed class TrainingConfig<TInput, TOutput> {
     public required Number LearnRate { get; init; }
     public Number LearnRateMultiplier { get; init; } = 1;
     //public required int ApplyLearnRateMultiplierAfterIterations { get; init; }
+    public IInputDataNoise<Number> InputNoise { get; init; } = NoInputNoise<Number>.Instance;
     public required IOutputResolver<TOutput, Number[]> OutputResolver { get; init; }
     public ICostFunction CostFunction { get; init; } = MeanSquaredErrorCost.Instance;
 

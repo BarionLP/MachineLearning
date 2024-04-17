@@ -7,39 +7,52 @@ using Simple.Training;
 using Simple.Training.Cost;
 using Simple.Training.Data;
 
-var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\NeuralNetwork\MNIST_ORG.zip"));
+//var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\NeuralNetwork\MNIST_ORG.zip"));
+var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
+var images = new ImageDataSource(new(@"C:\Users\Nation\OneDrive\Digits"));
 
+System.Console.WriteLine(images.DataSet[0].DumpImage());
+
+return;
 var config = new TrainingConfig<Number[], int>() {
     TrainingSet = mnistDataSource.TrainingSet,
-    TestSet = mnistDataSource.TestingSet.Take(128+64).ToArray(),
-    LearnRate = .1,
-    LearnRateMultiplier = 0.998,
+    TestSet = mnistDataSource.TestingSet,
+    LearnRate = 0.7,
+    LearnRateMultiplier = 0.995,
     TrainingBatchSize = 256,
-    Iterations = 128*4,
-    DumpEvaluationAfterIterations = 32,
+    TestBatchSize = 256,
+    Iterations = 128*2,
+    InputNoise = new RandomInputNoise(0.3f, new Random(420)),
+    DumpEvaluationAfterIterations = 1,
     CostFunction = CrossEntropyCost.Instance,
     OutputResolver = new MNISTOutputResolver(),
     RandomSource = new Random(42),
 };
 
-var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\test.nnw"));
-//var setupRandom = new Random(69);
+var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\digits.nnw"));
+var setupRandom = new Random(69);
 
-var network = serializer.Load<RecordingNetwork<Number[], int>>(SigmoidActivation.Instance, MNISTEmbedder.Instance).ReduceOrThrow();
+//var network = serializer.Load<RecordingNetwork<Number[], int>>(SigmoidActivation.Instance, MNISTEmbedder.Instance).ReduceOrThrow();
 
-//var network = NetworkBuilder.Recorded<Number[], int>(784)
-//    .SetEmbedder(MNISTEmbedder.Instance)
-//    .SetDefaultActivationMethod(SigmoidActivation.Instance)
-//    .AddRandomizedLayer(128, setupRandom)
-//    .AddRandomizedLayer(10, setupRandom)
-//    .Build();
+//var image = new MNISTDataPoint(config.InputNoise.Apply(config.TestSet[0].Input), 0);
+//Console.WriteLine(image.DumpImage());
+
+//return;
+
+var network = NetworkBuilder.Recorded<Number[], int>(784)
+    .SetEmbedder(MNISTEmbedder.Instance)
+    .SetDefaultActivationMethod(SigmoidActivation.Instance)
+    //.AddRandomizedLayer(128, setupRandom)
+    .AddRandomizedLayer(128, setupRandom)
+    .AddRandomizedLayer(10, setupRandom)
+    .Build();
 
 var trainer = new NetworkTrainer<Number[], int>(config, network);
 
 var trainingResults = trainer.Train();
-Console.WriteLine($"Iteration {trainingResults.IterationCount} {trainingResults.After.DumpShort()}");
+Console.WriteLine(trainingResults.DumpShort());
 
-//serializer.Save(network);
+serializer.Save(network);
 
 return;
 

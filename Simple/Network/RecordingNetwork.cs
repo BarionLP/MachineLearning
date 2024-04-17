@@ -11,8 +11,8 @@ public sealed class RecordingNetwork<TInput, TOutput>(RecordingLayer[] layers, I
 
     public Number[] LastOutputWeights { get; private set; } = [];
 
-    public TOutput Process(TInput input) {
-        var weights = Embedder.Embed(input);
+    public TOutput Process(TInput input) => Process(Embedder.Embed(input));
+    public TOutput Process(Number[] weights) {
         foreach (var layer in Layers){
             weights = layer.Process(weights);
         }

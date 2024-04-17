@@ -6,7 +6,7 @@ namespace Simple.Training;
 public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network) where TInput : notnull where TOutput : notnull{
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
     public RecordingNetwork<TInput, TOutput> Network { get; } = network;
-    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.CostFunction, config.OutputResolver);
+    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.CostFunction, config.InputNoise, config.OutputResolver);
 
     public NetworkTrainingResult Train() {
         var before = Evaluate();

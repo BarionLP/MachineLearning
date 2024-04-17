@@ -4,12 +4,13 @@ using System.Collections.Immutable;
 
 namespace Simple.Training;
 
-internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<TInput, TOutput> network, ICostFunction costFunction, IOutputResolver<TOutput, Number[]> outputResolver) {
+internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<TInput, TOutput> network, ICostFunction costFunction, IInputDataNoise<Number> inputNoise, IOutputResolver<TOutput, Number[]> outputResolver) {
     internal RecordingNetwork<TInput, TOutput> Network = network;
     internal ImmutableArray<LayerLearningContext> LayerContexts = network.Layers.Select(layer => new LayerLearningContext(layer) { CostFunction = costFunction }).ToImmutableArray();
     internal LayerLearningContext OutputLayerContext => LayerContexts[^1];
     internal ICostFunction CostFunction { get; } = costFunction;
-    internal IOutputResolver<TOutput, double[]> OutputResolver { get; } = outputResolver;
+    public IInputDataNoise<Number> InputNoise { get; } = inputNoise;
+    internal IOutputResolver<TOutput, Number[]> OutputResolver { get; } = outputResolver;
 
     public void Learn(IEnumerable<DataPoint<TInput, TOutput>> trainingBatch, Number learnRate) {
         ClearAllGradients();
@@ -36,7 +37,7 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
     }
 
     private void UpdateAllGradients(DataPoint<TInput, TOutput> data) {
-        Network.Process(data.Input);
+        Network.Process(InputNoise.Apply(Network.Embedder.Embed(data.Input)));
 
         var nodeValues = OutputLayerContext.CalculateOutputLayerNodeValues(OutputResolver.Expected(data.Expected));
         OutputLayerContext.UpdateGradients(nodeValues);
