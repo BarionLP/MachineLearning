@@ -8,28 +8,28 @@ using Simple.Training.Cost;
 using Simple.Training.Data;
 
 //var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\NeuralNetwork\MNIST_ORG.zip"));
-var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
-var images = new ImageDataSource(new(@"C:\Users\Nation\OneDrive\Digits"));
+var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Barion\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
+var images = new ImageDataSource(new(@"C:\Users\Barion\OneDrive\Digits"));
 
-System.Console.WriteLine(images.DataSet[0].DumpImage());
+//Console.WriteLine(images.DataSet[0].DumpImage());
 
-return;
+//return;
 var config = new TrainingConfig<Number[], int>() {
     TrainingSet = mnistDataSource.TrainingSet,
     TestSet = mnistDataSource.TestingSet,
     LearnRate = 0.7,
-    LearnRateMultiplier = 0.995,
+    LearnRateMultiplier = 0.99,
     TrainingBatchSize = 256,
     TestBatchSize = 256,
     Iterations = 128*2,
     InputNoise = new RandomInputNoise(0.3f, new Random(420)),
-    DumpEvaluationAfterIterations = 1,
+    DumpEvaluationAfterIterations = 32,
     CostFunction = CrossEntropyCost.Instance,
     OutputResolver = new MNISTOutputResolver(),
     RandomSource = new Random(42),
 };
 
-var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\digits.nnw"));
+var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\digits.nnw"));
 var setupRandom = new Random(69);
 
 //var network = serializer.Load<RecordingNetwork<Number[], int>>(SigmoidActivation.Instance, MNISTEmbedder.Instance).ReduceOrThrow();
@@ -53,6 +53,13 @@ var trainingResults = trainer.Train();
 Console.WriteLine(trainingResults.DumpShort());
 
 serializer.Save(network);
+
+foreach(var image in images.DataSet) {
+    Console.WriteLine();
+    Console.WriteLine(image.DumpImage());
+    Console.Write($"Prediction: {network.Process(image.Image)} ");
+    Console.WriteLine($"\t Actual: {image.Digit}");
+}
 
 return;
 

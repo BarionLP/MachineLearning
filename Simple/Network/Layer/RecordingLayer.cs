@@ -2,13 +2,13 @@
 
 namespace Simple.Network.Layer;
 
-public sealed class RecordingLayer(Number[,] Weights, Number[] Biases, IActivationMethod ActivationMethod) : ILayer<Number> {
+public sealed class RecordingLayer(Number[,] Weights, Number[] Biases, IActivationMethod<Number> ActivationMethod) : ILayer<Number> {
     public int InputNodeCount { get; } = Weights.GetLength(0);
     public int OutputNodeCount { get; } = Biases.Length;
     public Number[,] Weights { get; } = Weights;
     public Number[] Biases { get; } = Biases;
 
-    public IActivationMethod ActivationMethod { get; } = ActivationMethod;
+    public IActivationMethod<Number> ActivationMethod { get; } = ActivationMethod;
 
     public Number[] LastRawInput = [];
     public readonly Number[] LastWeightedInput = new Number[Biases.Length]; // OutputNodeCount
@@ -31,5 +31,5 @@ public sealed class RecordingLayer(Number[,] Weights, Number[] Biases, IActivati
         return LastActivatedWeights;
     }
 
-    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod activationMethod) => new RecordingLayer(weights, biases, activationMethod);
+    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod<Number> activationMethod) => new RecordingLayer(weights, biases, activationMethod);
 }

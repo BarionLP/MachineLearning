@@ -5,9 +5,9 @@ namespace Simple.Network.Layer;
 public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount) where TLayer : ILayer<Number>{
     public Number[,] Weights { get; } = new Number[inputNodeCount, outputNodeCount];
     public Number[] Biases { get; } = new Number[outputNodeCount];
-    public IActivationMethod ActivationMethod { get; set; } = SigmoidActivation.Instance;
+    public IActivationMethod<Number> ActivationMethod { get; set; } = SigmoidActivation.Instance;
 
-    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod activationMethod) { 
+    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod<Number> activationMethod) { 
         ActivationMethod = activationMethod;
         return this;
     }

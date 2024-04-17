@@ -7,9 +7,9 @@ public interface ILayer<TData> {
     public int OutputNodeCount { get; }
     public TData[,] Weights { get; }
     public TData[] Biases { get; }
-    public IActivationMethod ActivationMethod { get; }
+    public IActivationMethod<TData> ActivationMethod { get; }
 
     public TData[] Process(TData[] input);
 
-    public virtual static ILayer<TData> Create(TData[,] weights, TData[] biases, IActivationMethod activationMethod) => throw new NotImplementedException();
+    public virtual static ILayer<TData> Create(TData[,] weights, TData[] biases, IActivationMethod<TData> activationMethod) => throw new NotImplementedException();
 }

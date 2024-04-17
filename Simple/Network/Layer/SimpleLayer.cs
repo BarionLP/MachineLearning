@@ -2,13 +2,13 @@
 
 namespace Simple.Network.Layer;
 
-public sealed class SimpleLayer(Number[,] Weights, Number[] Biases, IActivationMethod Activation) : ILayer<Number> {
+public sealed class SimpleLayer(Number[,] Weights, Number[] Biases, IActivationMethod<Number> Activation) : ILayer<Number> {
     public int InputNodeCount { get; } = Weights.GetLength(0);
     public int OutputNodeCount { get; } = Biases.Length;
     public Number[,] Weights { get; } = Weights;
     public Number[] Biases { get; } = Biases;
 
-    public IActivationMethod ActivationMethod { get; } = Activation;
+    public IActivationMethod<Number> ActivationMethod { get; } = Activation;
 
     public Number[] Process(Number[] input) {
         var weighted = new Number[OutputNodeCount];
@@ -24,5 +24,5 @@ public sealed class SimpleLayer(Number[,] Weights, Number[] Biases, IActivationM
         return ActivationMethod.Activate(weighted); //TODO: operate on weighted directly instead of creating a copy
     }
 
-    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod activationMethod) => new SimpleLayer(weights, biases, activationMethod);
+    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod<Number> activationMethod) => new SimpleLayer(weights, biases, activationMethod);
 }

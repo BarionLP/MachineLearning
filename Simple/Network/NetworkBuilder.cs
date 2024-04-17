@@ -9,13 +9,13 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
     public int InputNodeCount { get; } = inputNodeCount;
 
     public IEmbedder<TInput, Number[], TOutput>? Embedder { get; set; }
-    public IActivationMethod DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
+    public IActivationMethod<Number> DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
     
     public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetEmbedder(IEmbedder<TInput, Number[], TOutput> embedder) {
         Embedder = embedder;
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod activationMethod) {
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod<Number> activationMethod) {
         DefaultActivationMethod = activationMethod;
         return this;
     }

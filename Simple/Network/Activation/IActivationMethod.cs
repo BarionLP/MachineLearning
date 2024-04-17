@@ -1,19 +1,19 @@
 ﻿namespace Simple.Network.Activation;
 
-public interface IActivationMethod {
-    public Number Activate(Number input);
-    public Number Derivative(Number input);
+public interface IActivationMethod<TData> {
+    public TData Activate(TData input);
+    public TData Derivative(TData input);
 
-    public Number[] Activate(Number[] input) {
-        var result = new Number[input.Length];
+    public TData[] Activate(TData[] input) {
+        var result = new TData[input.Length];
         foreach(int i in ..input.Length) {
             result[i] = Activate(input[i]);
         }
         return result;
     }
 
-    public Number[] Derivative(Number[] input) {
-        var result = new Number[input.Length];
+    public TData[] Derivative(TData[] input) {
+        var result = new TData[input.Length];
         foreach(int i in ..input.Length) {
             result[i] = Derivative(input[i]);
         }
