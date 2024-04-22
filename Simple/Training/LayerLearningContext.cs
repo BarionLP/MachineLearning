@@ -50,10 +50,10 @@ internal sealed class LayerLearningContext {
     public Number[] CalculateOutputLayerNodeValues(Number[] expected) {
         var nodeValues = new Number[expected.Length];
 
+        var activationDerivatives = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput); // can i derive in-place?
         foreach(int i in ..expected.Length) {
             var costDerivative = CostFunction.Derivative(Layer.LastActivatedWeights[i], expected[i]);
-            var activationDerivative = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput[i]);
-            nodeValues[i] = costDerivative * activationDerivative;
+            nodeValues[i] = costDerivative * activationDerivatives[i];
         }
 
         return nodeValues;
@@ -61,6 +61,7 @@ internal sealed class LayerLearningContext {
 
     public Number[] CalculateHiddenLayerNodeValues(RecordingLayer oldLayer, Number[] oldNodeValues) {
         var newNodeValues = new Number[Layer.OutputNodeCount];
+        var derivatives = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput);
 
         foreach(int newNodeIndex in ..newNodeValues.Length) {
             var newNodeValue = 0d;
@@ -71,7 +72,7 @@ internal sealed class LayerLearningContext {
                 newNodeValue += weightedInputDerivative * oldNodeValues[oldNodeIndex];
             }
 
-            newNodeValue *= Layer.ActivationMethod.Derivative(Layer.LastWeightedInput[newNodeIndex]);
+            newNodeValue *= derivatives[newNodeIndex];
             newNodeValues[newNodeIndex] = newNodeValue;
         }
 

@@ -5,7 +5,7 @@
 /// helps with death neurons in <see cref="ReLUActivation"/> <br/>
 /// </summary>
 /// <param name="alpha">slope for x &lt; 0</param>
-public sealed class LeakyReLUActivation(Number alpha = 0.01) : IActivationMethod<Number> {
+public sealed class LeakyReLUActivation(Number alpha = 0.01) : ISimpleActivationMethod<Number> {
     public static readonly LeakyReLUActivation Instance = new();
     private readonly Number alpha = alpha;
     public Number Activate(Number input) => input > 0 ? input : alpha * input;
