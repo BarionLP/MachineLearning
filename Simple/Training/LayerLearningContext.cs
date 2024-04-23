@@ -7,12 +7,16 @@ internal sealed class LayerLearningContext {
     public RecordingLayer Layer { get; }
     public readonly Number[,] CostGradientWeights;
     public readonly Number[] CostGradientBiases;
+    public readonly Number[,] WeightVelocities;
+    public readonly Number[] BiasVelocities;
     public ICostFunction CostFunction { get; init; } = MeanSquaredErrorCost.Instance;
 
     public LayerLearningContext(RecordingLayer layer) {
         Layer = layer;
         CostGradientWeights = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
         CostGradientBiases = new Number[Layer.OutputNodeCount];
+        WeightVelocities = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
+        BiasVelocities = new Number[Layer.OutputNodeCount];
     }
 
     public void UpdateGradients(Number[] nodeValues) {
@@ -29,11 +33,22 @@ internal sealed class LayerLearningContext {
         }
     }
 
-    public void ApplyGradients(Number learnRate) {
-        foreach(int outputNodeIndex in ..Layer.OutputNodeCount) {
-            Layer.Biases[outputNodeIndex] -= CostGradientBiases[outputNodeIndex] * learnRate;
+    public void ApplyGradients(Number learnRate, Number regularization, Number momentum) {
+        var weightDecay = 1 - regularization * learnRate; //used against overfitting
+
+        foreach (int outputNodeIndex in ..Layer.OutputNodeCount) {
+            var biasVelocity = BiasVelocities[outputNodeIndex] * momentum - CostGradientBiases[outputNodeIndex] * learnRate;
+            BiasVelocities[outputNodeIndex] = biasVelocity;
+            Layer.Biases[outputNodeIndex] += biasVelocity;
+            CostGradientBiases[outputNodeIndex] = 0;
+            //Layer.Biases[outputNodeIndex] -= CostGradientBiases[outputNodeIndex] * learnRate; //old
+            
             foreach(int inputNodeIndex in ..Layer.InputNodeCount) {
-                Layer.Weights[inputNodeIndex, outputNodeIndex] -= CostGradientWeights[inputNodeIndex, outputNodeIndex] * learnRate;
+                var weight = Layer.Weights[inputNodeIndex, outputNodeIndex];
+                var weightVelocity = WeightVelocities[inputNodeIndex, outputNodeIndex] * momentum - CostGradientWeights[inputNodeIndex, outputNodeIndex] * learnRate;
+                WeightVelocities[inputNodeIndex, outputNodeIndex] = weightVelocity;
+                Layer.Weights[inputNodeIndex, outputNodeIndex] = weight * weightDecay + weightVelocity;
+                //Layer.Weights[inputNodeIndex, outputNodeIndex] -= CostGradientWeights[inputNodeIndex, outputNodeIndex] * learnRate; //old
             }
         }
     }
@@ -52,6 +67,7 @@ internal sealed class LayerLearningContext {
 
         var activationDerivatives = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput); // can i derive in-place?
         foreach(int i in ..expected.Length) {
+            // Evaluate partial derivatives for current node: cost/activation & activation/weightedInput
             var costDerivative = CostFunction.Derivative(Layer.LastActivatedWeights[i], expected[i]);
             nodeValues[i] = costDerivative * activationDerivatives[i];
         }
