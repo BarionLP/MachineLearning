@@ -1,15 +1,17 @@
-﻿namespace Simple;
+﻿using Simple.Training.Data;
+
+namespace Simple;
 
 public interface IInputDataNoise<TData>{
-    public TData[] Apply(TData[] data);
+    public TData Apply(TData data);
 }
 
 public sealed class NoInputNoise<TData> : IInputDataNoise<TData>{
     public static readonly NoInputNoise<TData> Instance = new();
-    public TData[] Apply(TData[] data) => data;
+    public TData Apply(TData data) => data;
 }
 
-public sealed class RandomInputNoise(float Strength, Random? Random = null) : IInputDataNoise<double>{
+public sealed class RandomInputNoise(float Strength, Random? Random = null) : IInputDataNoise<double[]>{
     public float Strength { get; } = Strength;
     public Random Random { get; } = Random ?? Random.Shared;
 

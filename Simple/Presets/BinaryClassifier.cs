@@ -21,6 +21,8 @@ public static class BinaryClassifier{
            TestSet = ConstructTrainingData(512).ToArray(),
            LearnRate = .25,
            LearnRateMultiplier = 0.99997,
+           Regularization = 0,
+           Momentum = 0,
            TrainingBatchSize = 128,
            Iterations = 1028*(64+16),
            DumpEvaluationAfterIterations = 1028*2,

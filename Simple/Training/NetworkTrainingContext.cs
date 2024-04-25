@@ -4,15 +4,14 @@ using System.Collections.Immutable;
 
 namespace Simple.Training;
 
-internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<TInput, TOutput> network, ICostFunction costFunction, IInputDataNoise<Number> inputNoise, IOutputResolver<TOutput, Number[]> outputResolver) {
+internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<TInput, TOutput> network, ICostFunction costFunction, IOutputResolver<TOutput, Number[]> outputResolver) {
     internal RecordingNetwork<TInput, TOutput> Network = network;
     internal ImmutableArray<LayerLearningContext> LayerContexts = network.Layers.Select(layer => new LayerLearningContext(layer) { CostFunction = costFunction }).ToImmutableArray();
     internal LayerLearningContext OutputLayerContext => LayerContexts[^1];
     internal ICostFunction CostFunction { get; } = costFunction;
-    public IInputDataNoise<Number> InputNoise { get; } = inputNoise;
     internal IOutputResolver<TOutput, Number[]> OutputResolver { get; } = outputResolver;
 
-    public void Learn(IEnumerable<DataPoint<TInput, TOutput>> trainingBatch, Number learnRate) {
+    public void Learn(IEnumerable<DataPoint<TInput, TOutput>> trainingBatch, Number learnRate, Number regularization, Number momentum) {
         ClearAllGradients();
         var dataCounter = 0;
 
@@ -21,12 +20,12 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
             dataCounter++;
         }
 
-        ApplyAllGradients(learnRate / dataCounter); // divide to scale the sum of changes to the average produced by the batch
+        ApplyAllGradients(learnRate / dataCounter, regularization, momentum); // divide to scale the sum of changes to the average produced by the batch
     }
 
-    private void ApplyAllGradients(Number leanRate) {
+    private void ApplyAllGradients(Number learnRate, Number regularization, Number momentum) {
         foreach(var layer in LayerContexts) {
-            layer.ApplyGradients(leanRate);
+            layer.ApplyGradients(learnRate, regularization, momentum);
         }
     }
 
@@ -37,7 +36,7 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
     }
 
     private void UpdateAllGradients(DataPoint<TInput, TOutput> data) {
-        Network.Process(InputNoise.Apply(Network.Embedder.Embed(data.Input)));
+        Network.Process(Network.Embedder.Embed(data.Input));
 
         var nodeValues = OutputLayerContext.CalculateOutputLayerNodeValues(OutputResolver.Expected(data.Expected));
         OutputLayerContext.UpdateGradients(nodeValues);

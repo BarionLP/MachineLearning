@@ -1,6 +1,8 @@
 ﻿using System.Drawing;
 using System.IO.Compression;
 using System.Text;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Simple.Training.Data;
 
@@ -86,5 +88,15 @@ public sealed record MNISTDataPoint(Number[] Image, int Digit) : DataPoint<Numbe
         }
 
         return new(image, rawDigit);
+    }
+
+    public void SaveImage(FileInfo fileInfo){
+        var image = new Image<Rgba32>(SIZE, SIZE);
+        foreach(var i in ..Image.Length){
+            int row = i / SIZE;
+            int column = i % SIZE;
+            image[column, row] = new Rgba32((float)Image[i], (float)Image[i], (float)Image[i]); 
+        }
+        image.SaveAsPng(fileInfo.FullName);
     }
 }

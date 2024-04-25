@@ -6,7 +6,7 @@ namespace Simple.Training;
 public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network) where TInput : notnull where TOutput : notnull{
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
     public RecordingNetwork<TInput, TOutput> Network { get; } = network;
-    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.CostFunction, config.InputNoise, config.OutputResolver);
+    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.CostFunction, config.OutputResolver);
 
     public NetworkTrainingResult Train() {
         var before = Evaluate();
@@ -14,10 +14,10 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
         var learnRate = Config.LearnRate;
         if(Config.DumpEvaluationAfterIterations > 0) Console.WriteLine($"Starting Training (learnRate: {learnRate:P}): {before.DumpShort()}");
         foreach(var iteration in ..Config.Iterations) {
+            Context.Learn(Config.GetNextTrainingBatch(), learnRate, Config.Regularization, Config.Momentum);
             if(iteration > 0 && Config.DumpEvaluationAfterIterations > 0 && iteration % Config.DumpEvaluationAfterIterations == 0) {
-                Console.WriteLine($"Iteration {iteration} (learnRate: {learnRate:P}): {Evaluate().DumpShort()}");
+                Console.WriteLine($"{Evaluate().DumpShort()} after {iteration} iterations (learnRate: {learnRate:P})");
             }
-            Context.Learn(Config.GetNextTrainingBatch(), learnRate);
             learnRate *= Config.LearnRateMultiplier;
         }
 
