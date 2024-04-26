@@ -12,15 +12,6 @@ public sealed class ImageInputNoise : IInputDataNoise<Number[]>{
 
     public Number[] Apply(Number[] data){
         return TransformImage(data, Random.NextDouble(MinScale, MaxScale), Random.NextDouble(-MaxAngle, MaxAngle), Random.Next(-MaxShift, MaxShift), Random.Next(-MaxShift, MaxShift), Random);
-        var transformer = ArrayTransformer.CreateWithCopy(data, Size)
-            .Shift(Random.Next(-MaxShift, MaxShift), Random.Next(-MaxShift, MaxShift), 0)
-            .Scale(Random.NextDouble(MinScale, MaxScale))
-            .Rotate(Random.NextDouble(-MaxAngle, MaxAngle));
-                
-        foreach (var i in ..transformer.Array.Length){
-            transformer.Array[i] = Math.Clamp(transformer.Array[i] + ((Random.NextDouble() - 0.5) * 2 * NoiseStrength), 0, 1);
-        }
-        return transformer.Array;
     }
 
     private Number[] TransformImage(Number[] original, double scale, double degrees, int shiftX, int shiftY, Random random){

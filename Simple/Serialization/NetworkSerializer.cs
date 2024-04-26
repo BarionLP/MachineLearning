@@ -1,6 +1,5 @@
 ﻿using Ametrin.Utils.Optional;
 using Simple.Network;
-using Simple.Network.Activation;
 using Simple.Network.Embedding;
 using Simple.Network.Layer;
 using Simple.Serialization.Activation;
@@ -19,12 +18,12 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
     private bool isDisposed;
     private readonly bool isStreamOwned = false;
     public NetworkSerializer(FileInfo fileInfo) 
-    : this(fileInfo.Open(FileMode.OpenOrCreate)){
+    : this(fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite)){
         isStreamOwned = true;
     }
 
     public ResultFlag Save(INetwork<TInput, double, TOutput, TLayer> network){
-        using var writer = new BinaryWriter(Stream);
+        var writer = new BinaryWriter(Stream);
         writer.WriteBigEndian(VERSION); // version
         writer.WriteBigEndian(network.Layers.Length);
         foreach(var layer in network.Layers){
@@ -47,7 +46,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
 
     //TODO: Serialize embedder
     public Result<TNetwork> Load<TNetwork>(IEmbedder<TInput, double[], TOutput> embedder) where TNetwork : INetwork<TInput, double, TOutput, TLayer>{
-        using var reader = new BinaryReader(Stream);
+        var reader = new BinaryReader(Stream);
         var version = reader.ReadUInt32BigEndian();
         if(version != VERSION) throw new InvalidDataException();
         var layerCount = reader.ReadInt32BigEndian();

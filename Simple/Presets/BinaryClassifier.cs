@@ -16,16 +16,16 @@ public static class BinaryClassifier{
             .AddRandomizedLayer(2)
             .Build();
 
-        var config = new SimpleTrainingConfig<Number[], bool>() {
+        var config = new TrainingConfig<Number[], bool>() {
            TrainingSet = ConstructTrainingData(1028*2).ToArray(),
            TestSet = ConstructTrainingData(512).ToArray(),
+           EpochCount = 64+16,
            LearnRate = .25,
            LearnRateMultiplier = 0.99997,
            Regularization = 0,
            Momentum = 0,
-           TrainingBatchSize = 128,
-           Iterations = 1028*(64+16),
-           DumpEvaluationAfterIterations = 1028*2,
+           BatchSize = 128,
+           DumpEvaluationAfterBatches = 128,
            OutputResolver = new OutputResolver(),
            CostFunction = CrossEntropyCost.Instance,
         };

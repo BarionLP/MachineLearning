@@ -1,5 +1,5 @@
-﻿using System.Text;
-using Simple.Network;
+﻿using Simple.Network;
+using Simple.Training.Evaluation;
 
 namespace Simple.Training;
 
@@ -9,35 +9,60 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
     internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.CostFunction, config.OutputResolver);
 
     public NetworkTrainingResult Train() {
-        var before = Evaluate();
+        // for each epoch 
+        // train on all batches
+        // decay learnrate
+
+        var before = EvaluateShort();
 
         var learnRate = Config.LearnRate;
-        if(Config.DumpEvaluationAfterIterations > 0) Console.WriteLine($"Starting Training (learnRate: {learnRate:P}): {before.DumpShort()}");
-        foreach(var iteration in ..Config.Iterations) {
-            Context.Learn(Config.GetNextTrainingBatch(), learnRate, Config.Regularization, Config.Momentum);
-            if(iteration > 0 && Config.DumpEvaluationAfterIterations > 0 && iteration % Config.DumpEvaluationAfterIterations == 0) {
-                Console.WriteLine($"{Evaluate().DumpShort()} after {iteration} iterations (learnRate: {learnRate:P})");
+        foreach(var epochIndex in ..Config.EpochCount) {
+            var epoch = Config.GetEpoch();
+            var batchCount = 0;
+            
+            if(Config.DumpEpochEvaluation) CallEvaluate();
+
+            foreach(var batch in epoch) {
+                if(Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) {
+                    CallEvaluate();
+                }
+
+                Context.Learn(batch, learnRate, Config.Regularization, Config.Momentum);
+                batchCount++;
             }
             learnRate *= Config.LearnRateMultiplier;
+        
+            void CallEvaluate(){
+                Config.EvaluationCallback!.Invoke(EvaluateShort(new() {
+                    CurrentBatch = batchCount,
+                    MaxBatch = epoch.BatchCount,
+                    CurrentEpoch = epochIndex + 1,
+                    MaxEpoch = Config.EpochCount,
+                    LearnRate = learnRate
+                }));
+            }
         }
 
-        var after = Evaluate();
         return new() { 
-            IterationCount = Config.Iterations,
+            EpochCount = Config.EpochCount,
             Before = before, 
-            After = after, 
+            After = EvaluateShort(), 
         };
     }
 
-    public NetworkEvaluationResult Evaluate() => new() {
-        TrainingSetResult = Evaluate(Config.GetNextTrainingBatch()),
-        TestSetResult = Evaluate(Config.GetNextTestBatch()),
+    public NetworkEvaluation EvaluateShort(NetworkEvaluationContext context) => new() {
+        Context = context,
+        Result = EvaluateShort(),
     };
-    public DataSetEvaluationResult Evaluate(IEnumerable<DataPoint<TInput, TOutput>> dataSet) {
+    public NetworkEvaluationResult EvaluateShort() => new() {
+        TrainingSetResult = Evaluate(Config.GetRandomTrainingBatch()),
+        TestSetResult = Evaluate(Config.GetRandomTestBatch()),
+    };
+    public DataSetEvaluationResult Evaluate(Batch<TInput, TOutput> batch) {
         int correctCounter = 0;
         Number totalCost = 0;
         int totalCounter = 0;
-        foreach(var entry in dataSet) {
+        foreach(var entry in batch) {
             totalCounter++;
             var output = Network.Process(entry.Input);
 
@@ -53,34 +78,5 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
             CorrectCount = correctCounter,
             TotalCost = totalCost,
         };
-    }
-}
-
-public sealed class DataSetEvaluationResult {
-    public required int TotalCount { get; init; }
-    public required int CorrectCount { get; init; }
-    public float CorrectPercentage => (float) CorrectCount / TotalCount;
-    public required Number TotalCost { get; init; }
-    public Number AverageCost => TotalCost / TotalCount;
-}
-
-public sealed class NetworkEvaluationResult {
-    public required DataSetEvaluationResult TrainingSetResult { get; init; }
-    public required DataSetEvaluationResult TestSetResult { get; init; }
-    public void DumpCorrectPrecentages(StringBuilder sb) => sb.Append($"{TrainingSetResult.CorrectPercentage:P} | {TestSetResult.CorrectPercentage:P}");
-    public string DumpShort() => $"Correct: {TrainingSetResult.CorrectPercentage:P} | {TestSetResult.CorrectPercentage:P}";
-}
-
-public sealed class NetworkTrainingResult {
-    public required int IterationCount { get; init; }
-    public required NetworkEvaluationResult Before { get; init; }
-    public required NetworkEvaluationResult After { get; init; }
-    public string DumpShort(){
-        var sb = new StringBuilder();
-        sb.Append("Training Results: ");
-        Before.DumpCorrectPrecentages(sb);
-        sb.Append(" -> ");
-        After.DumpCorrectPrecentages(sb);
-        return sb.ToString();
     }
 }

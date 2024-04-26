@@ -1,4 +1,5 @@
-﻿using Simple.Training.Data;
+﻿using Simple.Training;
+using Simple.Training.Data;
 
 namespace Simple;
 
