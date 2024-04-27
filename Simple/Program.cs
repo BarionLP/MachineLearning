@@ -1,6 +1,5 @@
 ﻿using Simple;
 using Simple.Network;
-using Simple.Network.Activation;
 using Simple.Network.Embedding;
 using Simple.Network.Layer;
 using Simple.Serialization.Activation;
@@ -56,7 +55,6 @@ foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=
 }
 return;
 
-
 var setupRandom = new Random(69);
 var network = NetworkBuilder.Recorded<Number[], int>(784)
     .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
@@ -66,6 +64,7 @@ var network = NetworkBuilder.Recorded<Number[], int>(784)
     .AddLayer(10, builder => builder.InitializeRandom(setupRandom).SetActivationMethod(SoftmaxActivation.Instance))
     .Build();
 */
+
 var network = serializer.Load<RecordingNetwork<Number[], int>>(MNISTEmbedder.Instance).ReduceOrThrow();
 var trainer = new NetworkTrainer<Number[], int>(config, network);
 
@@ -84,7 +83,7 @@ foreach(var image in images.DataSet) {
     if(prediction == image.Digit) correctCounter++;
 
     Console.ForegroundColor = prediction == image.Digit ? ConsoleColor.Green : ConsoleColor.Red;
-    Console.WriteLine($"Predicted: {prediction}\tActual: {image.Digit}\tOutput: {network.OutputLayer.LastActivatedWeights.Dump(' ', "F2")}");
+    Console.WriteLine($"Predicted: {prediction}\tActual: {image.Digit}");
     counter++;
 }
 Console.ForegroundColor = previousColor;
