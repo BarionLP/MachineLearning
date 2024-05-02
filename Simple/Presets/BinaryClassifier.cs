@@ -3,6 +3,7 @@ using Simple.Network.Activation;
 using Simple.Network.Embedding;
 using Simple.Training;
 using Simple.Training.Cost;
+using Simple.Training.Optimization;
 
 namespace Simple;
 
@@ -17,17 +18,21 @@ public static class BinaryClassifier{
             .Build();
 
         var config = new TrainingConfig<Number[], bool>() {
-           TrainingSet = ConstructTrainingData(1028*2).ToArray(),
-           TestSet = ConstructTrainingData(512).ToArray(),
-           EpochCount = 64+16,
-           LearnRate = .25,
-           LearnRateMultiplier = 0.99997,
-           Regularization = 0,
-           Momentum = 0,
-           BatchSize = 128,
-           DumpEvaluationAfterBatches = 128,
-           OutputResolver = new OutputResolver(),
-           CostFunction = CrossEntropyCost.Instance,
+            TrainingSet = ConstructTrainingData(1028*2).ToArray(),
+            TestSet = ConstructTrainingData(512).ToArray(),
+            EpochCount = 64+16,
+
+            Optimizer = new GDMomentumOptimizer{
+                LearningRate = .25,
+                LearningRateEpochMultiplier = 0.99997,
+                Regularization = 0,
+                Momentum = 0,
+            },
+            
+            BatchSize = 128,
+            DumpEvaluationAfterBatches = 128,
+            OutputResolver = new OutputResolver(),
+            CostFunction = CrossEntropyCost.Instance,
         };
 
 

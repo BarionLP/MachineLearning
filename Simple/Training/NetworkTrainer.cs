@@ -6,7 +6,7 @@ namespace Simple.Training;
 public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network) where TInput : notnull where TOutput : notnull{
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
     public RecordingNetwork<TInput, TOutput> Network { get; } = network;
-    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.CostFunction, config.OutputResolver);
+    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config.Optimizer, config.OutputResolver);
 
     public NetworkTrainingResult Train() {
         // for each epoch 
@@ -14,8 +14,8 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
         // decay learnrate
 
         var before = EvaluateShort();
+        Config.Optimizer.Init();
 
-        var learnRate = Config.LearnRate;
         foreach(var epochIndex in ..Config.EpochCount) {
             var epoch = Config.GetEpoch();
             var batchCount = 0;
@@ -27,10 +27,11 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
                     CallEvaluate();
                 }
 
-                Context.Learn(batch, learnRate, Config.Regularization, Config.Momentum);
+                Context.Learn(batch);
                 batchCount++;
             }
-            learnRate *= Config.LearnRateMultiplier;
+
+            Config.Optimizer.OnEpochCompleted();
         
             void CallEvaluate(){
                 Config.EvaluationCallback!.Invoke(EvaluateShort(new() {
@@ -38,7 +39,7 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
                     MaxBatch = epoch.BatchCount,
                     CurrentEpoch = epochIndex + 1,
                     MaxEpoch = Config.EpochCount,
-                    LearnRate = learnRate
+                    LearnRate = Config.Optimizer.CurrentLearningRate,
                 }));
             }
         }

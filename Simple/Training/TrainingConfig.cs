@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using Simple.Training.Cost;
+﻿using Simple.Training.Cost;
 using Simple.Training.Evaluation;
+using Simple.Training.Optimization;
 
 namespace Simple.Training;
 
@@ -10,10 +10,8 @@ public sealed class TrainingConfig<TInput, TOutput> {
 
     public required int EpochCount  { get; init; }
     public required int BatchSize { get; init; }
-    public required Number LearnRate { get; init; }
-    public Number LearnRateMultiplier { get; init; } = 1;
-    public required Number Regularization { get; init; } 
-    public required Number Momentum { get; init; }
+
+    public required IOptimizerConfig<Number> Optimizer { get; init; }
 
     public IInputDataNoise<TInput> InputNoise { get; init; } = NoInputNoise<TInput>.Instance;
     public ICostFunction CostFunction { get; init; } = MeanSquaredErrorCost.Instance;

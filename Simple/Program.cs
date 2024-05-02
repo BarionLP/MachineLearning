@@ -1,11 +1,13 @@
 ﻿using Simple;
 using Simple.Network;
+using Simple.Network.Activation;
 using Simple.Network.Embedding;
 using Simple.Network.Layer;
 using Simple.Serialization.Activation;
 using Simple.Training;
 using Simple.Training.Cost;
 using Simple.Training.Data;
+using Simple.Training.Optimization;
 
 ActivationMethodSerializer.RegisterDefaults();
 
@@ -30,10 +32,14 @@ var config = new TrainingConfig<Number[], int>() {
     
     EpochCount = 3,
     BatchSize = 256*4,
-    LearnRate = 0.04,
-    LearnRateMultiplier = 0.5,
-    Momentum = 0.85,
-    Regularization = 0.01,
+
+    Optimizer = new GDMomentumOptimizer{
+        LearningRate = 0.7,
+        LearningRateEpochMultiplier = 0.5,
+        Momentum = 0.85,
+        Regularization = 0.01,
+    },
+
     
     InputNoise = inputNoise,
     CostFunction = CrossEntropyCost.Instance,
@@ -45,9 +51,9 @@ var config = new TrainingConfig<Number[], int>() {
     RandomSource = new Random(42),
 };
 
+/*
 using var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\digits_big.nnw"));
 
-/*
 var count = 0;
 foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=> new MNISTDataPoint(d.Input, d.Expected))){
     item.SaveImage(new(@$"C:\Users\Nation\Downloads\digits\{count}.png"));
@@ -55,6 +61,7 @@ foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=
 }
 return;
 
+*/
 var setupRandom = new Random(69);
 var network = NetworkBuilder.Recorded<Number[], int>(784)
     .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
@@ -63,15 +70,14 @@ var network = NetworkBuilder.Recorded<Number[], int>(784)
     .AddRandomizedLayer(128, setupRandom)
     .AddLayer(10, builder => builder.InitializeRandom(setupRandom).SetActivationMethod(SoftmaxActivation.Instance))
     .Build();
-*/
 
-var network = serializer.Load<RecordingNetwork<Number[], int>>(MNISTEmbedder.Instance).ReduceOrThrow();
+//var network = serializer.Load<RecordingNetwork<Number[], int>>(MNISTEmbedder.Instance).ReduceOrThrow();
 var trainer = new NetworkTrainer<Number[], int>(config, network);
 
 var trainingResults = trainer.Train();
 Console.WriteLine(trainingResults.DumpShort());
 
-serializer.Save(network);
+//serializer.Save(network);
 
 //Console.WriteLine(trainer.Evaluate().DumpShort());
 
