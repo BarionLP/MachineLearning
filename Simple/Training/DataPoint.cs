@@ -5,7 +5,7 @@ namespace Simple.Training;
 public sealed record BinaryDataPoint(Number[] Input, bool Expected) : DataPoint<Number[], bool>(Input, Expected) {
     public override string ToString() {
         var sb = new StringBuilder();
-        sb.Append('[').AppendCollection(Input, ", ").Append("] => ").Append(Expected);
+        sb.Append('[').AppendJoin(", ", Input).Append("] => ").Append(Expected);
         return sb.ToString();
     }
 }
