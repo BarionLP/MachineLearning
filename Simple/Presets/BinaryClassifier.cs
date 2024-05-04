@@ -1,9 +1,10 @@
-﻿using Simple.Network;
-using Simple.Network.Activation;
-using Simple.Network.Embedding;
-using Simple.Training;
-using Simple.Training.Cost;
-using Simple.Training.Optimization;
+﻿using MachineLearning.Data.Entry;
+using MachineLearning.Domain.Activation;
+using MachineLearning.Model;
+using MachineLearning.Model.Embedding;
+using MachineLearning.Training;
+using MachineLearning.Training.Cost;
+using MachineLearning.Training.Optimization;
 
 namespace Simple;
 
@@ -23,7 +24,7 @@ public static class BinaryClassifier{
             EpochCount = 64+16,
 
             Optimizer = new GDMomentumOptimizer{
-                LearningRate = .25,
+                InitalLearningRate = .25,
                 LearningRateEpochMultiplier = 0.99997,
                 Regularization = 0,
                 Momentum = 0,
@@ -79,11 +80,11 @@ public static class BinaryClassifier{
         }
 
 
-        static IEnumerable<BinaryDataPoint> ConstructTrainingData(int count) {
+        static IEnumerable<BinaryDataEntry> ConstructTrainingData(int count) {
             foreach(var _ in ..count) {
                 var x = Random.Shared.NextDouble();
                 var y = Random.Shared.NextDouble();
-                yield return new BinaryDataPoint([x, y],  IsInsideShapes(x, y));
+                yield return new BinaryDataEntry([x, y],  IsInsideShapes(x, y));
             }
         }
     }

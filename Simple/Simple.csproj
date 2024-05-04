@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj" />
+    <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />
+    <ProjectReference Include="..\MachineLearning.Serialization\MachineLearning.Serialization.csproj" />
   </ItemGroup>
   
   <ItemGroup>

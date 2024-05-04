@@ -1,13 +1,13 @@
-﻿using Simple;
-using Simple.Network;
-using Simple.Network.Activation;
-using Simple.Network.Embedding;
-using Simple.Network.Layer;
-using Simple.Serialization.Activation;
-using Simple.Training;
-using Simple.Training.Cost;
-using Simple.Training.Data;
-using Simple.Training.Optimization;
+﻿using MachineLearning.Data.Entry;
+using MachineLearning.Data.Noise;
+using MachineLearning.Data.Source;
+using MachineLearning.Domain.Activation;
+using MachineLearning.Model;
+using MachineLearning.Model.Embedding;
+using MachineLearning.Serialization.Activation;
+using MachineLearning.Training;
+using MachineLearning.Training.Cost;
+using MachineLearning.Training.Optimization;
 
 ActivationMethodSerializer.RegisterDefaults();
 
@@ -16,7 +16,7 @@ var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schul
 var images = new ImageDataSource(new(@"C:\Users\Nation\OneDrive\Digits"));
 
 var inputNoise = new ImageInputNoise {
-    Size = MNISTDataPoint.SIZE,
+    Size = ImageDataEntry.SIZE,
     NoiseStrength = 0.35,
     NoiseProbability = 0.75,
     MaxShift = 2,
@@ -30,23 +30,28 @@ var config = new TrainingConfig<Number[], int>() {
     TrainingSet = mnistDataSource.TrainingSet,
     TestSet = mnistDataSource.TestingSet,
     
-    EpochCount = 3,
-    BatchSize = 256*4,
+    EpochCount = 4,
+    BatchSize = 256*2,
 
+    /*
     Optimizer = new GDMomentumOptimizer{
-        LearningRate = 0.7,
+        InitalLearningRate = 0.7,
         LearningRateEpochMultiplier = 0.5,
         Momentum = 0.85,
         Regularization = 0.01,
     },
+    */
 
+    Optimizer = new AdamOptimizer {
+        LearningRate = 0.1,
+    },
     
     InputNoise = inputNoise,
     CostFunction = CrossEntropyCost.Instance,
     OutputResolver = new MNISTOutputResolver(),
     
     EvaluationCallback = result => Console.WriteLine(result.Dump()),
-    DumpEvaluationAfterBatches = 32,
+    DumpEvaluationAfterBatches = 4,
     
     RandomSource = new Random(42),
 };

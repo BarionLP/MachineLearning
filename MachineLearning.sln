@@ -1,42 +1,73 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.10.34804.81
+VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj", "{65C0B18E-5633-4629-A3DE-CEFE564D6837}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarionGPT", "BarionGPT\BarionGPT.csproj", "{583A9FAD-329C-467C-AC4A-C2631A7AF61E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarionGPT", "BarionGPT\BarionGPT.csproj", "{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Domain", "MachineLearning.Domain\MachineLearning.Domain.csproj", "{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Simple", "Simple\Simple.csproj", "{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Model", "MachineLearning.Model\MachineLearning.Model.csproj", "{7730AEEE-5540-4E56-8725-66E2E8D8D686}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Common", "MachineLearning.Common\MachineLearning.Common.csproj", "{EE9EA1F3-B205-4BB5-8865-BD9737435339}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Training", "MachineLearning.Training\MachineLearning.Training.csproj", "{68FCA961-7AD2-453D-9790-322D470A78AF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Training.GUI", "MachineLearning.Training.GUI\MachineLearning.Training.GUI.csproj", "{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Simple", "Simple\Simple.csproj", "{A72F4D5A-306B-4D52-A298-43B8E3E029FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj", "{F4768C27-F7E1-48ED-A828-5B51E9073939}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Serialization", "MachineLearning.Serialization\MachineLearning.Serialization.csproj", "{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Data", "MachineLearning.Data\MachineLearning.Data.csproj", "{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}"
 EndProject
 Global
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {20CDD983-F803-4C9D-BDA5-0F6B202B92E9}
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{65C0B18E-5633-4629-A3DE-CEFE564D6837}.Release|Any CPU.Build.0 = Release|Any CPU
-		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{999DFBD3-9A77-4BEF-A6BB-AD8154ADDEC3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EE9EA1F3-B205-4BB5-8865-BD9737435339}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FCD38BC7-AB67-4DB4-BC3B-E3CDB0E7AE88}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68FCA961-7AD2-453D-9790-322D470A78AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68FCA961-7AD2-453D-9790-322D470A78AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68FCA961-7AD2-453D-9790-322D470A78AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68FCA961-7AD2-453D-9790-322D470A78AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A72F4D5A-306B-4D52-A298-43B8E3E029FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A72F4D5A-306B-4D52-A298-43B8E3E029FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A72F4D5A-306B-4D52-A298-43B8E3E029FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A72F4D5A-306B-4D52-A298-43B8E3E029FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {230C7672-7D7B-46CB-84E3-29CD42CEB720}
 	EndGlobalSection
 EndGlobal
