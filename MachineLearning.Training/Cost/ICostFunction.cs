@@ -2,12 +2,12 @@
 
 public interface ICostFunction
 {
-    public Number Cost(Number output, Number expected);
-    public Number Derivative(Number output, Number expected);
-    public Number TotalCost(Number[] output, Number[] expected)
+    public double Cost(double output, double expected);
+    public double Derivative(double output, double expected);
+    public double TotalCost(double[] output, double[] expected)
     {
         if (output.Length != expected.Length) throw new ArgumentException("Output and Expected length didn't match");
-        Number totalCost = 0.0;
+        double totalCost = 0.0;
 
         foreach (var i in ..output.Length)
         {

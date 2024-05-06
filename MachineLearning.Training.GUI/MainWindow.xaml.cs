@@ -22,23 +22,17 @@ public partial class MainWindow : Window {
         InitializeComponent();
         DataContext = this;
 
-        var networkBuilder = NetworkBuilder.Recorded<double[], int>(784)
+        var networkBuilderHuge = NetworkBuilder.Recorded<double[], int>(784)
             .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
             .SetEmbedder(MNISTEmbedder.Instance)
             .AddRandomizedLayer(256)
             .AddRandomizedLayer(128)
             .AddLayer(10, builder => builder.InitializeRandom().SetActivationMethod(SoftmaxActivation.Instance));
         
-        
-        var networkBuilderSmall = NetworkBuilder.Recorded<double[], int>(784)
+        var networkBuilderGPT = NetworkBuilder.Recorded<double[], int>(784)
             .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
             .SetEmbedder(MNISTEmbedder.Instance)
             .AddRandomizedLayer(128)
-            .AddLayer(10, builder => builder.InitializeRandom().SetActivationMethod(SoftmaxActivation.Instance));
-        
-        var networkBuilderTiny = NetworkBuilder.Recorded<double[], int>(784)
-            .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
-            .SetEmbedder(MNISTEmbedder.Instance)
             .AddLayer(10, builder => builder.InitializeRandom().SetActivationMethod(SoftmaxActivation.Instance));
         
         var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
@@ -73,14 +67,13 @@ public partial class MainWindow : Window {
             DumpEvaluationAfterBatches = 4,
         };
 
-        var trainerBig = ProgressTracker.CreateLinkedTrainer("Big", SKColors.Blue, config, networkBuilder.Build());
-        var trainerSmall = ProgressTracker.CreateLinkedTrainer("Small", SKColors.Red, config, networkBuilderSmall.Build());
-        var trainerTiny = ProgressTracker.CreateLinkedTrainer("Tiny", SKColors.Green, config, networkBuilderTiny.Build());
+        var trainerBig = ProgressTracker.CreateLinkedTrainer("ChatGPT", SKColors.Blue, config, networkBuilderGPT.Build());
+        var trainerSmall = ProgressTracker.CreateLinkedTrainer("Huge", SKColors.Red, config, networkBuilderHuge.Build());
 
         Loaded += (sender, args) => {
             Task.Run(trainerBig.Train);
             Task.Run(trainerSmall.Train);
-            Task.Run(trainerTiny.Train);
+            //Task.Run(trainerTiny.Train);
         };
     }
 }
