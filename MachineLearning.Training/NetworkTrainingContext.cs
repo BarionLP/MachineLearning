@@ -1,16 +1,18 @@
 ﻿using MachineLearning.Data.Entry;
 using MachineLearning.Model;
 using MachineLearning.Training.Evaluation;
+using MachineLearning.Training.Optimization;
 using MachineLearning.Training.Optimization.Layer;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
-internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<TInput, TOutput> network, TrainingConfig<TInput, TOutput> config)
+internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<TInput, TOutput> network, TrainingConfig<TInput, TOutput> config, IOptimizer<double> optimizer)
 {
     internal RecordingNetwork<TInput, TOutput> Network = network;
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
-    internal ImmutableArray<ILayerOptimizer<Number>> LayerContexts = network.Layers.Select(config.Optimizer.CreateLayerOptimizer).ToImmutableArray();
+    internal ImmutableArray<ILayerOptimizer<Number>> LayerContexts = network.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
     internal ILayerOptimizer<Number> OutputLayerContext => LayerContexts[^1];
 
     public void Train(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch)
@@ -42,10 +44,11 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
             {
                 correctCounter++;
             }
-            totalCost += Config.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(dataPoint.Expected));
+            totalCost += Config.Optimizer.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(dataPoint.Expected));
         }
 
         Apply(dataCounter);
+        //HasModelErrors();
 
         return new()
         {
@@ -76,6 +79,26 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
         foreach (var layer in LayerContexts)
         {
             layer.FullReset();
+        }
+    }
+
+    public void HasModelErrors()
+    {
+        foreach (var layer in LayerContexts)
+        {
+            foreach (var ouputNodeIndex in ..layer.Layer.OutputNodeCount)
+            {
+                if(double.IsNaN(layer.Layer.Biases[ouputNodeIndex]) || double.IsInfinity(layer.Layer.Biases[ouputNodeIndex]))
+                {
+                    Debug.WriteLine("Model has invalid values!!!");
+                }
+                foreach (var inputNodeIndex in ..layer.Layer.InputNodeCount){
+                    if(double.IsNaN(layer.Layer.Weights[inputNodeIndex, ouputNodeIndex]) || double.IsInfinity(layer.Layer.Weights[inputNodeIndex, ouputNodeIndex]))
+                    {
+                        Debug.WriteLine("Model has invalid values!!!");
+                    }
+                }
+            }
         }
     }
 

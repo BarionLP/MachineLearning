@@ -1,13 +1,23 @@
 ﻿using MachineLearning.Model;
 using MachineLearning.Training.Evaluation;
+using MachineLearning.Training.Optimization;
 
 namespace MachineLearning.Training;
 
-public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network) where TInput : notnull where TOutput : notnull
+public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where TOutput : notnull
 {
-    public TrainingConfig<TInput, TOutput> Config { get; } = config;
-    public RecordingNetwork<TInput, TOutput> Network { get; } = network;
-    internal NetworkTrainingContext<TInput, TOutput> Context { get; } = new(network, config);
+    public TrainingConfig<TInput, TOutput> Config { get; }
+    public RecordingNetwork<TInput, TOutput> Network { get; }
+    public IOptimizer<double> Optimizer { get; }
+    internal NetworkTrainingContext<TInput, TOutput> Context { get; }
+
+    public NetworkTrainer(TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network)
+    {
+        Config = config;
+        Network = network;
+        Optimizer = config.Optimizer.CreateOptimizer();
+        Context = new(network, config, Optimizer);
+    }
 
     public ModelTrainingResult Train()
     {
@@ -16,7 +26,7 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
         // decay learnrate
 
         var before = EvaluateShort();
-        Config.Optimizer.Init();
+        Optimizer.Init();
         Context.FullReset();
         foreach (var epochIndex in ..Config.EpochCount)
         {
@@ -31,13 +41,13 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
                 var evaluation = Context.TrainAndEvaluate(batch);
                 if (Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0)
                 {
-                    Config.EvaluationCallback!.Invoke(new() { Context = GetContext(), Result = evaluation });
+                    Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = evaluation });
                 }
                 batchCount++;
-                Config.Optimizer.OnBatchCompleted();
+                Optimizer.OnBatchCompleted();
             }
 
-            Config.Optimizer.OnEpochCompleted();
+            Optimizer.OnEpochCompleted();
 
             TrainingEvaluationContext GetContext() => new()
             {
@@ -50,7 +60,7 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
             };
         }
 
-        return new()
+        return new ModelTrainingResult
         {
             EpochCount = Config.EpochCount,
             Before = before,
@@ -58,11 +68,6 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
         };
     }
 
-    public ModelEvaluation EvaluateShort(TrainingEvaluationContext context) => new()
-    {
-        Context = context,
-        Result = EvaluateShort(),
-    };
     public ModelEvaluationResult EvaluateShort() => new()
     {
         TrainingSetResult = Evaluate(Config.GetRandomTrainingBatch()),
@@ -83,7 +88,7 @@ public sealed class NetworkTrainer<TInput, TOutput>(TrainingConfig<TInput, TOutp
                 correctCounter++;
             }
 
-            totalCost += Config.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(entry.Expected));
+            totalCost += Config.Optimizer.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(entry.Expected));
         }
 
         return new()

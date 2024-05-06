@@ -1,15 +1,12 @@
-﻿using MachineLearning.Model.Layer;
-using MachineLearning.Training.Cost;
-using MachineLearning.Training.Optimization.Layer;
+﻿using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization;
 
-public interface IOptimizer<TData>
+// must be completely readonly, will be used multiple times
+// state must go in the optimizer. this will be created at the start of each training
+public interface IOptimizerConfig<TData>
 {
     public Number LearningRate { get; }
     public ICostFunction CostFunction { get; }
-    public void Init() { }
-    public void OnBatchCompleted() { }
-    public void OnEpochCompleted() { }
-    public ILayerOptimizer<TData> CreateLayerOptimizer(RecordingLayer layer);
+    public IOptimizer<TData> CreateOptimizer();
 }

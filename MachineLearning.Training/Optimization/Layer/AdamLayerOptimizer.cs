@@ -6,7 +6,7 @@ namespace MachineLearning.Training.Optimization.Layer;
 public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
 {
     public RecordingLayer Layer { get; }
-    public ICostFunction CostFunction { get; }
+    public ICostFunction CostFunction => Optimizer.Config.CostFunction;
     public AdamOptimizer Optimizer { get; }
 
     public readonly Number[] GradientCostBiases;
@@ -23,11 +23,10 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
     public readonly Number[,] SecondMomentWeights;
 
 
-    public AdamLayerOptimizer(AdamOptimizer optimizer, RecordingLayer layer, ICostFunction costFunction)
+    public AdamLayerOptimizer(AdamOptimizer optimizer, RecordingLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;
-        CostFunction = costFunction;
 
         GradientCostBiases = new Number[Layer.OutputNodeCount];
         GradientCostWeights = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
@@ -58,35 +57,36 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
 
     public void Apply(int dataCounter)
     {
-        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.Config.LearningRate / Math.Sqrt(dataCounter);
 
         foreach (int outputNodeIndex in ..Layer.OutputNodeCount)
         {
-            FirstMomentBiases[outputNodeIndex] = Optimizer.GradientsDecayRate * FirstMomentBiases[outputNodeIndex] + (1 - Optimizer.GradientsDecayRate) * GradientCostBiases[outputNodeIndex];
-            SecondMomentBiases[outputNodeIndex] = Optimizer.SquaredGradientsDecayRate * SecondMomentBiases[outputNodeIndex] + (1 - Optimizer.SquaredGradientsDecayRate) * GradientCostBiases[outputNodeIndex] * GradientCostBiases[outputNodeIndex];
-            var mHatB = FirstMomentBiases[outputNodeIndex] / (1 - Math.Pow(Optimizer.GradientsDecayRate, Optimizer.Iteration));
-            var vHatB = SecondMomentBiases[outputNodeIndex] / (1 - Math.Pow(Optimizer.SquaredGradientsDecayRate, Optimizer.Iteration));
-            Layer.Biases[outputNodeIndex] -= averagedLearningRate * mHatB / (Math.Sqrt(vHatB) + Optimizer.Epsilon);
+            FirstMomentBiases[outputNodeIndex] = Optimizer.Config.FirstDecayRate * FirstMomentBiases[outputNodeIndex] + (1 - Optimizer.Config.FirstDecayRate) * GradientCostBiases[outputNodeIndex];
+            SecondMomentBiases[outputNodeIndex] = Optimizer.Config.SecondDecayRate * SecondMomentBiases[outputNodeIndex] + (1 - Optimizer.Config.SecondDecayRate) * GradientCostBiases[outputNodeIndex] * GradientCostBiases[outputNodeIndex];
+            var mHatB = FirstMomentBiases[outputNodeIndex] / (1 - Math.Pow(Optimizer.Config.FirstDecayRate, Optimizer.Iteration));
+            var vHatB = SecondMomentBiases[outputNodeIndex] / (1 - Math.Pow(Optimizer.Config.SecondDecayRate, Optimizer.Iteration));
+            Layer.Biases[outputNodeIndex] -= averagedLearningRate * mHatB / (Math.Sqrt(vHatB) + Optimizer.Config.Epsilon);
 
             foreach (int inputNodeIndex in ..Layer.InputNodeCount)
             {
-                FirstMomentWeights[inputNodeIndex, outputNodeIndex] = Optimizer.GradientsDecayRate * FirstMomentWeights[inputNodeIndex, outputNodeIndex] + (1 - Optimizer.GradientsDecayRate) * GradientCostWeights[inputNodeIndex, outputNodeIndex];
-                SecondMomentWeights[inputNodeIndex, outputNodeIndex] = Optimizer.SquaredGradientsDecayRate * SecondMomentWeights[inputNodeIndex, outputNodeIndex] + (1 - Optimizer.SquaredGradientsDecayRate) * GradientCostWeights[inputNodeIndex, outputNodeIndex] * GradientCostWeights[inputNodeIndex, outputNodeIndex];
-                var mHatW = FirstMomentWeights[inputNodeIndex, outputNodeIndex] / (1 - Math.Pow(Optimizer.GradientsDecayRate, Optimizer.Iteration));
-                var vHatW = SecondMomentWeights[inputNodeIndex, outputNodeIndex] / (1 - Math.Pow(Optimizer.SquaredGradientsDecayRate, Optimizer.Iteration));
-                Layer.Weights[inputNodeIndex, outputNodeIndex] -= averagedLearningRate * mHatW / (Math.Sqrt(vHatW) + Optimizer.Epsilon);
+                FirstMomentWeights[inputNodeIndex, outputNodeIndex] = FirstMomentEstimate(FirstMomentWeights[inputNodeIndex, outputNodeIndex], GradientCostWeights[inputNodeIndex, outputNodeIndex]);
+                SecondMomentWeights[inputNodeIndex, outputNodeIndex] = SecondMomentEstimate(SecondMomentWeights[inputNodeIndex, outputNodeIndex], GradientCostWeights[inputNodeIndex, outputNodeIndex]);
+                Layer.Weights[inputNodeIndex, outputNodeIndex] -= WeightReduction(FirstMomentWeights[inputNodeIndex, outputNodeIndex], SecondMomentWeights[inputNodeIndex, outputNodeIndex]);
 
             }
         }
-        /*
-        (Number newW, Number newM, Number newV) UpdateWeight(Number currentW, Number lastM, Number lastV, Number gradient){
-            var m = Optimizer.GradientsDecayRate*lastM + (1 - Optimizer.GradientsDecayRate)*gradient;
-            var v = Optimizer.SquaredGradientsDecayRate*lastV + (1 - Optimizer.SquaredGradientsDecayRate)*gradient*gradient;
-            var mHat = m/(1- Math.Pow(Optimizer.GradientsDecayRate, Optimizer.Iteration));
-            var vHat = m/(1- Math.Pow(Optimizer.SquaredGradientsDecayRate, Optimizer.Iteration));
-            return (currentW-averagedLearningRate*mHat/(Math.Sqrt(vHat)+Optimizer.Epsilon), m, v);
+        
+        double WeightReduction(double firstMoment, double secondMoment){
+            var mHat = firstMoment / (1 - Math.Pow(Optimizer.Config.FirstDecayRate, Optimizer.Iteration));
+            var vHat = secondMoment / (1 - Math.Pow(Optimizer.Config.SecondDecayRate, Optimizer.Iteration));
+            return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Config.Epsilon);
         }
-        */
+        double FirstMomentEstimate(double lastMoment, double gradient){
+            return Optimizer.Config.FirstDecayRate * lastMoment + (1 - Optimizer.Config.FirstDecayRate) * gradient;
+        }
+        double SecondMomentEstimate(double lastMoment, double gradient){
+            return Optimizer.Config.SecondDecayRate * lastMoment + (1 - Optimizer.Config.SecondDecayRate) * gradient*gradient;
+        }
     }
 
     public void GradientCostReset()

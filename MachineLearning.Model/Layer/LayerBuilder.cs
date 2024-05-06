@@ -4,12 +4,13 @@ namespace MachineLearning.Model.Layer;
 
 public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount) where TLayer : ILayer<Number>
 {
+    public int OutputNodeCount { get; } = outputNodeCount;
+    public int InputNodeCount { get; } = inputNodeCount;
     public Number[,] Weights { get; } = new Number[inputNodeCount, outputNodeCount];
     public Number[] Biases { get; } = new Number[outputNodeCount];
     public IActivationMethod<Number> ActivationMethod { get; set; } = SigmoidActivation.Instance;
 
-    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod<Number> activationMethod)
-    {
+    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod<Number> activationMethod) {
         ActivationMethod = activationMethod;
         return this;
     }
@@ -52,5 +53,5 @@ public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount
         }
     }
 
-    public TLayer Build() => (TLayer)TLayer.Create(Weights, Biases, ActivationMethod);
+    public TLayer Build() => (TLayer)TLayer.Create(Weights.Copy(), Biases.Copy(), ActivationMethod);
 }

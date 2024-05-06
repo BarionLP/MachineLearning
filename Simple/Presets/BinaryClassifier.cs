@@ -18,22 +18,24 @@ public static class BinaryClassifier{
             .AddRandomizedLayer(2)
             .Build();
 
-        var config = new TrainingConfig<Number[], bool>() {
+        var config = new TrainingConfig<Number[], bool>()
+        {
             TrainingSet = ConstructTrainingData(1028*2).ToArray(),
             TestSet = ConstructTrainingData(512).ToArray(),
             EpochCount = 64+16,
 
-            Optimizer = new GDMomentumOptimizer{
-                InitalLearningRate = .25,
+            Optimizer = new GDMomentumOptimizerConfig
+            {
+                LearningRate = .25,
                 LearningRateEpochMultiplier = 0.99997,
                 Regularization = 0,
                 Momentum = 0,
+                CostFunction = CrossEntropyLoss.Instance,
             },
             
             BatchSize = 128,
             DumpEvaluationAfterBatches = 128,
             OutputResolver = new OutputResolver(),
-            CostFunction = CrossEntropyCost.Instance,
         };
 
 

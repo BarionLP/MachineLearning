@@ -10,14 +10,13 @@ public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<Number>
     public readonly Number[] CostGradientBiases;
     public readonly Number[,] WeightVelocities;
     public readonly Number[] BiasVelocities;
-    public ICostFunction CostFunction { get; }
+    public ICostFunction CostFunction => Optimizer.Config.CostFunction;
     public GDMomentumOptimizer Optimizer { get; }
 
-    public GDMomentumLayerOptimizer(GDMomentumOptimizer optimizer, RecordingLayer layer, ICostFunction costFunction)
+    public GDMomentumLayerOptimizer(GDMomentumOptimizer optimizer, RecordingLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;
-        CostFunction = costFunction;
         CostGradientWeights = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
         CostGradientBiases = new Number[Layer.OutputNodeCount];
         WeightVelocities = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
@@ -44,23 +43,21 @@ public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<Number>
     public void Apply(int dataCounter)
     {
         var averagedLearningRate = Optimizer.LearningRate / dataCounter;
-        var weightDecay = 1 - Optimizer.Regularization * averagedLearningRate; //used against overfitting
+        var weightDecay = 1 - Optimizer.Config.Regularization * averagedLearningRate; //used against overfitting
 
         foreach (int outputNodeIndex in ..Layer.OutputNodeCount)
         {
-            var biasVelocity = BiasVelocities[outputNodeIndex] * Optimizer.Momentum - CostGradientBiases[outputNodeIndex] * averagedLearningRate;
+            var biasVelocity = BiasVelocities[outputNodeIndex] * Optimizer.Config.Momentum - CostGradientBiases[outputNodeIndex] * averagedLearningRate;
             BiasVelocities[outputNodeIndex] = biasVelocity;
             Layer.Biases[outputNodeIndex] += biasVelocity;
             CostGradientBiases[outputNodeIndex] = 0;
-            //Layer.Biases[outputNodeIndex] -= CostGradientBiases[outputNodeIndex] * learnRate; //old
 
             foreach (int inputNodeIndex in ..Layer.InputNodeCount)
             {
                 var weight = Layer.Weights[inputNodeIndex, outputNodeIndex];
-                var weightVelocity = WeightVelocities[inputNodeIndex, outputNodeIndex] * Optimizer.Momentum - CostGradientWeights[inputNodeIndex, outputNodeIndex] * averagedLearningRate;
+                var weightVelocity = WeightVelocities[inputNodeIndex, outputNodeIndex] * Optimizer.Config.Momentum - CostGradientWeights[inputNodeIndex, outputNodeIndex] * averagedLearningRate;
                 WeightVelocities[inputNodeIndex, outputNodeIndex] = weightVelocity;
                 Layer.Weights[inputNodeIndex, outputNodeIndex] = weight * weightDecay + weightVelocity;
-                //Layer.Weights[inputNodeIndex, outputNodeIndex] -= CostGradientWeights[inputNodeIndex, outputNodeIndex] * learnRate; //old
             }
         }
     }

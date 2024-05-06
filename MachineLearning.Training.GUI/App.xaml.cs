@@ -1,6 +1,4 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
+﻿using System.Windows;
 
 namespace MachineLearning.Training.GUI;
 
@@ -9,5 +7,5 @@ namespace MachineLearning.Training.GUI;
 /// </summary>
 public partial class App : Application
 {
-}
 
+}

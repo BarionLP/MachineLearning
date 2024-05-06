@@ -1,12 +1,11 @@
 ﻿using MachineLearning.Data.Entry;
 using MachineLearning.Data.Noise;
-using MachineLearning.Training.Cost;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
 namespace MachineLearning.Training;
 
-public sealed class TrainingConfig<TInput, TOutput>
+public sealed record TrainingConfig<TInput, TOutput>
 {
     public required DataEntry<TInput, TOutput>[] TrainingSet { get; init; }
     public required DataEntry<TInput, TOutput>[] TestSet { get; init; }
@@ -14,10 +13,9 @@ public sealed class TrainingConfig<TInput, TOutput>
     public required int EpochCount { get; init; }
     public required int BatchSize { get; init; }
 
-    public required IOptimizer<Number> Optimizer { get; init; }
+    public required IOptimizerConfig<Number> Optimizer { get; init; }
 
     public IInputDataNoise<TInput> InputNoise { get; init; } = NoInputNoise<TInput>.Instance;
-    public ICostFunction CostFunction { get; init; } = MeanSquaredErrorCost.Instance;
     public required IOutputResolver<TOutput, Number[]> OutputResolver { get; init; }
 
     public Action<DataSetEvaluation>? EvaluationCallback { get; init; } = null;

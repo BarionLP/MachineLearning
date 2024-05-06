@@ -15,7 +15,8 @@ ActivationMethodSerializer.RegisterDefaults();
 var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
 var images = new ImageDataSource(new(@"C:\Users\Nation\OneDrive\Digits"));
 
-var inputNoise = new ImageInputNoise {
+var inputNoise = new ImageInputNoise 
+{
     Size = ImageDataEntry.SIZE,
     NoiseStrength = 0.35,
     NoiseProbability = 0.75,
@@ -26,7 +27,8 @@ var inputNoise = new ImageInputNoise {
     Random = new Random(3),
 };
 
-var config = new TrainingConfig<Number[], int>() {
+var config = new TrainingConfig<Number[], int>() 
+{
     TrainingSet = mnistDataSource.TrainingSet,
     TestSet = mnistDataSource.TestingSet,
     
@@ -42,12 +44,13 @@ var config = new TrainingConfig<Number[], int>() {
     },
     */
 
-    Optimizer = new AdamOptimizer {
+    Optimizer = new AdamOptimizerConfig 
+    {
         LearningRate = 0.1,
+        CostFunction = MeanSquaredErrorCost.Instance,
     },
     
     InputNoise = inputNoise,
-    CostFunction = CrossEntropyCost.Instance,
     OutputResolver = new MNISTOutputResolver(),
     
     EvaluationCallback = result => Console.WriteLine(result.Dump()),
@@ -89,7 +92,8 @@ Console.WriteLine(trainingResults.DumpShort());
 var correctCounter  = 0;
 var counter = 0;
 var previousColor = Console.ForegroundColor;
-foreach(var image in images.DataSet) {
+foreach(var image in images.DataSet) 
+{
     var prediction = network.Process(image.Image);
     if(prediction == image.Digit) correctCounter++;
 

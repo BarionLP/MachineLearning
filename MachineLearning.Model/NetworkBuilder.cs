@@ -1,4 +1,5 @@
-﻿using MachineLearning.Domain.Activation;
+﻿using System.Collections.Immutable;
+using MachineLearning.Domain.Activation;
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 
@@ -6,7 +7,7 @@ namespace MachineLearning.Model;
 
 public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputNodeCount) where TNetwork : INetwork<TInput, Number, TOutput, TLayer> where TLayer : ILayer<Number>
 {
-    private List<TLayer> Layers { get; } = [];
+    private List<LayerBuilder<TLayer>> Layers { get; } = [];
     public int InputNodeCount { get; } = inputNodeCount;
 
     public IEmbedder<TInput, Number[], TOutput>? Embedder { get; set; }
@@ -26,7 +27,7 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
     {
         Layers.Add(
             new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
-            .SetActivationMethod(DefaultActivationMethod).Build()
+            .SetActivationMethod(DefaultActivationMethod)
         );
         return this;
     }
@@ -35,7 +36,7 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
         var layerBuilder = new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
             .SetActivationMethod(DefaultActivationMethod);
         consumer.Invoke(layerBuilder);
-        Layers.Add(layerBuilder.Build());
+        Layers.Add(layerBuilder);
         return this;
     }
     public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddRandomizedLayer(int nodeCount, Random? random = null)
@@ -43,14 +44,14 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
         Layers.Add(
             new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
             .SetActivationMethod(DefaultActivationMethod)
-            .InitializeRandom(random).Build()
+            .InitializeRandom(random)
         );
         return this;
     }
 
     public TNetwork Build()
     {
-        return (TNetwork)TNetwork.Create([.. Layers], Embedder ?? throw new NullReferenceException("NetworkBuilder needs an embedder!"));
+        return (TNetwork)TNetwork.Create(Layers.Select(l=>l.Build()).ToArray(), Embedder ?? throw new NullReferenceException("NetworkBuilder needs an embedder!"));
     }
 }
 
