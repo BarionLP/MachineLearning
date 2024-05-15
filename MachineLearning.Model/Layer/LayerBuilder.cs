@@ -1,4 +1,5 @@
 ﻿using MachineLearning.Domain.Activation;
+using MachineLearning.Model.Layer.Initialization;
 
 namespace MachineLearning.Model.Layer;
 
@@ -15,42 +16,10 @@ public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount
         return this;
     }
 
-    public LayerBuilder<TLayer> Initialize(int defaultValue) => Initialize(defaultValue, defaultValue);
-    public LayerBuilder<TLayer> Initialize(int weightDefault, int biasDefault)
+    public LayerBuilder<TLayer> Initialize(ILayerInitializer<double> initializer)
     {
-        foreach (int outputNodeIndex in ..Biases.Length)
-        {
-            foreach (int inputNodeIndex in ..Weights.GetLength(0))
-            {
-                Weights[inputNodeIndex, outputNodeIndex] = weightDefault;
-            }
-            Biases[outputNodeIndex] = biasDefault;
-        }
+        initializer.Initialize(Weights, Biases);
         return this;
-    }
-
-    public LayerBuilder<TLayer> InitializeRandom(Random? random = null)
-    {
-        var sqrtInputNodeCount = Math.Sqrt(Weights.GetLength(0));
-        random ??= Random.Shared;
-        foreach (int outputNodeIndex in ..Biases.Length)
-        {
-            foreach (int inputNodeIndex in ..Weights.GetLength(0))
-            {
-                Weights[inputNodeIndex, outputNodeIndex] = RandomInNormalDistribution(random, 0, 1) / sqrtInputNodeCount;
-            }
-            Biases[outputNodeIndex] = RandomInNormalDistribution(random, 0, 0.1);
-        }
-        return this;
-
-        static Number RandomInNormalDistribution(Random random, Number mean, Number standardDeviation)
-        {
-            var x1 = 1 - random.NextDouble();
-            var x2 = 1 - random.NextDouble();
-
-            var y1 = Math.Sqrt(-2.0 * Math.Log(x1)) * Math.Cos(2.0 * Math.PI * x2);
-            return y1 * standardDeviation + mean;
-        }
     }
 
     public TLayer Build() => (TLayer)TLayer.Create(Weights.Copy(), Biases.Copy(), ActivationMethod);

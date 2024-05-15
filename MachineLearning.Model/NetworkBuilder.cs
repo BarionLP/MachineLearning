@@ -1,7 +1,7 @@
-﻿using System.Collections.Immutable;
-using MachineLearning.Domain.Activation;
+﻿using MachineLearning.Domain.Activation;
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Initialization;
 
 namespace MachineLearning.Model;
 
@@ -31,21 +31,20 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
         );
         return this;
     }
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, ILayerInitializer<double> initializer)
+    {
+        Layers.Add(
+            new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
+            .SetActivationMethod(DefaultActivationMethod).Initialize(initializer)
+        );
+        return this;
+    }
     public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, Action<LayerBuilder<TLayer>> consumer)
     {
         var layerBuilder = new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
             .SetActivationMethod(DefaultActivationMethod);
         consumer.Invoke(layerBuilder);
         Layers.Add(layerBuilder);
-        return this;
-    }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddRandomizedLayer(int nodeCount, Random? random = null)
-    {
-        Layers.Add(
-            new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
-            .SetActivationMethod(DefaultActivationMethod)
-            .InitializeRandom(random)
-        );
         return this;
     }
 

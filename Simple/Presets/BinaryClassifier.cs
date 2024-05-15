@@ -2,6 +2,7 @@
 using MachineLearning.Domain.Activation;
 using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
+using MachineLearning.Model.Layer.Initialization;
 using MachineLearning.Training;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
@@ -10,12 +11,14 @@ namespace Simple;
 
 public static class BinaryClassifier{
     public static void Code(){
+        
+        var initializer = new XavierInitializer();
         var network = NetworkBuilder.Recorded<Number[], bool>(2)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
             .SetEmbedder(new Embedder())
-            .AddRandomizedLayer(6)
-            .AddRandomizedLayer(4)
-            .AddRandomizedLayer(2)
+            .AddLayer(6, initializer)
+            .AddLayer(4, initializer)
+            .AddLayer(2, initializer)
             .Build();
 
         var config = new TrainingConfig<Number[], bool>()
