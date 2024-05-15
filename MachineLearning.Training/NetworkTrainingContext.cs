@@ -33,17 +33,17 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
     {
         GradientCostReset();
         int correctCounter = 0;
-        Number totalCost = 0;
+        double totalCost = 0;
         var dataCounter = 0;
 
         foreach (var dataPoint in trainingBatch)
         {
-            dataCounter++;
             var result = Update(dataPoint)!;
             if (result.Equals(dataPoint.Expected))
             {
                 correctCounter++;
             }
+            dataCounter++;
             totalCost += Config.Optimizer.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(dataPoint.Expected));
         }
 
@@ -104,7 +104,7 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
 
     private TOutput Update(DataEntry<TInput, TOutput> data)
     {
-        var result = Network.Process(Network.Embedder.Embed(data.Input));
+        var result = Network.Process(data.Input);
 
         var nodeValues = OutputLayerContext.CalculateOutputLayerNodeValues(Config.OutputResolver.Expected(data.Expected));
         OutputLayerContext.Update(nodeValues);

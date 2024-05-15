@@ -60,8 +60,9 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
         // do i need gradient clipping?
         var averagedLearningRate = Optimizer.Config.LearningRate / Math.Sqrt(dataCounter);
 
+        // parallelizing makes no difference
         foreach (int outputNodeIndex in ..Layer.OutputNodeCount)
-        {
+            {
             FirstMomentBiases[outputNodeIndex] = FirstMomentEstimate(FirstMomentBiases[outputNodeIndex], GradientCostBiases[outputNodeIndex]);
             SecondMomentBiases[outputNodeIndex] = SecondMomentEstimate(SecondMomentBiases[outputNodeIndex], GradientCostBiases[outputNodeIndex]);
             Layer.Biases[outputNodeIndex] -= WeightReduction(FirstMomentBiases[outputNodeIndex], SecondMomentBiases[outputNodeIndex]);
@@ -74,7 +75,7 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
 
             }
         }
-        
+
         double WeightReduction(double firstMoment, double secondMoment){
             var mHat = firstMoment / (1 - Math.Pow(Optimizer.Config.FirstDecayRate, Optimizer.Iteration));
             var vHat = secondMoment / (1 - Math.Pow(Optimizer.Config.SecondDecayRate, Optimizer.Iteration));
