@@ -1,0 +1,835 @@
+The cat is on the mat.
+She loves to read books.
+He runs every morning.
+They are good friends.
+The sun is shining bright.
+I like ice cream.
+We went to the park.
+The bird is singing.
+She has a red car.
+He plays the guitar.
+They are very happy.
+The dog is barking loud.
+I enjoy watching movies.
+We had a great time.
+The sky is clear today.
+She makes delicious cakes.
+He is a fast runner.
+They live in a big house.
+The flowers are blooming.
+I bought a new phone.
+We are learning Python.
+The moon is full tonight.
+She paints beautiful art.
+He likes to cook food.
+They travel every year.
+The water is very cold.
+I saw a cute puppy.
+We danced all night.
+The wind is blowing hard.
+She writes amazing stories.
+He is a good singer.
+They play soccer daily.
+The trees are tall.
+I found my keys.
+We laughed a lot.
+The river is deep.
+She wears a blue dress.
+He is very kind.
+They swim every weekend.
+The stars are bright.
+I read a good book.
+We visited the zoo.
+The cake tastes sweet.
+She has a green hat.
+He rides a bike.
+They watch TV together.
+The rain is heavy.
+I baked some cookies.
+We climbed the hill.
+The grass is wet.
+She sings beautifully.
+He works very hard.
+They jog in the park.
+The fire is warm.
+I need more coffee.
+We played video games.
+The leaves are falling.
+She has a black cat.
+He likes to draw.
+They drive a truck.
+The beach is empty.
+I love sunny days.
+We picked fresh apples.
+The car is red.
+She studies hard.
+He found a coin.
+They bought new shoes.
+The city is big.
+I lost my wallet.
+We built a sandcastle.
+The fish swims fast.
+She wears glasses.
+He fixed the car.
+They enjoy hiking.
+The ice is melting.
+I cooked dinner.
+We wrote a song.
+The coffee is hot.
+She eats healthy food.
+He reads the news.
+They have a garden.
+The chair is broken.
+I need a nap.
+We sang together.
+The snow is deep.
+She loves flowers.
+He likes the rain.
+They play chess.
+The book is old.
+I watch TV.
+We saw a movie.
+The milk is cold.
+She has a pet.
+He is tall.
+They eat lunch.
+The clock is ticking.
+I bought a gift.
+We play cards.
+The bus is late.
+I am a hero.
+You are insane.
+He is god.
+She is a princes.
+It can fly.
+All Humans run.
+The sun sets early.
+She has curly hair.
+He drinks tea daily.
+They ride the bus.
+The room is dark.
+I painted a picture.
+We found a shortcut.
+The cat is asleep.
+She loves her job.
+He plays chess well.
+They ate all the pizza.
+The stars are twinkling.
+I bought a new book.
+We cleaned the house.
+The dog is friendly.
+She likes warm weather.
+He built a treehouse.
+They sing in the choir.
+The lamp is broken.
+I need new shoes.
+We visited a museum.
+The cake is delicious.
+She watches the news.
+He fixes old cars.
+They own a bakery.
+The garden is beautiful.
+I wrote a poem.
+We took a photo.
+The fish is swimming.
+She enjoys yoga.
+He reads every night.
+They run marathons.
+The ice cream melted.
+I saw a rainbow.
+We explored the cave.
+The horse is fast.
+She loves dancing.
+He paints houses.
+They enjoy camping.
+The sky is cloudy.
+I need more time.
+We watched the sunset.
+The phone is ringing.
+She is a scientist.
+He repairs bikes.
+They have a boat.
+The grass is green.
+I made a sandwich.
+We played outside.
+The river is flowing.
+She studies chemistry.
+He likes basketball.
+They traveled to Spain.
+The water is clear.
+I lost my glasses.
+We bought groceries.
+The tree is old.
+She enjoys painting.
+He makes pizza.
+They walk to school.
+The cake is gone.
+I planted flowers.
+We went shopping.
+The hill is steep.
+She likes reading.
+He is a chef.
+They adopted a cat.
+The stars are out.
+I baked a pie.
+We found a kitten.
+The car is fast.
+She wears a scarf.
+He enjoys fishing.
+They play music.
+The bird is flying.
+I saw a deer.
+We played chess.
+The tent is up.
+She likes tea.
+He reads books.
+They hike mountains.
+The cake is ready.
+I need a pen.
+We solved the puzzle.
+The fish is big.
+She is happy.
+He likes coffee.
+They play tennis.
+The moon is bright.
+I wrote a letter.
+We met friends.
+The cat is cute.
+She has a doll.
+He rides horses.
+They eat dinner.
+The snow is white.
+I need a break.
+We drew pictures.
+The apple is sweet.
+She is very tall.
+He writes stories.
+They enjoy cooking.
+The book is new.
+I need water.
+We ran fast.
+The bird chirps.
+She likes music.
+He owns a farm.
+They saw a bear.
+The car is blue.
+I have a dog.
+We ate dinner.
+The sky is blue.
+She plays piano.
+He is very smart.
+They own a car.
+The lake is calm.
+I found a coin.
+We read books.
+The grass is tall.
+She bought a hat.
+He likes pizza.
+They ride bikes.
+The rain is light.
+I need coffee.
+We played soccer.
+The snow is soft.
+She loves chocolate.
+He is an artist.
+They have kids.
+The tree is tall.
+I saw a movie.
+We went hiking.
+The bird is loud.
+She is laughing.
+He drives fast.
+They swim well.
+The stars shine.
+I lost my keys.
+We had fun.
+The cat is loud.
+She likes soup.
+He reads fast.
+They went home.
+The cake is big.
+I saw a car.
+We went fishing.
+The milk spilled.
+She makes tea.
+He is running.
+They drink coffee.
+The dog is big.
+I need help.
+We saw birds.
+The sun rose.
+She has a bike.
+He plays drums.
+They laugh loud.
+The book is thick.
+I drew a cat.
+We bought milk.
+She sings well.
+He is asleep.
+They play games.
+The wind blows.
+I love music.
+We saw clouds.
+The cake is warm.
+She is smiling.
+He has a book.
+They like tea.
+The cat jumps.
+I need a map.
+We are happy.
+The bird sings.
+She writes well.
+He is awake.
+They eat apples.
+The sky cleared.
+I took a nap.
+We had cake.
+The dog sleeps.
+She likes cats.
+He is working.
+They saw stars.
+The sun sets.
+I have pens.
+We are friends.
+The fish swims.
+She owns shoes.
+He likes books.
+They walk fast.
+The tree grows.
+The rain stopped.
+She has pets.
+He is late.
+They drink tea.
+The car honks.
+I love pizza.
+We saw deer.
+The dog barks.
+She is tired.
+He likes candy.
+They eat ice.
+The sun shines.
+I read often.
+We made soup.
+The tree fell.
+She is crying.
+He likes jokes.
+They wear hats.
+The cat purrs.
+I drew a dog.
+We went out.
+The bird flies.
+She enjoys walks.
+He makes tea.
+They run fast.
+The rain pours.
+I saw stars.
+We cleaned up.
+The cake is sweet.
+She likes naps.
+He plays chess.
+They read books.
+I love dogs.
+We picked fruit.
+The dog wags.
+She is kind.
+He eats fish.
+They have toys.
+The bird nests.
+I saw fish.
+We are done.
+The car turns.
+She owns cats.
+He is ready.
+They make soup.
+I have time.
+We saw rain.
+The cake rose.
+She has coins.
+He likes golf.
+They walk slow.
+I am calm.
+We found shells.
+The cat sleeps.
+He eats eggs.
+They own bikes.
+The bird pecks.
+I need sleep.
+We found coins.
+The car moves.
+She likes coffee.
+He is early.
+They love cats.
+The tree bends.
+We ran home.
+The cake fell.
+She likes candy.
+He makes music.
+They eat nuts.
+The dog howls.
+I saw ducks.
+We climbed rocks.
+The rain falls.
+She enjoys tea.
+He plays flute.
+They walk far.
+I love books.
+We made art.
+The cat naps.
+She owns books.
+He is neat.
+They eat soup.
+The bird rests.
+I need space.
+We saw fish.
+The cake melts.
+She is neat.
+He likes ice.
+They read fast.
+The tree sways.
+I found gold.
+We took notes.
+The dog runs.
+She is quiet.
+He eats fast.
+They make bread.
+I love cats.
+We picked pears.
+The car beeps.
+She likes fish.
+They own shops.
+We saw stars.
+She has dolls.
+He likes dogs.
+They wear masks.
+I read daily.
+We made tea.
+The cat plays.
+She owns dogs.
+He is smart.
+They eat fast.
+I saw ants.
+We found wood.
+The rain stops.
+She is awake.
+He likes tea.
+They read daily.
+The dog jumps.
+I need books.
+We ran quick.
+The cake cools.
+She is tall.
+He makes soup.
+They eat cheese.
+The bird is red.
+I love fish.
+We picked grapes.
+The car is old.
+She likes songs.
+He is funny.
+They make toys.
+The tree blooms.
+I found coins.
+The cat meows.
+She owns a bike.
+He is kind.
+They eat cake.
+I read slow.
+We made plans.
+The bird tweets.
+He likes rain.
+They run late.
+The tree is high.
+I have toys.
+We are full.
+The cake is dry.
+She is funny.
+He makes jokes.
+The dog sniffs.
+I saw flowers.
+We found sand.
+She is calm.
+He likes art.
+They read slow.
+The cat stretches.
+I need ice.
+She has toys.
+He is quiet.
+They make plans.
+The tree is big.
+I need time.
+We saw ants.
+The cake is small.
+She likes birds.
+He makes plans.
+They eat fruit.
+The bird builds.
+I love rain.
+We picked beans.
+The car stops.
+She likes hats.
+They make ice.
+The tree is thin.
+I found shoes.
+We saw snow.
+The dog pants.
+She owns a car.
+They eat meat.
+The sun glows.
+I read fast.
+We made bread.
+The cat hides.
+He likes naps.
+They wear coats.
+We saw flowers.
+She is ready.
+They eat fish.
+I love stars.
+We picked apples.
+The car runs.
+She likes sun.
+He is slow.
+We found toys.
+He likes cats.
+The cat climbs.
+She owns toys.
+We are late.
+The cake is done.
+She has books.
+He likes stars.
+We found ice.
+I found food.
+He likes soup.
+We found ants.
+She likes toys.
+I saw ice.
+We found books.
+I saw cats.
+I love birds.
+I saw birds.
+She enjoys reading books.
+He jogs along the river.
+The cake was delicious and sweet.
+I love watching the stars at night.
+We danced under the moonlit sky.
+The dog barked at the mailman.
+She has a beautiful singing voice.
+He plays the piano beautifully.
+They are very excited to travel.
+The sun sets behind the mountains.
+I found a treasure chest at the beach.
+We went hiking in the tall mountains.
+The bird flew across the clear sky.
+She writes in her journal daily.
+He fixed the car in the garage.
+They built a treehouse in the yard.
+The flowers bloom in the springtime.
+I bought a new laptop yesterday.
+We enjoyed a picnic in the park.
+The river flows through the valley.
+She painted a stunning landscape.
+He is reading a fascinating book.
+They danced until the music stopped.
+The rain falls softly on the roof.
+I love eating ice cream in summer.
+We visited a museum last weekend.
+The wind whispers through the trees.
+She has a collection of rare coins.
+He enjoys cooking Italian dishes.
+They are learning to play guitar.
+The snow covered the ground fully.
+I saw a deer in the forest today.
+We baked cookies for the party.
+The sun rose over the calm sea.
+She created a beautiful painting.
+He fixed the bike in the shed.
+They enjoy watching the sunset.
+The car broke down on the road.
+I love listening to soft music.
+We are planning a summer trip.
+The cat chased a butterfly.
+She wears a hat in the sun.
+He built a robot from scratch.
+They play basketball together.
+The stars twinkled in the sky.
+I enjoy reading mystery novels.
+We traveled to a distant city.
+The flowers in the garden grew.
+She plays tennis every Sunday.
+He loves swimming in the lake.
+They decorated the Christmas tree.
+The clouds formed interesting shapes.
+I found a shell on the seashore.
+We are learning to speak French.
+The boat sailed across the ocean.
+She enjoys hiking in the mountains.
+He planted trees in the backyard.
+They love playing board games.
+The fire crackled in the fireplace.
+I wrote a letter to my friend.
+We danced in the pouring rain.
+The bird built a nest in the tree.
+She bought a necklace at the market.
+He is designing a new app.
+They are watching a new movie.
+The stars are bright tonight.
+I baked a cake for the party.
+We enjoy camping in the woods.
+The sun shines through the window.
+She sings songs in the shower.
+He found a penny on the sidewalk.
+They are eating lunch together.
+The dog chased the bouncing ball.
+I need to finish my homework.
+We played games at the arcade.
+The river flowed over the rocks.
+She reads books by the window.
+He fixed the broken computer.
+They are building a new house.
+The snowflakes are falling gently.
+I painted the walls light blue.
+We laughed at the funny joke.
+The cat curled up on the couch.
+She loves dancing in the rain.
+He enjoys fishing at the lake.
+They are planning a surprise.
+The sunset painted the sky orange.
+I found a good book to read.
+We are learning a new language.
+The wind blew through the trees.
+She loves to draw and paint.
+He built a fire in the fireplace.
+They are saving money for a trip.
+The cake was sweet and delicious.
+I wrote a story about a dragon.
+We saw a rainbow after the storm.
+He loved an asian woman.
+His name is engraved in a stone.
+Her lover sleeps with someone.
+The leaves rustled in the breeze.
+She enjoys painting landscapes.
+He found a shiny rock in the garden.
+They are watching a new series.
+The sun sets over the horizon.
+I love the smell of fresh bread.
+We hiked to the top of the hill.
+The stars are twinkling tonight.
+She bought a new dress yesterday.
+He fixed the broken fence outside.
+They cooked a delicious meal together.
+The river winds through the valley.
+I saw a fox in the woods today.
+We visited a historic museum downtown.
+The cat chased the laser pointer.
+She makes jewelry in her free time.
+He built a bookshelf for the study.
+They are planning their next adventure.
+The snow covered the fields entirely.
+I enjoy listening to the birds sing.
+We planted flowers in the backyard.
+The fire kept us warm all night.
+She likes to bake cookies on weekends.
+He enjoys watching classic movies.
+They found a secret passage in the cave.
+The moonlight reflected on the water.
+I bought a ticket to the concert.
+We played chess in the living room.
+The cat curled up by the fireplace.
+She loves writing in her diary.
+He plays the violin beautifully.
+They danced under the twinkling stars.
+The rain created puddles on the street.
+I need to finish my book report.
+We watched the sunset from the rooftop.
+The dog fetched the stick happily.
+She has a knack for solving puzzles.
+He enjoys building model airplanes.
+They are excited for the summer trip.
+The garden is full of colorful flowers.
+I love spending time with my family.
+We explored the old abandoned house.
+The treehouse is their secret hideout.
+She sings lullabies to her baby.
+He fixed the old clock in the hall.
+They enjoy picnics in the countryside.
+The waves crashed against the rocks.
+I found a four-leaf clover today.
+We played hide and seek in the park.
+The sun peeked through the clouds.
+She made a quilt from old shirts.
+He loves stargazing on clear nights.
+They read stories by the fireplace.
+The wind carried the scent of flowers.
+I need to pack for the camping trip.
+We watched the fireworks on New Year's.
+The puppy chewed on a new toy.
+She enjoys crafting handmade cards.
+He is learning to play the saxophone.
+They are setting up a Christmas tree.
+The moon cast shadows on the ground.
+I baked brownies for the bake sale.
+We saw dolphins swimming near the boat.
+The forest is alive with wildlife.
+She likes to sketch nature scenes.
+He fixed the leaky faucet in the kitchen.
+They watched the leaves fall from the trees.
+The bird built a nest in the bush.
+I love the taste of fresh strawberries.
+We collected seashells on the beach.
+The car sped down the highway.
+She enjoys hiking in the autumn woods.
+He built a model train set.
+They are preparing for the festival.
+The cat watched birds from the window.
+I need to buy groceries for dinner.
+We painted the room a bright yellow.
+The stars form constellations in the sky.
+She knits scarves for her friends.
+He fixed the broken swing in the yard.
+They are exploring a new city today.
+The snowflakes danced in the air.
+I love watching the sunrise over the sea.
+We cooked pasta for dinner last night.
+The dog barked at the delivery person.
+She enjoys taking long walks in the park.
+He built a tree fort in the backyard.
+They are planning a surprise party.
+The river flows gently past the town.
+I saw a shooting star last night.
+We played board games all evening.
+The sun warmed our faces as we walked.
+She loves collecting vintage postcards.
+He fixed the broken lamp in the study.
+They watched the parade from the balcony.
+The garden is blooming with roses.
+I need to clean my messy room.
+We saw a movie at the theater.
+The cat napped in the sunny spot.
+She made a scrapbook of her travels.
+He enjoys reading science fiction books.
+They are organizing a neighborhood party.
+The sky turned pink at dusk.
+I found a perfect seashell on the shore.
+We ate ice cream on a hot day.
+The wind chimes sang in the breeze.
+She likes to jog in the morning.
+He built a birdhouse from scratch.
+They are planting trees in the park.
+The rain washed away the dust.
+I need to finish my art project.
+We saw a double rainbow after the storm.
+The dog wagged its tail happily.
+She enjoys knitting blankets and scarves.
+He plays basketball at the local gym.
+They are planning a hiking trip soon.
+The sunflowers turned towards the sun.
+I love walking in the rain.
+We made s'mores by the campfire.
+The stars sparkled like diamonds.
+She has a green thumb for gardening.
+He fixed the broken fence in the yard.
+They enjoy taking road trips together.
+The ocean waves lapped at our feet.
+I found a lucky penny on the sidewalk.
+We played frisbee in the park.
+The cat purred loudly in her lap.
+She loves making pottery at home.
+He is learning to play the guitar.
+They are building a treehouse together.
+The snow covered the mountain peaks.
+I need to study for my exams.
+We watched a play at the theater.
+The dog chased its tail in circles.
+She made a collage of family photos.
+He enjoys cooking gourmet meals.
+They are decorating their new apartment.
+The wind blew through the open windows.
+I saw a hawk soaring above the trees.
+We had a picnic by the riverbank.
+The sun set behind the rolling hills.
+She likes to collect antique jewelry.
+He is fixing the broken lawn mower.
+They are excited for the carnival.
+The stars lit up the night sky.
+I love the smell of fresh rain.
+We played soccer until it got dark.
+The cat stretched out on the rug.
+She enjoys writing letters to friends.
+He built a cabinet for the kitchen.
+They are planning a beach vacation.
+The river flowed swiftly over the rocks.
+I need to buy new running shoes.
+We saw a concert in the park.
+The dog dug a hole in the yard.
+She loves making homemade candles.
+He is learning to drive a car.
+They are watching the clouds drift by.
+The snow crunched under our boots.
+I found an old photograph in the attic.
+We played cards by the fireplace.
+The sun rose over the calm ocean.
+She enjoys baking bread on weekends.
+He fixed the broken window pane.
+They are planting flowers in the garden.
+The rain tapped on the roof softly.
+I need to write a thank-you note.
+We saw a meteor shower last night.
+The dog loves playing fetch.
+She made a delicious fruit salad.
+He enjoys reading history books.
+They are organizing a garage sale.
+The stars shone brightly in the sky.
+I love hiking in the forest.
+We played tennis at the park.
+The cat watched the fish tank.
+She likes to sew her own clothes.
+He built a bench for the backyard.
+They are planning a trip to the zoo.
+The snow sparkled in the sunlight.
+I need to fix my broken watch.
+We saw a ballet performance downtown.
+The dog wagged its tail excitedly.
+She loves taking photographs of nature.
+He is learning to paint landscapes.
+They are building a snowman outside.
+The river is frozen in the winter.
+I found a perfect spot for a picnic.
+We played music and sang along.
+The sun set behind the tall buildings.
+She enjoys walking in the city at night.
+He fixed the broken lock on the door.
+They are watching a football game.
+The wind howled through the trees.
+I need to organize my closet.
+We saw a play at the community theater.
+The dog chewed on a new bone.
+She loves making handmade crafts.
+He is learning to play the drums.
+They are decorating their house for Halloween.
+The stars are visible on clear nights.
+I love the sound of waves crashing.
+We played catch in the backyard.
+The cat climbed up the tall tree.
+She enjoys reading poetry by the window.
+He built a shed for his tools.
+They are planning a picnic by the lake.
+The snow is falling steadily outside.
+I need to finish my science project.
+We saw fireworks on the Fourth of July.
+The dog rolled in the grass happily.
+She made a wreath for the front door.
+He enjoys watching action movies.
+They are organizing a family reunion.
+The sun rises early in the summer.
+I found a penny on the ground.
+We played basketball at the court.
+The cat loves chasing laser pointers.
+She likes to paint her nails.
+He built a bookshelf for his office.
+They are planning a visit to the aquarium.
+The river flows gently through the valley.
+I need to get a new notebook.
+We saw an art exhibit at the gallery.
+The dog barked at the passing cars.
+She loves writing stories and poems.
+He is learning to play the keyboard.
+They are decorating their home for Christmas.

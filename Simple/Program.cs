@@ -1,66 +1,47 @@
-﻿using MachineLearning.Data.Entry;
-using MachineLearning.Data.Noise;
-using MachineLearning.Data.Source;
-using MachineLearning.Domain.Activation;
+﻿using MachineLearning.Domain.Activation;
 using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
+using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Initialization;
+using MachineLearning.Serialization;
 using MachineLearning.Serialization.Activation;
 using MachineLearning.Training;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
+using Simple;
+
 
 ActivationMethodSerializer.RegisterDefaults();
 
-//var mnistDataSource = new MNISTDataSource(new(@"I:\Coding\TestEnvironments\NeuralNetwork\MNIST_ORG.zip"));
-var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
-var images = new ImageDataSource(new(@"C:\Users\Nation\OneDrive\Digits"));
+int contextSize = 46;
+var dataSet = SimpleSentencesDataSource.GenerateData(contextSize).ToArray();
+new Random(128).Shuffle(dataSet);
 
-var inputNoise = new ImageInputNoise 
+var config = new TrainingConfig<string, char>() 
 {
-    Size = ImageDataEntry.SIZE,
-    NoiseStrength = 0.35,
-    NoiseProbability = 0.75,
-    MaxShift = 2,
-    MaxAngle = 30,
-    MinScale = 0.8,
-    MaxScale = 1.2,
-    Random = new Random(3),
-};
-
-var config = new TrainingConfig<Number[], int>() 
-{
-    TrainingSet = mnistDataSource.TrainingSet,
-    TestSet = mnistDataSource.TestingSet,
+    TrainingSet = dataSet.Take((int)(dataSet.Length*0.9)).ToArray(),
+    TestSet = dataSet.Skip((int)(dataSet.Length * 0.9)).ToArray(),
     
-    EpochCount = 4,
-    BatchSize = 256*2,
+    EpochCount = 27,
+    BatchSize = 128+32,
 
-    /*
-    Optimizer = new GDMomentumOptimizer{
-        InitalLearningRate = 0.7,
-        LearningRateEpochMultiplier = 0.5,
-        Momentum = 0.85,
-        Regularization = 0.01,
-    },
-    */
-
-    Optimizer = new AdamOptimizerConfig 
+    Optimizer = new AdamOptimizerConfig
     {
-        LearningRate = 0.1,
-        CostFunction = MeanSquaredErrorCost.Instance,
+        LearningRate = 0.05,
+        //SecondDecayRate = 0.999,
+        CostFunction = CrossEntropyLoss.Instance,
     },
     
-    InputNoise = inputNoise,
-    OutputResolver = new MNISTOutputResolver(),
+    OutputResolver = new CharOutputResolver(),
     
     EvaluationCallback = result => Console.WriteLine(result.Dump()),
-    DumpEvaluationAfterBatches = 4,
+    //DumpEvaluationAfterBatches = 11,
     
     RandomSource = new Random(42),
 };
 
+var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
 /*
-using var serializer = new NetworkSerializer<Number[], int, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\digits_big.nnw"));
 
 var count = 0;
 foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=> new MNISTDataPoint(d.Input, d.Expected))){
@@ -68,27 +49,116 @@ foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=
     count++;
 }
 return;
-
 */
+
 var setupRandom = new Random(69);
-var network = NetworkBuilder.Recorded<Number[], int>(784)
-    .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
-    .SetEmbedder(MNISTEmbedder.Instance)
-    .AddRandomizedLayer(256, setupRandom)
-    .AddRandomizedLayer(128, setupRandom)
-    .AddLayer(10, builder => builder.InitializeRandom(setupRandom).SetActivationMethod(SoftmaxActivation.Instance))
+var initializer = new XavierInitializer(setupRandom);
+var network = NetworkBuilder.Recorded<string, char>(contextSize * 8)
+    .SetDefaultActivationMethod(SigmoidActivation.Instance)
+    .SetEmbedder(new StringEmbedder(contextSize))
+    .AddLayer(512, initializer)
+    .AddLayer(256, initializer)
+    .AddLayer(64, initializer)
+    .AddLayer(32, initializer)
+    .AddLayer(8, initializer)
     .Build();
+    
+//var network = serializer.Load<RecordingNetwork<string, char>>(new StringEmbedder(contextSize)).ReduceOrThrow();
+var trainer = new NetworkTrainer<string, char>(config, network);
 
-//var network = serializer.Load<RecordingNetwork<Number[], int>>(MNISTEmbedder.Instance).ReduceOrThrow();
-var trainer = new NetworkTrainer<Number[], int>(config, network);
+//var trainingResults = trainer.Train();
+//Console.WriteLine(trainingResults.DumpShort());
+//Console.WriteLine(trainer.EvaluateShort().DumpCorrectPrecentages());
 
-var trainingResults = trainer.Train();
-Console.WriteLine(trainingResults.DumpShort());
+serializer.Save(network);
+
+var data = "They ".ToLowerInvariant();
+Console.Write(data);
+char prediction;
+do {
+    prediction = network.Process(data);
+    data += prediction;
+    Console.Write(prediction);
+}while(prediction != '.' && data.Length < 32);
+Console.WriteLine();
+
+class StringEmbedder(int contextSize) : IEmbedder<string, double[], char>
+{
+    public double[] Embed(string input)
+    {
+        var result = new double[8*input.Length];
+        
+        for(var ic = 0; ic < input.Length; ic++){
+            var c = input[ic];
+            for (int i = 0; i < 8; i++)
+            {
+                result[ic*8+i] = ((c & (1 << i)) != 0) ? 1.0 : 0.0;
+            }
+        }
+
+        return PadLeft(result, contextSize * 8);
+    }
+
+    static double[] PadLeft(double[] originalArray, int totalLength, double paddingValue = 0.0)
+    {
+        if (totalLength <= originalArray.Length)
+        {
+            throw new ArgumentException("Total length must be greater than the length of the original array.");
+        }
+
+        double[] paddedArray = new double[totalLength];
+        int paddingSize = totalLength - originalArray.Length;
+
+        for (int i = 0; i < paddingSize; i++)
+        {
+            paddedArray[i] = paddingValue;
+        }
+
+        for (int i = 0; i < originalArray.Length; i++)
+        {
+            paddedArray[i + paddingSize] = originalArray[i];
+        }
+
+        return paddedArray;
+    }
+
+
+    public char UnEmbed(double[] input)
+    {
+        if (input.Length != 8) throw new ArgumentException("Input length must be 8.");
+
+        byte result = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            byte bit = (input[i] >= 0.5) ? (byte)1 : (byte)0;
+            result |= (byte)(bit << i);
+        }
+
+        return (char) result;
+    }
+}
+
+class CharOutputResolver : IOutputResolver<char, double[]>
+{
+    public double[] Expected(char b)
+    {
+        var result = new double[8];
+
+        for (int i = 0; i < 8; i++)
+        {
+            result[i] = ((b & (1 << i)) != 0) ? 1.0 : 0.0;
+        }
+
+        return result;
+    }
+} 
 
 //serializer.Save(network);
 
 //Console.WriteLine(trainer.Evaluate().DumpShort());
 
+/*
 var correctCounter  = 0;
 var counter = 0;
 var previousColor = Console.ForegroundColor;
@@ -103,7 +173,7 @@ foreach(var image in images.DataSet)
 }
 Console.ForegroundColor = previousColor;
 Console.WriteLine($"Correct: {(double)correctCounter/counter:P0}");
-
+*/
 
 /*
 When scaling up neural network models in size and complexity, various hyperparameters need adjustment to maintain or improve the model’s training efficiency and performance. Here's a table overview that outlines general trends for tweaking key hyperparameters like Epoch Count, Batch Size, Learning Rate, Learning Rate Multiplier, Momentum, and Regularization as the model size increases:

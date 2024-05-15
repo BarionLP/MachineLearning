@@ -3,7 +3,7 @@ using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Model;
 
-public sealed class SimpleNetwork<TInput, TOutput, TLayer>(TLayer[] layers, IEmbedder<TInput, Number[], TOutput> embedder) : INetwork<TInput, Number, TOutput, TLayer> where TLayer : ILayer<Number>
+public sealed class SimpleNetwork<TInput, TOutput, TLayer>(TLayer[] layers, IEmbedder<TInput, double[], TOutput> embedder) : INetwork<TInput, double, TOutput, TLayer> where TLayer : ILayer<double>
 {
     public TLayer[] Layers { get; } = layers;
     public TLayer OutputLayer => Layers[^1];

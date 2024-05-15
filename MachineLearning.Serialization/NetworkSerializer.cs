@@ -12,21 +12,14 @@ namespace MachineLearning.Serialization;
 /// <typeparam name="TInput">network input type</typeparam>
 /// <typeparam name="TOutput">network output type</typeparam>
 /// <typeparam name="TLayer">layer type</typeparam>
-public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : IDisposable where TLayer : ILayer<double>
+public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo)where TLayer : ILayer<double>
 {
     public const uint VERSION = 2;
-    public Stream Stream { get; } = stream;
-    private bool isDisposed;
-    private readonly bool isStreamOwned = false;
-    public NetworkSerializer(FileInfo fileInfo)
-    : this(fileInfo.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite))
-    {
-        isStreamOwned = true;
-    }
 
     public ResultFlag Save(INetwork<TInput, double, TOutput, TLayer> network)
     {
-        var writer = new BinaryWriter(Stream);
+        using var stream = fileInfo.Create();
+        var writer = new BinaryWriter(stream);
         writer.WriteBigEndian(VERSION); // version
         writer.WriteBigEndian(network.Layers.Length);
         foreach (var layer in network.Layers)
@@ -53,7 +46,8 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
     //TODO: Serialize embedder
     public Result<TNetwork> Load<TNetwork>(IEmbedder<TInput, double[], TOutput> embedder) where TNetwork : INetwork<TInput, double, TOutput, TLayer>
     {
-        var reader = new BinaryReader(Stream);
+        using var stream = fileInfo.OpenRead();
+        var reader = new BinaryReader(stream);
         var version = reader.ReadUInt32BigEndian();
         if (version != VERSION) throw new InvalidDataException();
         var layerCount = reader.ReadInt32BigEndian();
@@ -79,27 +73,5 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(Stream stream) : 
         }
 
         return (TNetwork)TNetwork.Create(layers, embedder);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (isDisposed) return;
-
-        if (disposing)
-        {
-            // managed
-            if (isStreamOwned) Stream.Dispose();
-        }
-
-        //unmanaged (implement Finalizer if exists)
-
-        isDisposed = true;
-    }
-
-    public void Dispose()
-    {
-        // cleanup goes in Dispose(bool)
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }
