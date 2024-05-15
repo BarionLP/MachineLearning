@@ -13,9 +13,9 @@ public sealed class XavierInitializer(Random? random = null) : ILayerInitializer
         var outputCount = biases.Length;
         var stddev = Math.Sqrt(2.0 / (inputCount + outputCount));
 
-        for (int outputNodeIndex = 0; outputNodeIndex < inputCount; outputNodeIndex++)
+        for (int outputNodeIndex = 0; outputNodeIndex < outputCount; outputNodeIndex++)
         {
-            for (int inputNodeIndex = 0; inputNodeIndex < outputCount; inputNodeIndex++)
+            for (int inputNodeIndex = 0; inputNodeIndex < inputCount; inputNodeIndex++)
             {
                 weights[inputNodeIndex, outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, stddev);
             }

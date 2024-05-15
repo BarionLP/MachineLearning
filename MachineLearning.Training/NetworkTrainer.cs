@@ -33,13 +33,11 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
             var epoch = Config.GetEpoch();
             var batchCount = 0;
 
-            //if(Config.DumpEpochEvaluation) CallEvaluate();
-
             foreach (var batch in epoch)
             {
 
                 var evaluation = Context.TrainAndEvaluate(batch);
-                if (Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0)
+                if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount+1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = evaluation });
                 }
@@ -51,7 +49,7 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
 
             TrainingEvaluationContext GetContext() => new()
             {
-                CurrentBatch = batchCount,
+                CurrentBatch = batchCount + 1,
                 MaxBatch = epoch.BatchCount,
                 CurrentEpoch = epochIndex + 1,
                 MaxEpoch = Config.EpochCount,

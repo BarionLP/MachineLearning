@@ -10,12 +10,13 @@ public sealed class HeInitializer(Random? random = null) : ILayerInitializer<dou
     public void Initialize(double[,] weights, double[] biases)
     {
         var inputCount = weights.GetLength(0);
+        var standartDeviation = Math.Sqrt(2.0 / inputCount);
 
         for (int outputNodeIndex = 0; outputNodeIndex < biases.Length; outputNodeIndex++)
         {
-            for (int inputNodeIndex = 0; inputNodeIndex < weights.GetLength(0); inputNodeIndex++)
+            for (int inputNodeIndex = 0; inputNodeIndex < inputCount; inputNodeIndex++)
             {
-                weights[inputNodeIndex, outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, Math.Sqrt(2.0 / inputCount));
+                weights[inputNodeIndex, outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, standartDeviation);
             }
             biases[outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1);
         }
