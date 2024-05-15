@@ -22,20 +22,19 @@ var config = new TrainingConfig<string, char>()
     TrainingSet = dataSet.Take((int)(dataSet.Length*0.9)).ToArray(),
     TestSet = dataSet.Skip((int)(dataSet.Length * 0.9)).ToArray(),
     
-    EpochCount = 27,
+    EpochCount = 8,
     BatchSize = 128+32,
 
     Optimizer = new AdamOptimizerConfig
     {
-        LearningRate = 0.05,
-        //SecondDecayRate = 0.999,
+        LearningRate = 0.08,
         CostFunction = CrossEntropyLoss.Instance,
     },
     
     OutputResolver = new CharOutputResolver(),
     
     EvaluationCallback = result => Console.WriteLine(result.Dump()),
-    //DumpEvaluationAfterBatches = 11,
+    DumpEvaluationAfterBatches = 16,
     
     RandomSource = new Random(42),
 };
@@ -49,7 +48,6 @@ foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=
     count++;
 }
 return;
-*/
 
 var setupRandom = new Random(69);
 var initializer = new XavierInitializer(setupRandom);
@@ -62,11 +60,12 @@ var network = NetworkBuilder.Recorded<string, char>(contextSize * 8)
     .AddLayer(32, initializer)
     .AddLayer(8, initializer)
     .Build();
+*/
     
-//var network = serializer.Load<RecordingNetwork<string, char>>(new StringEmbedder(contextSize)).ReduceOrThrow();
+var network = serializer.Load<RecordingNetwork<string, char>>(new StringEmbedder(contextSize)).ReduceOrThrow();
 var trainer = new NetworkTrainer<string, char>(config, network);
 
-//var trainingResults = trainer.Train();
+var trainingResults = trainer.Train();
 //Console.WriteLine(trainingResults.DumpShort());
 //Console.WriteLine(trainer.EvaluateShort().DumpCorrectPrecentages());
 
