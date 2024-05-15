@@ -1,5 +1,6 @@
 using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
+using System.Numerics;
 
 namespace MachineLearning.Training.Optimization.Layer;
 
@@ -12,11 +13,11 @@ public interface ILayerOptimizer<TData>
     public void GradientCostReset();
     public void FullReset();
 
-    public Number[] CalculateOutputLayerNodeValues(Number[] expected)
+    public double[] CalculateOutputLayerNodeValues(double[] expected)
     {
-        var nodeValues = new Number[expected.Length];
+        var nodeValues = new double[expected.Length];
 
-        var activationDerivatives = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput); // can i derive in-place?
+        var activationDerivatives = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput);
         foreach (int i in ..expected.Length)
         {
             // Evaluate partial derivatives for current node: cost/activation & activation/weightedInput
@@ -27,9 +28,9 @@ public interface ILayerOptimizer<TData>
         return nodeValues;
     }
 
-    public Number[] CalculateHiddenLayerNodeValues(RecordingLayer oldLayer, Number[] oldNodeValues)
+    public double[] CalculateHiddenLayerNodeValues(RecordingLayer oldLayer, double[] oldNodeValues)
     {
-        var newNodeValues = new Number[Layer.OutputNodeCount];
+        var newNodeValues = new double[Layer.OutputNodeCount];
         var derivatives = Layer.ActivationMethod.Derivative(Layer.LastWeightedInput);
 
         foreach (int newNodeIndex in ..newNodeValues.Length)
