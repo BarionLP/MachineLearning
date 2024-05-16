@@ -1,7 +1,7 @@
 ﻿namespace MachineLearning.Model.Layer.Node;
 
-public sealed class SimpleNode(int weightCount) : INode<Number>
+public sealed class SimpleNode(int weightCount) : INode<double>
 {
-    public Number[] Weights { get; } = new Number[weightCount];
-    public Number Bias { get; set; }
+    public double[] Weights { get; } = new double[weightCount];
+    public double Bias { get; set; }
 }

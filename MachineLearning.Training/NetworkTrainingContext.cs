@@ -1,5 +1,6 @@
 ﻿using MachineLearning.Data.Entry;
 using MachineLearning.Model;
+using MachineLearning.Model.Layer;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 using MachineLearning.Training.Optimization.Layer;
@@ -8,12 +9,12 @@ using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
-internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<TInput, TOutput> network, TrainingConfig<TInput, TOutput> config, IOptimizer<double> optimizer)
+internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, double, TOutput, RecordingLayer> network, TrainingConfig<TInput, TOutput> config, IOptimizer<double> optimizer)
 {
-    internal RecordingNetwork<TInput, TOutput> Network = network;
+    internal INetwork<TInput, double, TOutput, RecordingLayer> Network = network;
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
-    internal ImmutableArray<ILayerOptimizer<Number>> LayerContexts = network.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
-    internal ILayerOptimizer<Number> OutputLayerContext => LayerContexts[^1];
+    internal ImmutableArray<ILayerOptimizer<double>> LayerContexts = network.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
+    internal ILayerOptimizer<double> OutputLayerContext => LayerContexts[^1];
 
     public void Train(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch)
     {
@@ -38,13 +39,14 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
 
         foreach (var dataPoint in trainingBatch)
         {
-            var result = Update(dataPoint)!;
+            var weights = Update(dataPoint);
+            var result = Network.Embedder.UnEmbed(weights)!;
             if (result.Equals(dataPoint.Expected))
             {
                 correctCounter++;
             }
             dataCounter++;
-            totalCost += Config.Optimizer.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(dataPoint.Expected));
+            totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
         }
 
         Apply(dataCounter);
@@ -102,18 +104,18 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(RecordingNetwork<T
         }
     }
 
-    private TOutput Update(DataEntry<TInput, TOutput> data)
+    private Vector<double> Update(DataEntry<TInput, TOutput> data)
     {
-        var result = Network.Process(data.Input);
+        var result = Network.Forward(Network.Embedder.Embed(data.Input));
 
-        var nodeValues = OutputLayerContext.CalculateOutputLayerNodeValues(Config.OutputResolver.Expected(data.Expected));
+        var nodeValues = OutputLayerContext.ComputeOutputLayerErrors(Config.OutputResolver.Expected(data.Expected));
         OutputLayerContext.Update(nodeValues);
 
 
         for (int hiddenLayerIndex = LayerContexts.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
         {
             var hiddenLayer = LayerContexts[hiddenLayerIndex];
-            nodeValues = hiddenLayer.CalculateHiddenLayerNodeValues(LayerContexts[hiddenLayerIndex + 1].Layer, nodeValues);
+            nodeValues = hiddenLayer.ComputeHiddenLayerErrors(LayerContexts[hiddenLayerIndex + 1].Layer, nodeValues);
             hiddenLayer.Update(nodeValues);
         }
 

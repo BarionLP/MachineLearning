@@ -2,31 +2,22 @@
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class SimpleLayer(Number[,] Weights, Number[] Biases, IActivationMethod<Number> Activation) : ILayer<Number>
+public sealed class SimpleLayer(Matrix<double> Weights, Vector<double> Biases, IActivationMethod<double> Activation) : ILayer<double>
 {
-    public int InputNodeCount { get; } = Weights.GetLength(0);
-    public int OutputNodeCount { get; } = Biases.Length;
-    public Number[,] Weights { get; } = Weights;
-    public Number[] Biases { get; } = Biases;
+    public int InputNodeCount { get; } = Weights.ColumnCount;
+    public int OutputNodeCount { get; } = Biases.Count;
+    public Matrix<double> Weights { get; } = Weights; // output * input!!
+    public Vector<double> Biases { get; } = Biases;
 
-    public IActivationMethod<Number> ActivationMethod { get; } = Activation;
+    public IActivationMethod<double> ActivationFunction { get; } = Activation;
 
-    public Number[] Process(Number[] input)
+    public Vector<double> Forward(Vector<double> input)
     {
-        var weighted = new Number[OutputNodeCount];
+        var weightedSum = Weights * input;
+        var output = weightedSum + Biases;
 
-        //for each output node sum up the products of each input node times the weight assigned to that connection, finally add the bias of the output node
-        foreach (int outputNodeIndex in ..OutputNodeCount)
-        {
-            weighted[outputNodeIndex] = Biases[outputNodeIndex];
-            foreach (int inputNodeIndex in ..InputNodeCount)
-            {
-                weighted[outputNodeIndex] += input[inputNodeIndex] * Weights[inputNodeIndex, outputNodeIndex];
-            }
-        }
-
-        return ActivationMethod.Activate(weighted); //TODO: operate on weighted directly instead of creating a copy
+        return ActivationFunction.Activate(output); //TODO: operate on output directly instead of creating a copy
     }
 
-    public static ILayer<Number> Create(Number[,] weights, Number[] biases, IActivationMethod<Number> activationMethod) => new SimpleLayer(weights, biases, activationMethod);
+    public static ILayer<double> Create(Matrix<double> weights, Vector<double> biases, IActivationMethod<double> activationMethod) => new SimpleLayer(weights, biases, activationMethod);
 }

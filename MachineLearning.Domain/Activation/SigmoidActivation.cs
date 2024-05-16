@@ -7,11 +7,11 @@
 /// can cause vanishing gradients <br/>
 /// high learn rates (1..0.25) <br/>
 /// </summary>
-public sealed class SigmoidActivation : ISimpleActivationMethod<Number>
+public sealed class SigmoidActivation : ISimpleActivationMethod<double>
 {
     public static readonly SigmoidActivation Instance = new();
-    public Number Activate(Number input) => 1 / (1 + Math.Exp(-input));
-    public Number Derivative(Number input)
+    public double Activate(double input) => 1 / (1 + Math.Exp(-input));
+    public double Derivative(double input)
     {
         var sigmoid = Activate(input);
         return sigmoid * (1 - sigmoid);

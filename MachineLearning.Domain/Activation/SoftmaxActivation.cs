@@ -4,43 +4,26 @@ public sealed class SoftmaxActivation : IActivationMethod<double>
 {
     public static readonly SoftmaxActivation Instance = new();
 
-    public double[] Activate(double[] input)
+    public Vector<double> Activate(Vector<double> input)
     {
-        //var maxInput = input.Max(); // Subtracting max for numerical stability (update derivative!!!)
-        var result = new double[input.Length];
-        var sum = 0.0;
-
-        foreach (var i in ..input.Length)
-        {
-            result[i] = Math.Exp(input[i]/* -maxInput */);
-            sum += result[i];
-        }
-
-        foreach (var i in ..input.Length)
-        {
-            result[i] /= sum;
-        }
-
-        return result;
+        var result = input.PointwiseExp();
+        var sum = result.Sum();
+        return result / sum;
     }
 
     // adapted from Sebastian Lague
-    public double[] Derivative(double[] input)
+    public Vector<double> Derivative(Vector<double> input)
     {
-        var result = new double[input.Length];
-
-        foreach (var i in ..input.Length)
-        {
-            result[i] = Math.Exp(input[i]);
-        }
+        var result = input.PointwiseExp();
         var expSum = result.Sum();
-
-        foreach (var i in ..result.Length)
-        {
-            var ex = result[i];
-            result[i] = (ex * expSum - ex * ex) / (expSum * expSum);
-        }
-
+        result.MapInplace(ex => (ex * expSum - ex * ex) / (expSum * expSum));
         return result;
+    }
+
+    public Vector<double> DerivativeAlt(Vector<double> input)
+    {
+        var softmax = Activate(input);
+        softmax.MapInplace(softmax => softmax * (1-softmax));
+        return softmax;
     }
 }

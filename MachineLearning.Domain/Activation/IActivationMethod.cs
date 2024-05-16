@@ -1,34 +1,17 @@
 ﻿namespace MachineLearning.Domain.Activation;
 
-public interface IActivationMethod<TData>
+public interface IActivationMethod<TData> where TData : struct, IEquatable<TData>, IFormattable
 {
-    public TData[] Activate(TData[] input);
-    public TData[] Derivative(TData[] input);
+    public Vector<TData> Activate(Vector<TData> input);
+    public Vector<TData> Derivative(Vector<TData> input);
 }
 
 
-public interface ISimpleActivationMethod<TData> : IActivationMethod<TData>
+public interface ISimpleActivationMethod<TData> : IActivationMethod<TData> where TData : struct, IEquatable<TData>, IFormattable
 {
     public TData Activate(TData input);
     public TData Derivative(TData input);
 
-    TData[] IActivationMethod<TData>.Activate(TData[] input)
-    {
-        var result = new TData[input.Length];
-        foreach (int i in ..input.Length)
-        {
-            result[i] = Activate(input[i]);
-        }
-        return result;
-    }
-
-    TData[] IActivationMethod<TData>.Derivative(TData[] input)
-    {
-        var result = new TData[input.Length];
-        foreach (int i in ..input.Length)
-        {
-            result[i] = Derivative(input[i]);
-        }
-        return result;
-    }
+    Vector<TData> IActivationMethod<TData>.Activate(Vector<TData> input) => input.Map(Activate);
+    Vector<TData> IActivationMethod<TData>.Derivative(Vector<TData> input) => input.Map(Derivative);
 }

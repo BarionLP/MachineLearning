@@ -26,7 +26,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
         {
             writer.WriteBigEndian(layer.InputNodeCount);
             writer.WriteBigEndian(layer.OutputNodeCount);
-            ActivationMethodSerializer<Number>.Write(writer, layer.ActivationMethod);
+            ActivationMethodSerializer<double>.Write(writer, layer.ActivationFunction);
 
 
             // encode weights & biases
@@ -43,8 +43,8 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
         return ResultFlag.Succeeded;
     }
 
-    //TODO: Serialize embedder
-    public Result<TNetwork> Load<TNetwork>(IEmbedder<TInput, double[], TOutput> embedder) where TNetwork : INetwork<TInput, double, TOutput, TLayer>
+    //TODO: Serialize embedder (is it even possible?!)
+    public Result<TNetwork> Load<TNetwork>(IEmbedder<TInput, Vector<double>, TOutput> embedder) where TNetwork : INetwork<TInput, double, TOutput, TLayer>
     {
         using var stream = fileInfo.OpenRead();
         var reader = new BinaryReader(stream);
@@ -57,7 +57,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
         {
             var inputNodeCount = reader.ReadInt32BigEndian();
             var outputNodeCount = reader.ReadInt32BigEndian();
-            var activationMethod = ActivationMethodSerializer<Number>.Read(reader);
+            var activationMethod = ActivationMethodSerializer<double>.Read(reader);
             var layerBuilder = new LayerBuilder<TLayer>(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
 
             // decode weights & biases

@@ -8,6 +8,7 @@ public sealed class SimpleSentencesDataSource
     public static IEnumerable<DataEntry<string, char>> GenerateData(int contextSize)
     {
         //Console.WriteLine(Data.Average(s => s.Length));
+        //var data = File.ReadAllText(@"..\..\..\sentences.txt")
         var data = File.ReadAllText(@"sentences.txt")
             .ToLowerInvariant()
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

@@ -3,15 +3,15 @@ using MachineLearning.Model.Layer.Initialization;
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount) where TLayer : ILayer<Number>
+public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount) where TLayer : ILayer<double>
 {
     public int OutputNodeCount { get; } = outputNodeCount;
     public int InputNodeCount { get; } = inputNodeCount;
-    public Number[,] Weights { get; } = new Number[inputNodeCount, outputNodeCount];
-    public Number[] Biases { get; } = new Number[outputNodeCount];
-    public IActivationMethod<Number> ActivationMethod { get; set; } = SigmoidActivation.Instance;
+    public Matrix<double> Weights { get; } = Matrix.Build.Dense(outputNodeCount, inputNodeCount);
+    public Vector<double> Biases { get; } = Vector.Build.Dense(outputNodeCount);
+    public IActivationMethod<double> ActivationMethod { get; set; } = SigmoidActivation.Instance;
 
-    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod<Number> activationMethod) {
+    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod<double> activationMethod) {
         ActivationMethod = activationMethod;
         return this;
     }
@@ -22,5 +22,5 @@ public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount
         return this;
     }
 
-    public TLayer Build() => (TLayer)TLayer.Create(Weights.Copy(), Biases.Copy(), ActivationMethod);
+    public TLayer Build() => (TLayer)TLayer.Create(Weights.Clone(), Biases.Clone(), ActivationMethod);
 }

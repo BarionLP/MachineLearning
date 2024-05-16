@@ -10,6 +10,9 @@ using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
 using Simple;
 
+Console.WriteLine(System.Numerics.Vector.IsHardwareAccelerated);
+Console.WriteLine(System.Numerics.Vector<float>.IsSupported);
+Console.WriteLine(System.Numerics.Vector<float>.Count);
 
 ActivationMethodSerializer.RegisterDefaults();
 
@@ -48,6 +51,7 @@ foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=
     count++;
 }
 return;
+*/
 
 var setupRandom = new Random(69);
 var initializer = new XavierInitializer(setupRandom);
@@ -60,16 +64,15 @@ var network = NetworkBuilder.Recorded<string, char>(contextSize * 8)
     .AddLayer(32, initializer)
     .AddLayer(8, initializer)
     .Build();
-*/
     
-var network = serializer.Load<RecordingNetwork<string, char>>(new StringEmbedder(contextSize)).ReduceOrThrow();
+//var network = serializer.Load<SimpleNetwork<string, char, RecordingLayer>>(new StringEmbedder(contextSize)).ReduceOrThrow();
 var trainer = new NetworkTrainer<string, char>(config, network);
 
 var trainingResults = trainer.Train();
 //Console.WriteLine(trainingResults.DumpShort());
 //Console.WriteLine(trainer.EvaluateShort().DumpCorrectPrecentages());
 
-serializer.Save(network);
+//serializer.Save(network);
 
 var data = "They ".ToLowerInvariant();
 Console.Write(data);
@@ -81,11 +84,11 @@ do {
 }while(prediction != '.' && data.Length < 32);
 Console.WriteLine();
 
-class StringEmbedder(int contextSize) : IEmbedder<string, double[], char>
+class StringEmbedder(int contextSize) : IEmbedder<string, Vector<double>, char>
 {
-    public double[] Embed(string input)
+    public Vector<double> Embed(string input)
     {
-        var result = new double[8*input.Length];
+        var result = Vector.Build.Dense(8*input.Length);
         
         for(var ic = 0; ic < input.Length; ic++){
             var c = input[ic];
@@ -97,34 +100,19 @@ class StringEmbedder(int contextSize) : IEmbedder<string, double[], char>
 
         return PadLeft(result, contextSize * 8);
     }
-
-    static double[] PadLeft(double[] originalArray, int totalLength, double paddingValue = 0.0)
+    public static Vector<double> PadLeft(Vector<double> vector, int totalWidth, double paddingValue = 0.0)
     {
-        if (totalLength <= originalArray.Length)
-        {
-            throw new ArgumentException("Total length must be greater than the length of the original array.");
-        }
+        if (vector.Count >= totalWidth)
+            return vector;
 
-        double[] paddedArray = new double[totalLength];
-        int paddingSize = totalLength - originalArray.Length;
-
-        for (int i = 0; i < paddingSize; i++)
-        {
-            paddedArray[i] = paddingValue;
-        }
-
-        for (int i = 0; i < originalArray.Length; i++)
-        {
-            paddedArray[i + paddingSize] = originalArray[i];
-        }
-
-        return paddedArray;
+        var paddedVector = Vector.Build.Dense(totalWidth, paddingValue);
+        paddedVector.SetSubVector(totalWidth - vector.Count, vector.Count, vector);
+        return paddedVector;
     }
 
-
-    public char UnEmbed(double[] input)
+    public char UnEmbed(Vector<double> input)
     {
-        if (input.Length != 8) throw new ArgumentException("Input length must be 8.");
+        if (input.Count != 8) throw new ArgumentException("Input length must be 8.");
 
         byte result = 0;
 
@@ -138,19 +126,10 @@ class StringEmbedder(int contextSize) : IEmbedder<string, double[], char>
     }
 }
 
-class CharOutputResolver : IOutputResolver<char, double[]>
+class CharOutputResolver : IOutputResolver<char, Vector<double>>
 {
-    public double[] Expected(char b)
-    {
-        var result = new double[8];
-
-        for (int i = 0; i < 8; i++)
-        {
-            result[i] = ((b & (1 << i)) != 0) ? 1.0 : 0.0;
-        }
-
-        return result;
-    }
+    public Vector<double> Expected(char b) 
+        => Vector.Build.Dense(8, i => ((b & (1 << i)) != 0) ? 1.0 : 0.0);
 } 
 
 //serializer.Save(network);

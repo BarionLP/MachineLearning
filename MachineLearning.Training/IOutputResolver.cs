@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Frozen;
+using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
@@ -12,23 +13,23 @@ public interface IOutputResolver<in TOutput, out TData>
     public TData Expected(TOutput output);
 }
 
-public sealed class MNISTOutputResolver : IOutputResolver<int, Number[]>
+public sealed class MNISTOutputResolver : IOutputResolver<int, Vector<double>>
 {
-    public Number[] Expected(int output)
+    private	readonly FrozenDictionary<int, Vector<double>> _map = new Dictionary<int, Vector<double>>(){
+        { 0, Vector.Build.DenseOfEnumerable([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])},
+        { 1, Vector.Build.DenseOfEnumerable([0, 1, 0, 0, 0, 0, 0, 0, 0, 0])},
+        { 2, Vector.Build.DenseOfEnumerable([0, 0, 1, 0, 0, 0, 0, 0, 0, 0])},
+        { 3, Vector.Build.DenseOfEnumerable([0, 0, 0, 1, 0, 0, 0, 0, 0, 0])},
+        { 4, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 1, 0, 0, 0, 0, 0])},
+        { 5, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 1, 0, 0, 0, 0])},
+        { 6, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 1, 0, 0, 0])},
+        { 7, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 0, 1, 0, 0])},
+        { 8, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 0, 0, 1, 0])},
+        { 9, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 0, 0, 0, 1])},
+    }.ToFrozenDictionary();
+    
+    public Vector<double> Expected(int output)
     {
-        return output switch
-        {
-            0 => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            1 => [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            2 => [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-            3 => [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            4 => [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            5 => [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-            6 => [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            7 => [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-            8 => [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-            9 => [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            _ => throw new UnreachableException()
-        };
+        return _map[output];
     }
 }

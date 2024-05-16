@@ -9,9 +9,9 @@ public sealed class CrossEntropyLoss : ICostFunction
 {
     public static readonly CrossEntropyLoss Instance = new();
 
-    public Number Cost(Number outputActivation, Number expected) =>
+    public double Cost(double outputActivation, double expected) =>
         -(expected * Math.Log(outputActivation) + (1 - expected) * Math.Log(1 - outputActivation));
 
-    public Number Derivative(Number outputActivation, Number expected) =>
+    public double Derivative(double outputActivation, double expected) =>
         (outputActivation - expected) / (outputActivation * (1 - outputActivation));
 }

@@ -1,4 +1,4 @@
-using MachineLearning.Model.Layer;
+/* using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.Layer;
@@ -87,4 +87,4 @@ public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<Number>
             }
         }
     }
-}
+} */

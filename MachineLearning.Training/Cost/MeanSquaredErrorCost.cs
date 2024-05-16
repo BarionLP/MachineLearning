@@ -8,9 +8,9 @@
 public sealed class MeanSquaredErrorCost : ICostFunction
 {
     public static readonly MeanSquaredErrorCost Instance = new();
-    public Number Cost(Number outputActivation, Number expected) =>
+    public double Cost(double outputActivation, double expected) =>
         0.5 * Math.Pow(outputActivation - expected, 2);
 
-    public Number Derivative(Number outputActivation, Number expected) =>
+    public double Derivative(double outputActivation, double expected) =>
         outputActivation - expected;
 }

@@ -13,10 +13,10 @@ public sealed record TrainingConfig<TInput, TOutput>
     public required int EpochCount { get; init; }
     public required int BatchSize { get; init; }
 
-    public required IOptimizerConfig<Number> Optimizer { get; init; }
+    public required IOptimizerConfig<double> Optimizer { get; init; }
 
     public IInputDataNoise<TInput> InputNoise { get; init; } = NoInputNoise<TInput>.Instance;
-    public required IOutputResolver<TOutput, Number[]> OutputResolver { get; init; }
+    public required IOutputResolver<TOutput, Vector<double>> OutputResolver { get; init; }
 
     public Action<DataSetEvaluation>? EvaluationCallback { get; init; } = null;
     public bool DumpEvaluation => EvaluationCallback is not null;

@@ -1,4 +1,4 @@
-﻿using MachineLearning.Data.Entry;
+﻿/* using MachineLearning.Data.Entry;
 using MachineLearning.Domain.Activation;
 using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
@@ -103,3 +103,4 @@ public static class BinaryClassifier{
         public bool UnEmbed(Number[] input) => input[0] > input[1];
     }
 }
+ */

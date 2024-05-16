@@ -8,17 +8,11 @@ public sealed class RandomInitializer(Random? random = null) : ILayerInitializer
 {
     public Random Random { get; } = random ?? Random.Shared;
 
-    public void Initialize(double[,] weights, double[] biases)
+    public void Initialize(Matrix<double> weights, Vector<double> biases)
     {
-        var sqrtInputNodeCount = Math.Sqrt(weights.GetLength(0));
+        var sqrtInputNodeCount = Math.Sqrt(weights.ColumnCount);
 
-        for (int outputNodeIndex = 0; outputNodeIndex < biases.Length; outputNodeIndex++)
-        {
-            for (int inputNodeIndex = 0; inputNodeIndex < weights.GetLength(0); inputNodeIndex++)
-            {
-                weights[inputNodeIndex, outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 1) / sqrtInputNodeCount;
-            }
-            biases[outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1);
-        }
+        weights.MapInplace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 1) / sqrtInputNodeCount);
+        biases.MapInplace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
     }
 }

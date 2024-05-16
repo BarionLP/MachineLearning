@@ -5,20 +5,20 @@ using MachineLearning.Model.Layer.Initialization;
 
 namespace MachineLearning.Model;
 
-public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputNodeCount) where TNetwork : INetwork<TInput, Number, TOutput, TLayer> where TLayer : ILayer<Number>
+public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputNodeCount) where TNetwork : INetwork<TInput, double, TOutput, TLayer> where TLayer : ILayer<double>
 {
     private List<LayerBuilder<TLayer>> Layers { get; } = [];
     public int InputNodeCount { get; } = inputNodeCount;
 
-    public IEmbedder<TInput, Number[], TOutput>? Embedder { get; set; }
-    public IActivationMethod<Number> DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
+    public IEmbedder<TInput, Vector<double>, TOutput>? Embedder { get; set; }
+    public IActivationMethod<double> DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
 
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetEmbedder(IEmbedder<TInput, Number[], TOutput> embedder)
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetEmbedder(IEmbedder<TInput, Vector<double>, TOutput> embedder)
     {
         Embedder = embedder;
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod<Number> activationMethod)
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod<double> activationMethod)
     {
         DefaultActivationMethod = activationMethod;
         return this;
@@ -56,6 +56,6 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
 
 public static class NetworkBuilder
 {
-    public static NetworkBuilder<RecordingNetwork<TInput, TOutput>, TInput, TOutput, RecordingLayer> Recorded<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
+    public static NetworkBuilder<SimpleNetwork<TInput, TOutput, RecordingLayer>, TInput, TOutput, RecordingLayer> Recorded<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
     public static NetworkBuilder<SimpleNetwork<TInput, TOutput, SimpleLayer>, TInput, TOutput, SimpleLayer> Simple<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
 }

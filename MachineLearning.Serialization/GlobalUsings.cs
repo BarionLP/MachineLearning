@@ -1,2 +1,2 @@
 ﻿global using Ametrin.Utils;
-global using Number = double;
+global using MathNet.Numerics.LinearAlgebra;

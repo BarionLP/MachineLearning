@@ -1,4 +1,4 @@
-using MachineLearning.Training.Cost;
+/* using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization;
 
@@ -12,3 +12,4 @@ public sealed class GDMomentumOptimizerConfig : IOptimizerConfig<double>
 
     public IOptimizer<double> CreateOptimizer() => new GDMomentumOptimizer(this);
 }
+ */

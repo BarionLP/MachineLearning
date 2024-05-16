@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using MachineLearning.Model;
+using MachineLearning.Model.Layer;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
@@ -8,11 +9,11 @@ namespace MachineLearning.Training;
 public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where TOutput : notnull
 {
     public TrainingConfig<TInput, TOutput> Config { get; }
-    public RecordingNetwork<TInput, TOutput> Network { get; }
+    public INetwork<TInput, double, TOutput, RecordingLayer> Network { get; }
     public IOptimizer<double> Optimizer { get; }
     internal NetworkTrainingContext<TInput, TOutput> Context { get; }
 
-    public NetworkTrainer(TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network)
+    public NetworkTrainer(TrainingConfig<TInput, TOutput> config, INetwork<TInput, double, TOutput, RecordingLayer> network)
     {
         Config = config;
         Network = network;
@@ -24,7 +25,6 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
     {
         // for each epoch 
         // train on all batches
-        // decay learnrate
 
         var before = EvaluateShort();
         Optimizer.Init();
@@ -78,19 +78,20 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
     public DataSetEvaluationResult Evaluate(Batch<TInput, TOutput> batch)
     {
         int correctCounter = 0;
-        Number totalCost = 0;
+        double totalCost = 0;
         int totalCounter = 0;
         foreach (var entry in batch)
         {
             totalCounter++;
-            var output = Network.Process(entry.Input);
+            var outputWeights = Network.Forward(Network.Embedder.Embed(entry.Input));
+            var output = Network.Embedder.UnEmbed(outputWeights);
 
             if (output.Equals(entry.Expected))
             {
                 correctCounter++;
             }
 
-            totalCost += Config.Optimizer.CostFunction.TotalCost(Network.LastOutputWeights, Config.OutputResolver.Expected(entry.Expected));
+            totalCost += Config.Optimizer.CostFunction.TotalCost(outputWeights, Config.OutputResolver.Expected(entry.Expected));
         }
 
         return new()

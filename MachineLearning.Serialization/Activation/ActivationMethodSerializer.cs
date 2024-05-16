@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Serialization.Activation;
 
-public static class ActivationMethodSerializer<TData>
+public static class ActivationMethodSerializer<TData> where TData : struct, IEquatable<TData>, IFormattable
 {
     private static readonly Dictionary<string, IActivationMethod<TData>> _registry = [];
 
@@ -16,10 +16,10 @@ public static class ActivationMethodSerializer
 {
     public static void RegisterDefaults()
     {
-        ActivationMethodSerializer<Number>.Register("sigmoid", SigmoidActivation.Instance);
-        ActivationMethodSerializer<Number>.Register("softmax", SoftmaxActivation.Instance);
-        ActivationMethodSerializer<Number>.Register("relu", ReLUActivation.Instance);
-        ActivationMethodSerializer<Number>.Register("leakyrelu", LeakyReLUActivation.Instance);
-        ActivationMethodSerializer<Number>.Register("tanh", TanhActivation.Instance);
+        ActivationMethodSerializer<double>.Register("sigmoid", SigmoidActivation.Instance);
+        ActivationMethodSerializer<double>.Register("softmax", SoftmaxActivation.Instance);
+        ActivationMethodSerializer<double>.Register("relu", ReLUActivation.Instance);
+        ActivationMethodSerializer<double>.Register("leakyrelu", LeakyReLUActivation.Instance);
+        ActivationMethodSerializer<double>.Register("tanh", TanhActivation.Instance);
     }
 }

@@ -5,12 +5,12 @@ namespace MachineLearning.Training.Optimization;
 
 public sealed class AdamOptimizer(AdamOptimizerConfig config) : IOptimizer<double>
 {
-    public Number Iteration { get; set; } = 1; //(even when retraining!) when starting with 0 gradient estimates shoot to infinity?
+    public double Iteration { get; set; } = 1; //(even when retraining!) when starting with 0 gradient estimates shoot to infinity?
     public AdamOptimizerConfig Config { get; } = config;
 
     public void OnBatchCompleted()
     {
         Iteration++;
     }
-    public ILayerOptimizer<Number> CreateLayerOptimizer(RecordingLayer layer) => new AdamLayerOptimizer(this, layer);
+    public ILayerOptimizer<double> CreateLayerOptimizer(RecordingLayer layer) => new AdamLayerOptimizer(this, layer);
 }
