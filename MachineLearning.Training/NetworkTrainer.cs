@@ -1,4 +1,5 @@
-﻿using MachineLearning.Model;
+﻿using System.Diagnostics;
+using MachineLearning.Model;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
@@ -28,6 +29,7 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
         var before = EvaluateShort();
         Optimizer.Init();
         Context.FullReset();
+        var sw = Stopwatch.StartNew();
         foreach (var epochIndex in ..Config.EpochCount)
         {
             var epoch = Config.GetEpoch();
@@ -40,6 +42,8 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
                 if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount+1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = evaluation });
+                    Console.WriteLine($"Took {sw.Elapsed:ss\\.fff}s");
+                    sw.Restart();
                 }
                 batchCount++;
                 Optimizer.OnBatchCompleted();
