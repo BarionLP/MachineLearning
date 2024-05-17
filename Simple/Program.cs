@@ -1,6 +1,6 @@
-﻿using MachineLearning.Domain.Activation;
+﻿using BenchmarkDotNet.Running;
+using MachineLearning.Domain.Activation;
 using MachineLearning.Model;
-using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
 using MachineLearning.Serialization;
@@ -9,10 +9,15 @@ using MachineLearning.Training;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
 using Simple;
+using System.Numerics;
+
+
+BenchmarkRunner.Run<SigmoidBenchmarks>();
+return;
 
 Console.WriteLine(System.Numerics.Vector.IsHardwareAccelerated);
-Console.WriteLine(System.Numerics.Vector<float>.IsSupported);
-Console.WriteLine(System.Numerics.Vector<float>.Count);
+Console.WriteLine(System.Numerics.Vector<double>.IsSupported);
+Console.WriteLine(System.Numerics.Vector<double>.Count);
 
 ActivationMethodSerializer.RegisterDefaults();
 
@@ -20,26 +25,24 @@ int contextSize = 46;
 var dataSet = SimpleSentencesDataSource.GenerateData(contextSize).ToArray();
 new Random(128).Shuffle(dataSet);
 
-var config = new TrainingConfig<string, char>() 
-{
-    TrainingSet = dataSet.Take((int)(dataSet.Length*0.9)).ToArray(),
-    TestSet = dataSet.Skip((int)(dataSet.Length * 0.9)).ToArray(),
-    
-    EpochCount = 8,
-    BatchSize = 128+32,
+var config = new TrainingConfig<string, char>() {
+TrainingSet = dataSet.Take((int) (dataSet.Length * 0.9)).ToArray(),
+TestSet = dataSet.Skip((int) (dataSet.Length * 0.9)).ToArray(),
 
-    Optimizer = new AdamOptimizerConfig
-    {
-        LearningRate = 0.08,
-        CostFunction = CrossEntropyLoss.Instance,
-    },
-    
-    OutputResolver = new CharOutputResolver(),
-    
-    EvaluationCallback = result => Console.WriteLine(result.Dump()),
-    DumpEvaluationAfterBatches = 16,
-    
-    RandomSource = new Random(42),
+EpochCount = 8,
+BatchSize = 128 + 32,
+
+Optimizer = new AdamOptimizerConfig {
+LearningRate = 0.08,
+CostFunction = CrossEntropyLoss.Instance,
+},
+
+OutputResolver = new CharOutputResolver(),
+
+EvaluationCallback = result => Console.WriteLine(result.Dump()),
+DumpEvaluationAfterBatches = 16,
+
+RandomSource = new Random(42),
 };
 
 var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
@@ -64,7 +67,7 @@ var network = NetworkBuilder.Recorded<string, char>(contextSize * 8)
     .AddLayer(32, initializer)
     .AddLayer(8, initializer)
     .Build();
-    
+
 //var network = serializer.Load<SimpleNetwork<string, char, RecordingLayer>>(new StringEmbedder(contextSize)).ReduceOrThrow();
 var trainer = new NetworkTrainer<string, char>(config, network);
 
@@ -78,59 +81,11 @@ var data = "They ".ToLowerInvariant();
 Console.Write(data);
 char prediction;
 do {
-    prediction = network.Process(data);
-    data += prediction;
-    Console.Write(prediction);
-}while(prediction != '.' && data.Length < 32);
+prediction = network.Process(data);
+data += prediction;
+Console.Write(prediction);
+} while(prediction != '.' && data.Length < 32);
 Console.WriteLine();
-
-class StringEmbedder(int contextSize) : IEmbedder<string, Vector<double>, char>
-{
-    public Vector<double> Embed(string input)
-    {
-        var result = Vector.Build.Dense(8*input.Length);
-        
-        for(var ic = 0; ic < input.Length; ic++){
-            var c = input[ic];
-            for (int i = 0; i < 8; i++)
-            {
-                result[ic*8+i] = ((c & (1 << i)) != 0) ? 1.0 : 0.0;
-            }
-        }
-
-        return PadLeft(result, contextSize * 8);
-    }
-    public static Vector<double> PadLeft(Vector<double> vector, int totalWidth, double paddingValue = 0.0)
-    {
-        if (vector.Count >= totalWidth)
-            return vector;
-
-        var paddedVector = Vector.Build.Dense(totalWidth, paddingValue);
-        paddedVector.SetSubVector(totalWidth - vector.Count, vector.Count, vector);
-        return paddedVector;
-    }
-
-    public char UnEmbed(Vector<double> input)
-    {
-        if (input.Count != 8) throw new ArgumentException("Input length must be 8.");
-
-        byte result = 0;
-
-        for (int i = 0; i < 8; i++)
-        {
-            byte bit = (input[i] >= 0.5) ? (byte)1 : (byte)0;
-            result |= (byte)(bit << i);
-        }
-
-        return (char) result;
-    }
-}
-
-class CharOutputResolver : IOutputResolver<char, Vector<double>>
-{
-    public Vector<double> Expected(char b) 
-        => Vector.Build.Dense(8, i => ((b & (1 << i)) != 0) ? 1.0 : 0.0);
-} 
 
 //serializer.Save(network);
 
