@@ -12,12 +12,12 @@ namespace Simple.Benchy;
 
 [SimpleJob]
 public class MatrixOperationsBenchmark {
-    private double[,] matrix1;
-    private double[,] matrix2;
-    private double[] matrix1Flat;
-    private double[] matrix2Flat;
-    private Matrix<double> mathNetMatrix1;
-    private Matrix<double> mathNetMatrix2;
+    private double[,] matrix1 = default!;
+    private double[,] matrix2 = default!;
+    private double[] matrix1Flat = [];
+    private double[] matrix2Flat = [];
+    private Matrix<double> mathNetMatrix1 = default!;
+    private Matrix<double> mathNetMatrix2 = default!;
 
     [Params(16, 128, 512)]
     public int Rows { get; set; }

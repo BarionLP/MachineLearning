@@ -4,9 +4,7 @@ using SIMDV = System.Numerics.Vector<double>;
 using SIMD = System.Numerics.Vector;
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using Ametrin.Utils.Optional;
 using MathNet.Numerics.LinearAlgebra;
-using System;
 using MathNet.Numerics.LinearAlgebra.Double;
 
 
@@ -16,12 +14,12 @@ public class SigmoidBenchmarks {
 
     IActivationMethod<double> ActivationFunction = SigmoidActivation.Instance;
 
-    double[] InputArray;
-    Vector<double> InputMathNet;
+    double[] InputArray = [];
+    Vector<double> InputMathNet = default!;
     SVec InputSVec;
 
     //[Params(128, 512, 2048)]
-    public int size = 2048;
+    public int size = 512;
 
     [GlobalSetup]
     public void Setup() {
@@ -49,8 +47,29 @@ public class SigmoidBenchmarks {
 
         return result;
     }
+    
+    [Benchmark] // (only worth with large arrays)
+    public double[] SigmoidActivation_Array_Parallel() {
+        var result = new double[InputArray.Length];
+        Parallel.For(0, InputArray.Length, (i) =>
+        {
+            var sigmoid = 1 / (1 + Math.Exp(InputArray[i]));
+            result[i] = sigmoid * (1 - sigmoid);
+        });
 
-    [Benchmark]
+        return result;
+    }
+    
+    // [Benchmark] // same
+    // public double[] SigmoidActivation_Array_LINQ() {
+    //     return InputArray.Select(v =>
+    //     {
+    //         var sigmoid = 1 / (1 + Math.Exp(v));
+    //         return sigmoid * (1 - sigmoid);
+    //     }).ToArray();;
+    // }
+
+    [Benchmark] // 0.95
     public void SigmoidActivation_Array_InPlace() {
         for(int i = 0; i < InputArray.Length; i++) {
             var sigmoid = 1 / (1 + Math.Exp(-InputArray[i]));
@@ -59,36 +78,37 @@ public class SigmoidBenchmarks {
     }
 
 
-    //way to slow
-    [Benchmark]
-    public Vector<double> SigmoidActivation_MathNet() {
-        var sigmoid = 1 / (1 + InputMathNet.PointwiseExp());
-        return sigmoid.PointwiseMultiply(1 - sigmoid);
+    [Benchmark] //0.93
+    public void SigmoidActivation_MathNet_MapInPlace() {
+        InputMathNet.MapInplace(v=>{
+            var sigmoid = 1 / (1 + Math.Exp(v));
+            return sigmoid * (1 - sigmoid);
+        });
     }
 
-    [Benchmark]
-    public double[] SigmoidActivation_SIMD() {
-        var inputLength = InputArray.Length;
-        var result = new double[inputLength];
-        var mdSize = SIMDV.Count;
-        var One = SIMDV.One;
+    // [Benchmark] // 1.12
+    // public double[] SigmoidActivation_SIMD() {
+    //     var inputLength = InputArray.Length;
+    //     var result = new double[inputLength];
+    //     var mdSize = SIMDV.Count;
+    //     var One = SIMDV.One;
 
-        var i = 0;
+    //     var i = 0;
 
-        for(; i <= inputLength - mdSize; i += mdSize) {
-            var md = new SIMDV(InputArray, i);
-            var sigmoid = One / (One + (-md).Exp());
-            var sigmoidDerivative = sigmoid * (One - sigmoid);
-            sigmoidDerivative.CopyTo(result, i);
-        }
+    //     for(; i <= inputLength - mdSize; i += mdSize) {
+    //         var md = new SIMDV(InputArray, i);
+    //         var sigmoid = One / (One + (-md).Exp());
+    //         var sigmoidDerivative = sigmoid * (One - sigmoid);
+    //         sigmoidDerivative.CopyTo(result, i);
+    //     }
 
-        for(; i < inputLength; i++) {
-            double sigmoid = 1 / (1 + Math.Exp(-InputArray[i]));
-            result[i] = sigmoid * (1 - sigmoid);
-        }
+    //     for(; i < inputLength; i++) {
+    //         var sigmoid = 1 / (1 + Math.Exp(-InputArray[i]));
+    //         result[i] = sigmoid * (1 - sigmoid);
+    //     }
 
-        return result;
-    }
+    //     return result;
+    // }
     
     SIMDV One = SIMDV.One;
     [Benchmark]
@@ -118,9 +138,9 @@ public static class SVecF {
         int simdCount = SIMDV.Count;
         int i = 0;
 
-        for(; i <= left.Count - simdCount; i += simdCount) {
-            action.Invoke(new SIMDV(left[i, simdCount])).CopyTo(left, i);
-        }
+        // for(; i <= left.Count - simdCount; i += simdCount) {
+        //     action.Invoke(new SIMDV(left[i, simdCount])).CopyTo(left, i);
+        // }
 
         for(; i < left.Count; i++) {
             left[i] = actionR.Invoke(left[i]);
@@ -154,7 +174,7 @@ public static class SVecF {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void CopyTo(this SIMDV vector, SVec destination, int startIndex) {
         if((uint) startIndex >= (uint) destination.Count) {
-            throw new ArgumentOutOfRangeException(nameof(startIndex), "start index must be within destination.count");
+            throw new ArgumentOutOfRangeException(nameof(startIndex), "start index must be within destination.Count");
         }
 
         if((destination.Count - startIndex) < SIMDV.Count) {
@@ -164,7 +184,7 @@ public static class SVecF {
         Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref destination[startIndex]), vector);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    //[MethodImpl(MethodImplOptions.AggressiveInlining)] // is slower?
     public static SIMDV Exp(this SIMDV vector) {
         Span<double> result = stackalloc double[SIMDV.Count];
         for(int i = 0; i < result.Length; i++) {

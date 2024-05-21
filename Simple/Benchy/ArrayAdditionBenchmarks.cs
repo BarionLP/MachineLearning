@@ -9,11 +9,11 @@ using MathNetVector = MathNet.Numerics.LinearAlgebra.Vector<double>;
 namespace Simple.Benchy;
 
 public class ArrayAdditionBenchmarks {
-    private double[] array1;
-    private double[] array2;
+    private double[] array1 = [];
+    private double[] array2 = [];
 
-    private MathNetVector vec1;
-    private MathNetVector vec2;
+    private MathNetVector vec1 = default!;
+    private MathNetVector vec2 = default!;
 
     [GlobalSetup]
     public void Setup() {

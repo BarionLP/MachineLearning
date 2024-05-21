@@ -8,6 +8,7 @@ using MachineLearning.Serialization.Activation;
 using MachineLearning.Training;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
+using Simple.Benchy;
 using Simple;
 using System.Numerics;
 

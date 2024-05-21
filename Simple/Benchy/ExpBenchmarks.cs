@@ -6,8 +6,8 @@ using SIMD = System.Numerics.Vector<double>;
 namespace Simple.Benchy;
 
 public class ExpBenchmarks {
-    double[] array;
-    Vector<double> mathnet;
+    double[] array = [];
+    Vector<double> mathnet = default!;
     SVec svec;
 
     //[Params(128, 512, 2048)]
