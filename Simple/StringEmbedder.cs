@@ -1,10 +1,8 @@
 ﻿using MachineLearning.Model.Embedding;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
 
-public sealed class StringEmbedder(int contextSize) : IEmbedder<string, Vector<double>, char> {
-    public Vector<double> Embed(string input) {
-        var result = Vector.Build.Dense(8 * input.Length);
+public sealed class StringEmbedder(int contextSize) : IEmbedder<string, char> {
+    public Vector Embed(string input) {
+        var result = Vector.Create(8 * input.Length);
 
         for(var ic = 0; ic < input.Length; ic++) {
             var c = input[ic];
@@ -15,16 +13,16 @@ public sealed class StringEmbedder(int contextSize) : IEmbedder<string, Vector<d
 
         return PadLeft(result, contextSize * 8);
     }
-    public static Vector<double> PadLeft(Vector<double> vector, int totalWidth, double paddingValue = 0.0) {
+    public static Vector PadLeft(Vector vector, int totalWidth) {
         if(vector.Count >= totalWidth)
             return vector;
 
-        var paddedVector = Vector.Build.Dense(totalWidth, paddingValue);
-        paddedVector.SetSubVector(totalWidth - vector.Count, vector.Count, vector);
+        var paddedVector = Vector.Create(totalWidth);
+        vector.AsSpan().CopyTo(paddedVector[totalWidth - vector.Count, vector.Count]);
         return paddedVector;
     }
 
-    public char UnEmbed(Vector<double> input) {
+    public char UnEmbed(Vector input) {
         if(input.Count != 8)
             throw new ArgumentException("Input length must be 8.");
 

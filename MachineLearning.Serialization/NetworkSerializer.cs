@@ -12,11 +12,11 @@ namespace MachineLearning.Serialization;
 /// <typeparam name="TInput">network input type</typeparam>
 /// <typeparam name="TOutput">network output type</typeparam>
 /// <typeparam name="TLayer">layer type</typeparam>
-public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo)where TLayer : ILayer<double>
+public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo) where TLayer : ILayer
 {
     public const uint VERSION = 2;
 
-    public ResultFlag Save(INetwork<TInput, double, TOutput, TLayer> network)
+    public ResultFlag Save(INetwork<TInput, TOutput, TLayer> network)
     {
         using var stream = fileInfo.Create();
         var writer = new BinaryWriter(stream);
@@ -26,7 +26,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
         {
             writer.WriteBigEndian(layer.InputNodeCount);
             writer.WriteBigEndian(layer.OutputNodeCount);
-            ActivationMethodSerializer<double>.Write(writer, layer.ActivationFunction);
+            ActivationMethodSerializer.Write(writer, layer.ActivationFunction);
 
 
             // encode weights & biases
@@ -44,7 +44,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
     }
 
     //TODO: Serialize embedder (is it even possible?!)
-    public Result<TNetwork> Load<TNetwork>(IEmbedder<TInput, Vector<double>, TOutput> embedder) where TNetwork : INetwork<TInput, double, TOutput, TLayer>
+    public Result<TNetwork> Load<TNetwork>(IEmbedder<TInput, TOutput> embedder) where TNetwork : INetwork<TInput, TOutput, TLayer>
     {
         using var stream = fileInfo.OpenRead();
         var reader = new BinaryReader(stream);
@@ -57,7 +57,7 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
         {
             var inputNodeCount = reader.ReadInt32BigEndian();
             var outputNodeCount = reader.ReadInt32BigEndian();
-            var activationMethod = ActivationMethodSerializer<double>.Read(reader);
+            var activationMethod = ActivationMethodSerializer.Read(reader);
             var layerBuilder = new LayerBuilder<TLayer>(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
 
             // decode weights & biases

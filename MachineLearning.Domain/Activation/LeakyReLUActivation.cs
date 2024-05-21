@@ -5,10 +5,10 @@
 /// helps with death neurons in <see cref="ReLUActivation"/> <br/>
 /// </summary>
 /// <param name="alpha">slope for x &lt; 0</param>
-public sealed class LeakyReLUActivation(double alpha = 0.01) : ISimpleActivationMethod<double>
+public sealed class LeakyReLUActivation(Weight alpha = 0.01) : ISimpleActivationMethod
 {
     public static readonly LeakyReLUActivation Instance = new();
-    private readonly double alpha = alpha;
-    public double Activate(double input) => input > 0 ? input : alpha * input;
-    public double Derivative(double input) => input > 0 ? 1 : alpha;
+    private readonly Weight alpha = alpha;
+    public Weight Activate(Weight input) => input > 0 ? input : alpha * input;
+    public Weight Derivative(Weight input) => input > 0 ? 1 : alpha;
 }

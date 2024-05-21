@@ -6,9 +6,9 @@
 /// usually bad for output layer because values go uncontrollable high <br/>
 /// can cause death neurons (better <see cref="LeakyReLUActivation"/>) <br/>
 /// </summary>
-public sealed class ReLUActivation : ISimpleActivationMethod<double>
+public sealed class ReLUActivation : ISimpleActivationMethod
 {
     public static readonly ReLUActivation Instance = new();
-    public double Activate(double input) => Math.Max(0, input);
-    public double Derivative(double input) => input > 0 ? 1 : 0;
+    public Weight Activate(Weight input) => Math.Max(0, input);
+    public Weight Derivative(Weight input) => input > 0 ? 1 : 0;
 }

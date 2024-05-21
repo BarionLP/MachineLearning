@@ -9,11 +9,11 @@ namespace MachineLearning.Training;
 public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where TOutput : notnull
 {
     public TrainingConfig<TInput, TOutput> Config { get; }
-    public INetwork<TInput, double, TOutput, RecordingLayer> Network { get; }
-    public IOptimizer<double> Optimizer { get; }
+    public INetwork<TInput, TOutput, RecordingLayer> Network { get; }
+    public IOptimizer Optimizer { get; }
     internal NetworkTrainingContext<TInput, TOutput> Context { get; }
 
-    public NetworkTrainer(TrainingConfig<TInput, TOutput> config, INetwork<TInput, double, TOutput, RecordingLayer> network)
+    public NetworkTrainer(TrainingConfig<TInput, TOutput> config, INetwork<TInput, TOutput, RecordingLayer> network)
     {
         Config = config;
         Network = network;

@@ -8,17 +8,19 @@ using MachineLearning.Serialization.Activation;
 using MachineLearning.Training;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
-using Simple.Benchy;
 using Simple;
-using System.Numerics;
+using Simple.Benchy;
+using System.Globalization;
 
+CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-BenchmarkRunner.Run<SigmoidBenchmarks>();
-return;
+//var left = Vector.Of([0.5, 11, 0.43]);
+//var right = Vector.Of([2, 0.1, 0.4]);
+//var result = left.PointwiseMultiply(right);
+//Console.WriteLine(result);
 
-Console.WriteLine(System.Numerics.Vector.IsHardwareAccelerated);
-Console.WriteLine(System.Numerics.Vector<double>.IsSupported);
-Console.WriteLine(System.Numerics.Vector<double>.Count);
+//BenchmarkRunner.Run<MatrixOperationsBenchmark>();
+//return;
 
 ActivationMethodSerializer.RegisterDefaults();
 
@@ -27,26 +29,26 @@ var dataSet = SimpleSentencesDataSource.GenerateData(contextSize).ToArray();
 new Random(128).Shuffle(dataSet);
 
 var config = new TrainingConfig<string, char>() {
-TrainingSet = dataSet.Take((int) (dataSet.Length * 0.9)).ToArray(),
-TestSet = dataSet.Skip((int) (dataSet.Length * 0.9)).ToArray(),
+    TrainingSet = dataSet.Take((int) (dataSet.Length * 0.9)).ToArray(),
+    TestSet = dataSet.Skip((int) (dataSet.Length * 0.9)).ToArray(),
 
-EpochCount = 8,
-BatchSize = 128 + 32,
+    EpochCount = 8,
+    BatchSize = 128 + 32,
 
-Optimizer = new AdamOptimizerConfig {
-LearningRate = 0.08,
-CostFunction = CrossEntropyLoss.Instance,
-},
+    Optimizer = new AdamOptimizerConfig {
+    LearningRate = 0.08,
+    CostFunction = CrossEntropyLoss.Instance,
+    },
 
-OutputResolver = new CharOutputResolver(),
+    OutputResolver = new CharOutputResolver(),
 
-EvaluationCallback = result => Console.WriteLine(result.Dump()),
-DumpEvaluationAfterBatches = 16,
+    EvaluationCallback = result => Console.WriteLine(result.Dump()),
+    DumpEvaluationAfterBatches = 16,
 
-RandomSource = new Random(42),
+    RandomSource = new Random(42),
 };
 
-var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
+//var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
 /*
 
 var count = 0;
@@ -82,9 +84,9 @@ var data = "They ".ToLowerInvariant();
 Console.Write(data);
 char prediction;
 do {
-prediction = network.Process(data);
-data += prediction;
-Console.Write(prediction);
+    prediction = network.Process(data);
+    data += prediction;
+    Console.Write(prediction);
 } while(prediction != '.' && data.Length < 32);
 Console.WriteLine();
 

@@ -9,12 +9,12 @@ using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
-internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, double, TOutput, RecordingLayer> network, TrainingConfig<TInput, TOutput> config, IOptimizer<double> optimizer)
+internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, TOutput, RecordingLayer> network, TrainingConfig<TInput, TOutput> config, IOptimizer optimizer)
 {
-    internal INetwork<TInput, double, TOutput, RecordingLayer> Network = network;
+    internal INetwork<TInput, TOutput, RecordingLayer> Network = network;
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
-    internal ImmutableArray<ILayerOptimizer<double>> LayerContexts = network.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
-    internal ILayerOptimizer<double> OutputLayerContext => LayerContexts[^1];
+    internal ImmutableArray<ILayerOptimizer> LayerContexts = network.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
+    internal ILayerOptimizer OutputLayerContext => LayerContexts[^1];
 
     public void Train(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch)
     {
@@ -104,7 +104,7 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, d
         }
     }
 
-    private Vector<double> Update(DataEntry<TInput, TOutput> data)
+    private Vector Update(DataEntry<TInput, TOutput> data)
     {
         var result = Network.Forward(Network.Embedder.Embed(data.Input));
 

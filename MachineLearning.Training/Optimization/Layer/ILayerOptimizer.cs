@@ -4,16 +4,16 @@ using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.Layer;
 
-public interface ILayerOptimizer<TWeight> where TWeight : struct, IEquatable<TWeight>, IFormattable
+public interface ILayerOptimizer
 {
     public RecordingLayer Layer { get; }
     public ICostFunction CostFunction { get; }
-    public void Update(Vector<TWeight> nodeValues);
+    public void Update(Vector nodeValues);
     public void Apply(int dataCounter);
     public void GradientCostReset();
     public void FullReset();
 
-    public Vector<double> ComputeOutputLayerErrors(Vector<double> expected)
+    public Vector ComputeOutputLayerErrors(Vector expected)
     {
         var activationDerivatives = Layer.ActivationFunction.Derivative(Layer.LastWeightedInput);
         var costDerivatives = CostFunction.Derivative(Layer.LastActivatedWeights, expected);
@@ -22,10 +22,10 @@ public interface ILayerOptimizer<TWeight> where TWeight : struct, IEquatable<TWe
         return costDerivatives;
     }
 
-    public Vector<double> ComputeHiddenLayerErrors(RecordingLayer nextLayer, Vector<double> nextErrors)
+    public Vector ComputeHiddenLayerErrors(RecordingLayer nextLayer, Vector nextErrors)
     {
         var activationDerivatives = Layer.ActivationFunction.Derivative(Layer.LastWeightedInput);
-        var weightedInputDerivatives = nextErrors * nextLayer.Weights; // TransposeThisAndMultiply ??
+        var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights); // TransposeThisAndMultiply ??
         weightedInputDerivatives.PointwiseMultiplyInPlace(activationDerivatives);
 
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)

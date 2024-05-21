@@ -1,29 +1,26 @@
 ﻿namespace MachineLearning.Domain.Activation;
 
-public sealed class SoftmaxActivation : IActivationMethod<double>
+public sealed class SoftmaxActivation : IActivationMethod
 {
     public static readonly SoftmaxActivation Instance = new();
 
-    public Vector<double> Activate(Vector<double> input)
-    {
-        var result = input.PointwiseExp();
+    public void Activate(Vector input, Vector result) {
+        input.Map(result, Math.Exp);   
         var sum = result.Sum();
-        return result / sum;
+        result.MapInPlace(ex => ex/sum); //TODO: simd
     }
 
     // adapted from Sebastian Lague
-    public Vector<double> Derivative(Vector<double> input)
-    {
-        var result = input.PointwiseExp();
+    public void Derivative(Vector input, Vector result) {
+        input.Map(result, Math.Exp);
         var expSum = result.Sum();
-        result.MapInplace(ex => (ex * expSum - ex * ex) / (expSum * expSum));
-        return result;
+        result.MapInPlace(ex => (ex * expSum - ex * ex) / (expSum * expSum));
     }
 
-    public Vector<double> DerivativeAlt(Vector<double> input)
+    // ChatGPT (same graph when plotted) TODO: is it faster?
+    public void DerivativeAlt(Vector input, Vector result)
     {
-        var softmax = Activate(input);
-        softmax.MapInplace(softmax => softmax * (1-softmax));
-        return softmax;
+        Activate(input, result);
+        result.MapInPlace(softmax => softmax * (1-softmax));
     }
 }

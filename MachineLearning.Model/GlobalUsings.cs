@@ -1,3 +1,4 @@
 ﻿global using Ametrin.Utils;
-global using MathNet.Numerics.LinearAlgebra;
-global using MathNet.Numerics.LinearAlgebra.Double;
+global using Ametrin.Utils.Optional;
+global using MachineLearning.Domain.Numerics;
+global using Weight = double;

@@ -8,27 +8,27 @@ namespace MachineLearning.Training;
 /// </summary>
 /// <typeparam name="TOutput">Network Output type</typeparam>
 /// <typeparam name="TData">Network Weight type</typeparam>
-public interface IOutputResolver<in TOutput, out TData>
+public interface IOutputResolver<in TOutput>
 {
-    public TData Expected(TOutput output);
+    public Vector Expected(TOutput output);
 }
 
-public sealed class MNISTOutputResolver : IOutputResolver<int, Vector<double>>
+public sealed class MNISTOutputResolver : IOutputResolver<int>
 {
-    private	readonly FrozenDictionary<int, Vector<double>> _map = new Dictionary<int, Vector<double>>(){
-        { 0, Vector.Build.DenseOfEnumerable([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])},
-        { 1, Vector.Build.DenseOfEnumerable([0, 1, 0, 0, 0, 0, 0, 0, 0, 0])},
-        { 2, Vector.Build.DenseOfEnumerable([0, 0, 1, 0, 0, 0, 0, 0, 0, 0])},
-        { 3, Vector.Build.DenseOfEnumerable([0, 0, 0, 1, 0, 0, 0, 0, 0, 0])},
-        { 4, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 1, 0, 0, 0, 0, 0])},
-        { 5, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 1, 0, 0, 0, 0])},
-        { 6, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 1, 0, 0, 0])},
-        { 7, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 0, 1, 0, 0])},
-        { 8, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 0, 0, 1, 0])},
-        { 9, Vector.Build.DenseOfEnumerable([0, 0, 0, 0, 0, 0, 0, 0, 0, 1])},
+    private	readonly FrozenDictionary<int, Vector> _map = new Dictionary<int, Vector>(){
+        { 0, Vector.Of([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])},
+        { 1, Vector.Of([0, 1, 0, 0, 0, 0, 0, 0, 0, 0])},
+        { 2, Vector.Of([0, 0, 1, 0, 0, 0, 0, 0, 0, 0])},
+        { 3, Vector.Of([0, 0, 0, 1, 0, 0, 0, 0, 0, 0])},
+        { 4, Vector.Of([0, 0, 0, 0, 1, 0, 0, 0, 0, 0])},
+        { 5, Vector.Of([0, 0, 0, 0, 0, 1, 0, 0, 0, 0])},
+        { 6, Vector.Of([0, 0, 0, 0, 0, 0, 1, 0, 0, 0])},
+        { 7, Vector.Of([0, 0, 0, 0, 0, 0, 0, 1, 0, 0])},
+        { 8, Vector.Of([0, 0, 0, 0, 0, 0, 0, 0, 1, 0])},
+        { 9, Vector.Of([0, 0, 0, 0, 0, 0, 0, 0, 0, 1])},
     }.ToFrozenDictionary();
     
-    public Vector<double> Expected(int output)
+    public Vector Expected(int output)
     {
         return _map[output];
     }

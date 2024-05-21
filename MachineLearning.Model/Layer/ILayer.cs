@@ -1,16 +1,17 @@
-﻿using MachineLearning.Domain.Activation;
+﻿using MachineLearning.Domain;
+using MachineLearning.Domain.Activation;
 
 namespace MachineLearning.Model.Layer;
 
-public interface ILayer<TWeights> where TWeights : struct, IEquatable<TWeights>, IFormattable
+public interface ILayer 
 {
     public int InputNodeCount { get; }
     public int OutputNodeCount { get; }
-    public Matrix<TWeights> Weights { get; }
-    public Vector<TWeights> Biases { get; }
-    public IActivationMethod<TWeights> ActivationFunction { get; }
+    public Matrix Weights { get; }
+    public Vector Biases { get; }
+    public IActivationMethod ActivationFunction { get; }
 
-    public Vector<TWeights> Forward(Vector<TWeights> input);
+    public Vector Forward(Vector input);
 
-    public virtual static ILayer<TWeights> Create(Matrix<TWeights> weights, Vector<TWeights> biases, IActivationMethod<TWeights> activationMethod) => throw new NotImplementedException();
+    public virtual static ILayer Create(Matrix weights, Vector biases, IActivationMethod activationMethod) => throw new NotImplementedException();
 }

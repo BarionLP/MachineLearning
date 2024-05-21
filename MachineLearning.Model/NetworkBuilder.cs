@@ -5,20 +5,20 @@ using MachineLearning.Model.Layer.Initialization;
 
 namespace MachineLearning.Model;
 
-public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputNodeCount) where TNetwork : INetwork<TInput, double, TOutput, TLayer> where TLayer : ILayer<double>
+public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputNodeCount) where TNetwork : INetwork<TInput, TOutput, TLayer> where TLayer : ILayer
 {
     private List<LayerBuilder<TLayer>> Layers { get; } = [];
     public int InputNodeCount { get; } = inputNodeCount;
 
-    public IEmbedder<TInput, Vector<double>, TOutput>? Embedder { get; set; }
-    public IActivationMethod<double> DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
+    public IEmbedder<TInput, TOutput>? Embedder { get; set; }
+    public IActivationMethod DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
 
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetEmbedder(IEmbedder<TInput, Vector<double>, TOutput> embedder)
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetEmbedder(IEmbedder<TInput, TOutput> embedder)
     {
         Embedder = embedder;
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod<double> activationMethod)
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod activationMethod)
     {
         DefaultActivationMethod = activationMethod;
         return this;
@@ -31,7 +31,7 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
         );
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, ILayerInitializer<double> initializer)
+    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, ILayerInitializer initializer)
     {
         Layers.Add(
             new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)

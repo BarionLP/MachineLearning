@@ -1,6 +1,6 @@
 namespace MachineLearning.Model.Layer.Initialization;
 
-public interface ILayerInitializer<TWeights> where TWeights : struct, IEquatable<TWeights>, IFormattable
+public interface ILayerInitializer
 {
-    void Initialize(Matrix<TWeights> weights, Vector<TWeights> biases);
+    void Initialize(Matrix weights, Vector biases);
 }

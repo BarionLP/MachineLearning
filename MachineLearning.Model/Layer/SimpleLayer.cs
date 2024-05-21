@@ -2,22 +2,24 @@
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class SimpleLayer(Matrix<double> Weights, Vector<double> Biases, IActivationMethod<double> Activation) : ILayer<double>
+public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod Activation) : ILayer
 {
     public int InputNodeCount { get; } = Weights.ColumnCount;
     public int OutputNodeCount { get; } = Biases.Count;
-    public Matrix<double> Weights { get; } = Weights; // output * input!!
-    public Vector<double> Biases { get; } = Biases;
+    public Matrix Weights { get; } = Weights; // output * input!!
+    public Vector Biases { get; } = Biases;
 
-    public IActivationMethod<double> ActivationFunction { get; } = Activation;
+    public IActivationMethod ActivationFunction { get; } = Activation;
 
-    public Vector<double> Forward(Vector<double> input)
+    public Vector Forward(Vector input)
     {
-        var weightedSum = Weights * input;
-        var output = weightedSum + Biases;
+        // // TODO: can i just operate on input?
+        Weights.Multiply(input, input);
+        input.AddInPlace(Biases);
+        ActivationFunction.Activate(input, input);
 
-        return ActivationFunction.Activate(output); //TODO: operate on output directly instead of creating a copy
+        return input;
     }
 
-    public static ILayer<double> Create(Matrix<double> weights, Vector<double> biases, IActivationMethod<double> activationMethod) => new SimpleLayer(weights, biases, activationMethod);
+    public static ILayer Create(Matrix weights, Vector biases, IActivationMethod activationMethod) => new SimpleLayer(weights, biases, activationMethod);
 }

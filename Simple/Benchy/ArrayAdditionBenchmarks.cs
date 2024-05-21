@@ -4,7 +4,6 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using System.Numerics;
 using Vector = System.Numerics.Vector<double>;
-using MathNetVector = MathNet.Numerics.LinearAlgebra.Vector<double>;
 
 namespace Simple.Benchy;
 
@@ -12,24 +11,19 @@ public class ArrayAdditionBenchmarks {
     private double[] array1 = [];
     private double[] array2 = [];
 
-    private MathNetVector vec1 = default!;
-    private MathNetVector vec2 = default!;
-
     [GlobalSetup]
     public void Setup() {
-        int size = 1000;
+        int size = 1024;
         array1 = new double[size];
         array2 = new double[size];
         for(int i = 0; i < size; i++) {
             array1[i] = i;
             array2[i] = size - i;
         }
-        vec1 = MathNetVector.Build.DenseOfArray(array1);
-        vec2 = MathNetVector.Build.DenseOfArray(array2);
     }
 
     [Benchmark(Baseline = true)]
-    public double[] SimpleLoopAddition() {
+    public double[] Addition_Loop() {
         double[] result = new double[array1.Length];
         for(int i = 0; i < array1.Length; i++) {
             result[i] = array1[i] + array2[i];
@@ -38,7 +32,7 @@ public class ArrayAdditionBenchmarks {
     }
 
     [Benchmark]
-    public double[] SimdAddition() {
+    public double[] Addition_SIMD() {
 
         double[] result = new double[array1.Length];
         int simdLength = Vector.Count;
@@ -55,11 +49,5 @@ public class ArrayAdditionBenchmarks {
         }
 
         return result;
-    }
-   
-    
-    [Benchmark]
-    public MathNetVector MathNetAddition() {
-        return vec1 + vec2;
     }
 }

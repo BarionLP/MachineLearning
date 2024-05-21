@@ -2,29 +2,31 @@
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class RecordingLayer(Matrix<double> Weights, Vector<double> Biases, IActivationMethod<double> ActivationMethod) : ILayer<double>
+public sealed class RecordingLayer(Matrix Weights, Vector Biases, IActivationMethod ActivationMethod) : ILayer
 {
     public int InputNodeCount { get; } = Weights.ColumnCount;
     public int OutputNodeCount { get; } = Biases.Count;
-    public Matrix<double> Weights { get; } = Weights;
-    public Vector<double> Biases { get; } = Biases;
+    public Matrix Weights { get; } = Weights;
+    public Vector Biases { get; } = Biases;
 
-    public IActivationMethod<double> ActivationFunction { get; } = ActivationMethod;
+    public IActivationMethod ActivationFunction { get; } = ActivationMethod;
 
-    public Vector<double> LastRawInput = Vector.Build.Dense(0);
-    public Vector<double> LastWeightedInput = Vector.Build.Dense(0); // OutputNodeCount
-    public Vector<double> LastActivatedWeights = Vector.Build.Dense(0);
+    public Vector LastRawInput = Vector.Empty;
+    public Vector LastWeightedInput = Vector.Create(Biases.Count);
+    public Vector LastActivatedWeights = Vector.Create(Biases.Count);
 
 
-    public Vector<double> Forward(Vector<double> input)
+    public Vector Forward(Vector input)
     {
         LastRawInput = input;
-        LastWeightedInput = (Weights * input) + Biases;
+        
+        Weights.Multiply(input, LastWeightedInput);
+        LastWeightedInput.AddInPlace(Biases);
 
-        LastActivatedWeights = ActivationFunction.Activate(LastWeightedInput);
+        ActivationFunction.Activate(LastWeightedInput, LastActivatedWeights);
 
         return LastActivatedWeights;
     }
 
-    public static ILayer<double> Create(Matrix<double> weights, Vector<double> biases, IActivationMethod<double> activationMethod) => new RecordingLayer(weights, biases, activationMethod);
+    public static ILayer Create(Matrix weights, Vector biases, IActivationMethod activationMethod) => new RecordingLayer(weights, biases, activationMethod);
 }
