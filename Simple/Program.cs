@@ -39,7 +39,7 @@ var config = new TrainingConfig<string, char>()
     RandomSource = new Random(42),
 };
 
-var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
+//var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
 /*
 
 var count = 0;
@@ -48,6 +48,7 @@ foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=
     count++;
 }
 return;
+*/
 
 var setupRandom = new Random(69);
 var initializer = new XavierInitializer(setupRandom);
@@ -60,16 +61,15 @@ var network = NetworkBuilder.Recorded<string, char>(contextSize * 8)
     .AddLayer(32, initializer)
     .AddLayer(8, initializer)
     .Build();
-*/
     
-var network = serializer.Load<RecordingNetwork<string, char>>(new StringEmbedder(contextSize)).ReduceOrThrow();
+//var network = serializer.Load<RecordingNetwork<string, char>>(new StringEmbedder(contextSize)).ReduceOrThrow();
 var trainer = new NetworkTrainer<string, char>(config, network);
 
 var trainingResults = trainer.Train();
 //Console.WriteLine(trainingResults.DumpShort());
 //Console.WriteLine(trainer.EvaluateShort().DumpCorrectPrecentages());
 
-serializer.Save(network);
+//serializer.Save(network);
 
 var data = "They ".ToLowerInvariant();
 Console.Write(data);
