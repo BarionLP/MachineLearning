@@ -17,10 +17,11 @@ int contextSize = 46;
 var dataSet = SimpleSentencesDataSource.GenerateData(contextSize).ToArray();
 new Random(128).Shuffle(dataSet);
 
+var trainingSetSize = (int) (dataSet.Length * 0.9);
 var config = new TrainingConfig<string, char>() 
 {
-    TrainingSet = dataSet.Take((int)(dataSet.Length*0.9)).ToArray(),
-    TestSet = dataSet.Skip((int)(dataSet.Length * 0.9)).ToArray(),
+    TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
+    TestSet = dataSet.Skip(trainingSetSize).ToArray(),
     
     EpochCount = 8,
     BatchSize = 128+32,
