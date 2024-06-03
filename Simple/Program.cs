@@ -14,10 +14,49 @@ using System.Globalization;
 
 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-//var left = Vector.Of([0.5, 11, 0.43]);
-//var right = Vector.Of([2, 0.1, 0.4]);
-//var result = left.PointwiseMultiply(right);
+//int rows = 17;
+//int columns = 17;
+//var inputv = Vector.Of(Enumerable.Range(0, columns).Select(n => Random.Shared.NextDouble()).ToArray());
+//var inputv2 = Vector.Of(Enumerable.Range(0, columns).Select(n => Random.Shared.NextDouble()).ToArray());
+//var inputm = Matrix.Of(rows, columns, Enumerable.Range(0, rows * columns).Select(n => Random.Shared.NextDouble()).ToArray());
+//var inputm2 = Matrix.Of(rows, columns, Enumerable.Range(0, rows * columns).Select(n => Random.Shared.NextDouble()).ToArray());
+//var result = Vector.Create(rows);
+//var result2 = Vector.Create(rows);
+
+//inputv.Multiply(inputm, result);
+//inputv.MultiplySimd(inputm, result2);
+
+//VectorHelper.MultiplyToMatrix(inputv, inputv2, inputm);
+//VectorHelper.MultiplyToMatrixSimd(inputv, inputv2, inputm2);
+
+//Console.WriteLine(inputm);
+//Console.WriteLine(inputm2);
+
+
+//int size = 7;
+//var input = Vector.Of(Enumerable.Range(0, size).Select(n => Random.Shared.NextDouble(-1, 1)).ToArray());
+//var result = Vector.Create(size);
+//var result2 = Vector.Create(size);
+
+
+//((IActivationMethod)LeakyReLUActivation.Instance).Activate(input, result);
+//((IActivationMethod) SimdLeakyReLUActivation.Instance).Activate(input, result2);
+//Console.WriteLine(input);
 //Console.WriteLine(result);
+//Console.WriteLine(result2);
+//Console.WriteLine(result.Equals(result2));
+
+//Console.WriteLine();
+
+//((IActivationMethod)LeakyReLUActivation.Instance).Derivative(input, result);
+//((IActivationMethod) SimdLeakyReLUActivation.Instance).Derivative(input, result2);
+//Console.WriteLine(input);
+//Console.WriteLine(result);
+//Console.WriteLine(result2);
+
+//var left = Vector.Of([0.5, 11, 0.43, 3.65]);
+//var right = Vector.Of([2, 0.1, 0.4, 53]);
+//var result = left.Divide(5);
 
 //BenchmarkRunner.Run<MatrixOperationsBenchmark>();
 //return;
@@ -28,16 +67,17 @@ int contextSize = 46;
 var dataSet = SimpleSentencesDataSource.GenerateData(contextSize).ToArray();
 new Random(128).Shuffle(dataSet);
 
+var trainingSetSize = (int) (dataSet.Length * 0.9);
 var config = new TrainingConfig<string, char>() {
-    TrainingSet = dataSet.Take((int) (dataSet.Length * 0.9)).ToArray(),
-    TestSet = dataSet.Skip((int) (dataSet.Length * 0.9)).ToArray(),
+    TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
+    TestSet = dataSet.Skip(trainingSetSize).ToArray(),
 
     EpochCount = 8,
     BatchSize = 128 + 32,
 
     Optimizer = new AdamOptimizerConfig {
-    LearningRate = 0.08,
-    CostFunction = CrossEntropyLoss.Instance,
+        LearningRate = 0.08,
+        CostFunction = CrossEntropyLoss.Instance,
     },
 
     OutputResolver = new CharOutputResolver(),

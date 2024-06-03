@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
-using SimdVector = System.Numerics.Vector<double>;
-using SimdVectorHelper = System.Numerics.Vector;
+using System.Text;
 
 namespace MachineLearning.Domain.Numerics;
 
@@ -11,7 +10,7 @@ public interface Matrix {
     public int ColumnCount { get; }
     public int FlatCount { get; }
     public ref Weight this[int row, int column] { get; }
-    public ref Weight this[int flatIndex] { get; }
+    public ref Weight this[nuint flatIndex] { get; }
 
     public Span<Weight> AsSpan();
 
@@ -21,7 +20,7 @@ public interface Matrix {
             throw new ArgumentException("storage size does not match specified");
         }
 
-        return new MatrixFlatArray(rowCount, columnCount, new Weight[rowCount * columnCount]);
+        return new MatrixFlatArray(rowCount, columnCount, storage);
     }
 }
 
@@ -31,10 +30,22 @@ internal readonly struct MatrixFlatArray(int rowCount, int columnCount, Weight[]
     public int ColumnCount { get; } = columnCount;
     public int FlatCount => _storage.Length;
 
-    public ref Weight this[int row, int column] => ref this[GetFlatIndex(row, column)];
-    public ref Weight this[int flatIndex] => ref _storage[flatIndex];
+    public ref Weight this[int row, int column] => ref _storage[GetFlatIndex(row, column)];
+    public ref Weight this[nuint flatIndex] => ref _storage[flatIndex];
     public Span<Weight> AsSpan() => _storage.AsSpan();
     //public Span<Weight> AsSpan(int flatStartIndex, int length) => _storage.AsSpan(flatStartIndex, length);
+
+    public override string ToString() {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Matrix ({RowCount}x{ColumnCount}):");
+        for(int i = 0; i < RowCount; i++) {
+            for(int j = 0; j < ColumnCount; j++) {
+                sb.Append(this[i, j].ToString("F2")).Append(' ');
+            }
+            sb.AppendLine();
+        }
+        return sb.ToString();
+    }
 
     private int GetFlatIndex(int row, int column) => row * ColumnCount + column;
 }
@@ -44,31 +55,63 @@ public static class MatrixHelper {
 
     public static Vector Multiply(this Matrix matrix, Vector vector) {
         var result = Vector.Create(matrix.RowCount);
-        matrix.Multiply(vector, result);
+        Multiply(matrix, vector, result);
         return result;
     }
-    // TODO: simd and test
+
     public static void Multiply(this Matrix matrix, Vector vector, Vector result) {
+        MultiplySimd(matrix, vector, result);
+        
+        //for(int row = 0; row < matrix.RowCount; row++) {
+        //    result[row] = 0;
+        //    for(int column = 0; column < matrix.ColumnCount; column++) {
+        //        result[row] += matrix[row, column] * vector[column];
+        //    }
+        //}
+    }
+    
+    public static void MultiplySimd(this Matrix matrix, Vector vector, Vector result) {
         Debug.Assert(vector.Count == matrix.ColumnCount);
         Debug.Assert(result.Count == matrix.RowCount);
-        
-        for(int row = 0; row < matrix.RowCount; row++) {
-            result[row] = 0;
-            for(int column = 0; column < matrix.ColumnCount; column++) {
-                result[row] += matrix[row, column] * vector[column];
+
+        ref var matrixPtr = ref MemoryMarshal.GetReference(matrix.AsSpan());
+        ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
+        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
+
+        var mdSize = (nuint) SimdVector.Count;
+        var rowCount = (nuint) matrix.RowCount;
+        var columnCount = (nuint) matrix.ColumnCount;
+
+
+        for(nuint row = 0; row < rowCount; row++) {
+            nuint rowOffset = row * columnCount;
+            Weight sum = 0;
+            
+            nuint column = 0;
+            for(; column + mdSize <= columnCount; column += mdSize) {
+                var matrixVec = SimdVectorHelper.LoadUnsafe(ref matrixPtr, rowOffset + column);
+                var vectorVec = SimdVectorHelper.LoadUnsafe(ref vectorPtr, column);
+                sum += SimdVectorHelper.Dot(matrixVec, vectorVec);
             }
+
+            for(; column < columnCount; column++) {
+                sum += matrix[row * columnCount + column] * vector[column];
+            }
+
+            result[row] = sum;
         }
     }
 
-    public static void MapInPlace(this Matrix left, Func<Weight, Weight> map) => left.Map(map, left);
-    public static Matrix Map(this Matrix left, Func<Weight, Weight> fallbackAction) {
-        var result = Matrix.Create(left.RowCount, left.ColumnCount);
-        left.Map(fallbackAction, result);
+    public static void MapInPlace(this Matrix matrix, Func<Weight, Weight> map) => matrix.Map(map, matrix);
+    public static Matrix Map(this Matrix matrix, Func<Weight, Weight> map) {
+        var result = Matrix.Create(matrix.RowCount, matrix.ColumnCount);
+        matrix.Map(map, result);
         return result;
     }
-    public static void Map(this Matrix left, Func<Weight, Weight> fallbackAction, Matrix result) {
-        for(int i = 0; i < left.FlatCount; i++) {
-            result[i] = fallbackAction.Invoke(left[i]);
+    public static void Map(this Matrix matrix, Func<Weight, Weight> map, Matrix result) {
+        var dataSize = (nuint) matrix.FlatCount;
+        for(nuint i = 0; i < dataSize; i++) {
+            result[i] = map.Invoke(matrix[i]);
         }
     }
 
@@ -79,78 +122,67 @@ public static class MatrixHelper {
         return result;
     }
     public static void Map(this (Matrix a, Matrix b) matrices, Matrix result, Func<Weight, Weight, Weight> map) {
-        for(int i = 0; i < matrices.a.FlatCount; i++) {
+        var dataSize = (nuint) matrices.a.FlatCount;
+        for(nuint i = 0; i < dataSize; i++) {
             result[i] = map.Invoke(matrices.a[i], matrices.b[i]);
         }
     }
 
     public static void AddInPlace(this Matrix left, Matrix right) {
-        DoAdd(left, right, left);
+        Add(left, right, left);
     }
     public static Matrix Add(this Matrix left, Matrix right) {
-        var target = Matrix.Create(left.RowCount, left.ColumnCount);
-        DoAdd(left, right, target);
-        return target;
-    }
-    public static void Add(this Matrix left, Matrix right, Matrix target) {
-        DoAdd(left, right, target);
+        var result = Matrix.Create(left.RowCount, left.ColumnCount);
+        Add(left, right, result);
+        return result;
     }
 
     //TODO: test
-    private static void DoAdd(this Matrix left, Matrix right, Matrix result) {
+    public static void Add(this Matrix left, Matrix right, Matrix result) {
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
-        nuint length = (nuint) left.FlatCount;
+        nuint dataSize = (nuint) left.FlatCount;
 
         nuint index = 0;
-        if(length > mdSize) {
-            for(; index <= length - mdSize; index += mdSize) {
-                var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-                var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-                SimdVectorHelper.StoreUnsafe(vec1 + vec2, ref resultPtr, index);
-            }
+        for(; index + mdSize <= dataSize; index += mdSize) {
+            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
+            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
+            SimdVectorHelper.StoreUnsafe(vec1 + vec2, ref resultPtr, index);
         }
 
-        var remaining = (int) (length - index);
-        for(int i = 0; i < remaining; i++) {
-            result[i] = left[i] + right[i];
+        for(; index < dataSize; index++) {
+            result[index] = left[index] + right[index];
         }
     }
     
     public static void SubtractInPlace(this Matrix left, Matrix right) {
-        DoSubtract(left, right, left);
+        Subtract(left, right, left);
     }
     public static Matrix Subtract(this Matrix left, Matrix right) {
-        var target = Matrix.Create(left.RowCount, left.ColumnCount);
-        DoSubtract(left, right, target);
-        return target;
-    }
-    public static void Subtract(this Matrix left, Matrix right, Matrix target) {
-        DoSubtract(left, right, target);
+        var result = Matrix.Create(left.RowCount, left.ColumnCount);
+        Subtract(left, right, result);
+        return result;
     }
 
     //TODO: test
-    private static void DoSubtract(this Matrix left, Matrix right, Matrix result) {
+    public static void Subtract(this Matrix left, Matrix right, Matrix result) {
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
-        nuint length = (nuint) left.FlatCount;
+        nuint dataSize = (nuint) left.FlatCount;
 
         nuint index = 0;
-        if(length > mdSize) {
-            for(; index <= length - mdSize; index += mdSize) {
-                var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-                var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-                SimdVectorHelper.StoreUnsafe(vec1 - vec2, ref resultPtr, index);
-            }
+        for(; index + mdSize <= dataSize; index += mdSize) {
+            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
+            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
+            SimdVectorHelper.StoreUnsafe(vec1 - vec2, ref resultPtr, index);
         }
 
-        var remaining = (int) (length - index);
-        for(int i = 0; i < remaining; i++) {
-            result[i] = left[i] - right[i];
+        for(; index < dataSize; index++) {
+            result[index] = left[index] - right[index];
         }
     }
 

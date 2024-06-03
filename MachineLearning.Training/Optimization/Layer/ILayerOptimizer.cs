@@ -25,7 +25,7 @@ public interface ILayerOptimizer
     public Vector ComputeHiddenLayerErrors(RecordingLayer nextLayer, Vector nextErrors)
     {
         var activationDerivatives = Layer.ActivationFunction.Derivative(Layer.LastWeightedInput);
-        var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights); // TransposeThisAndMultiply ??
+        var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights); // other option? cannot be simded
         weightedInputDerivatives.PointwiseMultiplyInPlace(activationDerivatives);
 
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)

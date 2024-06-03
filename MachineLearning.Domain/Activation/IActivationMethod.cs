@@ -23,6 +23,18 @@ public interface ISimpleActivationMethod : IActivationMethod
     public Weight Activate(Weight input);
     public Weight Derivative(Weight input);
 
-    void IActivationMethod.Activate(Vector input, Vector result) => input.Map(result, Activate);
-    void IActivationMethod.Derivative(Vector input, Vector result) => input.Map(result, Derivative);
+    void IActivationMethod.Activate(Vector input, Vector result) => input.Map(Activate, result);
+    void IActivationMethod.Derivative(Vector input, Vector result) => input.Map(Derivative, result);
+}
+
+public interface ISimdActivationMethod : IActivationMethod
+{
+    public Weight Activate(Weight input);
+    public SimdVector Activate(SimdVector input);
+
+    public Weight Derivative(Weight input);
+    public SimdVector Derivative(SimdVector input);
+
+    void IActivationMethod.Activate(Vector input, Vector result) => input.Map(Activate, Activate, result);
+    void IActivationMethod.Derivative(Vector input, Vector result) => input.Map(Derivative, Derivative, result);
 }

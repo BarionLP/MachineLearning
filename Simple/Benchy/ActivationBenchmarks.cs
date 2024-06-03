@@ -7,9 +7,12 @@ namespace Simple.Benchy;
 public class ActivationBenchmarks {
 
     IActivationMethod ActivationFunction = SigmoidActivation.Instance;
+    IActivationMethod NewActivationFunction = SoftmaxActivation.Instance;
+
 
     double[] InputArray = [];
-    Vector InputVector = default!;
+    Vector input = default!;
+    Vector result = default!;
 
     //[Params(128, 512, 2048)]
     public int size = 512;
@@ -17,13 +20,28 @@ public class ActivationBenchmarks {
     [GlobalSetup]
     public void Setup() {
         InputArray = Enumerable.Range(0, size).Select(n=> Random.Shared.NextDouble()).ToArray();
-        InputVector = Vector.Of(InputArray);
+        input = Vector.Of(InputArray);
+        result = Vector.Create(size);
     }
 
 
     [Benchmark(Baseline = true)]
-    public Vector SigmoidActivation_Current() {
-        var activationDerivatives = ActivationFunction.Derivative(InputVector);
-        return activationDerivatives;
+    public void Activate_Current() {
+        ActivationFunction.Activate(input, result);
+    }
+
+    [Benchmark]
+    public void Activate_Simd() {
+        NewActivationFunction.Activate(input, result);
+    }
+    
+    [Benchmark]
+    public void Derivative_Current() {
+        ActivationFunction.Derivative(input, result);
+    }
+
+    [Benchmark]
+    public void Derivative_Simd() {
+        NewActivationFunction.Derivative(input, result);
     }
 }

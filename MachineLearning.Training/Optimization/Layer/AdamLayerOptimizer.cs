@@ -55,8 +55,8 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
 
         // parallelizing makes no difference
         // Update biases
-        (FirstMomentBiases, GradientCostBiases).MapInPlaceOnFirst(FirstMomentEstimate);
-        (SecondMomentBiases, GradientCostBiases).MapInPlaceOnFirst(SecondMomentEstimate);
+        (FirstMomentBiases, GradientCostBiases).MapInFirst(FirstMomentEstimate);
+        (SecondMomentBiases, GradientCostBiases).MapInFirst(SecondMomentEstimate);
         Layer.Biases.SubtractInPlace((FirstMomentBiases, SecondMomentBiases).Map(WeightReduction));
 
         // Update weights
