@@ -5,6 +5,7 @@ namespace MachineLearning.Model.Layer.Initialization;
 /// </summary>
 public sealed class HeInitializer(Random? random = null) : ILayerInitializer
 {
+    public static HeInitializer Instance { get; } = new HeInitializer();
     public Random Random { get; } = random ?? Random.Shared;
 
     public void Initialize(Matrix weights, Vector biases)

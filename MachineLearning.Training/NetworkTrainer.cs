@@ -100,3 +100,8 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
         };
     }
 }
+
+public static class ModelTrainer {
+    public static NetworkTrainer<TInput, TOutput> Create<TInput, TOutput>(SimpleNetwork<TInput, TOutput, RecordingLayer> model, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
+            => new(config, model);
+}

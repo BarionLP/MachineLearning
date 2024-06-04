@@ -1,17 +1,30 @@
 ﻿using MachineLearning.Model;
+using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Samples;
 using MachineLearning.Serialization;
 using MachineLearning.Serialization.Activation;
+using MachineLearning.Training.GUI;
 using System.Globalization;
 
-CultureInfo.CurrentCulture = new CultureInfo("en-US");
+
+//Console.WriteLine(LanguageDataSource.SpeechData(SimpleLM.ContextSize).Select(s=>s.Input).Take(128).Dump('\n'));
+//Console.WriteLine(new string(LanguageDataSource.GetLines("speech.txt").Dump(' ').Distinct().Order().ToArray()));
+
+//return;
+
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 ActivationMethodSerializer.RegisterDefaults();
 
-var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\slm.nnw"));
+var serializer = new NetworkSerializer<double[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\digits.nnw"));
 
-var model = SimpleLM.TrainDefault(serializer.Load<SimpleNetwork<string, char, RecordingLayer>>(new StringEmbedder(SimpleLM.ContextSize)).ReduceOrThrow());
+var model = serializer.Load<SimpleNetwork<double[], int, RecordingLayer>>(MNISTEmbedder.Instance).ReduceOrThrow();
+
+//var random = new Random(69);
+var random = Random.Shared;
+
+MNISTModel.TrainDefault(model, MNISTModel.GetTrainingConfig(random));
 
 serializer.Save(model);
 

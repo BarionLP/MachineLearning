@@ -1,13 +1,21 @@
-﻿namespace MachineLearning.Samples;
+﻿using System.Diagnostics;
+using System.Text;
+
+namespace MachineLearning.Samples;
 
 public sealed class StringEmbedder(int contextSize) : IEmbedder<string, char> {
     public Vector Embed(string input) {
-        var result = Vector.Create(8 * input.Length);
+        var bytes = Encoding.Latin1.GetBytes(input);
+        var result = Vector.Create(8 * bytes.Length);
 
-        for(var ic = 0; ic < input.Length; ic++) {
-            var c = input[ic];
-            for(int i = 0; i < 8; i++) {
-                result[ic * 8 + i] = ((c & (1 << i)) != 0) ? 1.0 : 0.0;
+        if(input.Length != bytes.Length) {
+            throw new UnreachableException();
+        }
+
+        for(var index = 0; index < bytes.Length; index++) {
+            var b = bytes[index];
+            for(var i = 0; i < 8; i++) {
+                result[index * 8 + i] = ((b & (1 << i)) != 0) ? 1.0 : 0.0;
             }
         }
 
@@ -23,16 +31,26 @@ public sealed class StringEmbedder(int contextSize) : IEmbedder<string, char> {
     }
 
     public char UnEmbed(Vector input) {
-        if(input.Count != 8)
-            throw new ArgumentException("Input length must be 8.");
+        return LanguageDataSource.TOKENS[IndexOfMax(input)];
 
-        byte result = 0;
-
-        for(int i = 0; i < 8; i++) {
-            byte bit = (input[i] >= 0.5) ? (byte) 1 : (byte) 0;
-            result |= (byte) (bit << i);
+        static int GetWeightedRandomIndex(Vector weights) {
+            var value = Random.Shared.NextDouble();
+            for(int i = 0; i < weights.Count; i++) {
+                value -= weights[i];
+                if(value < 0) return i;
+            }
+            return weights.Count - 1;
         }
 
-        return (char) result;
+        static int IndexOfMax(Vector weights) {
+            int max = 0;
+            for(int i = 0; i < weights.Count; i++) {
+                if(weights[i] > weights[max]) {
+                    max = i;
+                }
+            }
+
+            return max;
+        }
     }
 }
