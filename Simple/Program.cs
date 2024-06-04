@@ -1,10 +1,5 @@
-﻿using MachineLearning.Model;
-using MachineLearning.Model.Embedding;
-using MachineLearning.Model.Layer;
-using MachineLearning.Samples;
-using MachineLearning.Serialization;
+﻿using MachineLearning.Samples.MNIST;
 using MachineLearning.Serialization.Activation;
-using MachineLearning.Training.GUI;
 using System.Globalization;
 
 
@@ -17,51 +12,16 @@ CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 ActivationMethodSerializer.RegisterDefaults();
 
-var serializer = new NetworkSerializer<double[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\digits.nnw"));
+//var serializer = new NetworkSerializer<double[], int, RecordingLayer>(new FileInfo(@"C:\Users\Barion\Downloads\digits.nnw"));
+//var model = serializer.Load<SimpleNetwork<double[], int, RecordingLayer>>(MNISTEmbedder.Instance).ReduceOrThrow();
+//MNISTModel.TrainDefault(model, MNISTModel.GetTrainingConfig(random));
 
-var model = serializer.Load<SimpleNetwork<double[], int, RecordingLayer>>(MNISTEmbedder.Instance).ReduceOrThrow();
+var random = new Random(69);
+//var random = Random.Shared;
+MNISTModel.TrainDefault(random);
 
-//var random = new Random(69);
-var random = Random.Shared;
+//serializer.Save(model);
 
-MNISTModel.TrainDefault(model, MNISTModel.GetTrainingConfig(random));
-
-serializer.Save(model);
-
-return;
-/*
-
-var count = 0;
-foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=> new MNISTDataPoint(d.Input, d.Expected))){
-    item.SaveImage(new(@$"C:\Users\Nation\Downloads\digits\{count}.png"));
-    count++;
-}
-return;
-*/
-
-//serializer.Save(network);
-
-
-//serializer.Save(network);
-
-//Console.WriteLine(trainer.Evaluate().DumpShort());
-
-/*
-var correctCounter  = 0;
-var counter = 0;
-var previousColor = Console.ForegroundColor;
-foreach(var image in images.DataSet) 
-{
-    var prediction = network.Process(image.Image);
-    if(prediction == image.Digit) correctCounter++;
-
-    Console.ForegroundColor = prediction == image.Digit ? ConsoleColor.Green : ConsoleColor.Red;
-    Console.WriteLine($"Predicted: {prediction}\tActual: {image.Digit}");
-    counter++;
-}
-Console.ForegroundColor = previousColor;
-Console.WriteLine($"Correct: {(double)correctCounter/counter:P0}");
-*/
 
 /*
 When scaling up neural network models in size and complexity, various hyperparameters need adjustment to maintain or improve the model’s training efficiency and performance. Here's a table overview that outlines general trends for tweaking key hyperparameters like Epoch Count, Batch Size, Learning Rate, Learning Rate Multiplier, Momentum, and Regularization as the model size increases:

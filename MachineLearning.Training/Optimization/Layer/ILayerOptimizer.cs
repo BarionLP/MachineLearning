@@ -16,7 +16,7 @@ public interface ILayerOptimizer
     {
         var activationDerivatives = Layer.ActivationFunction.Derivative(Layer.LastWeightedInput);
         var costDerivatives = CostFunction.Derivative(Layer.LastActivatedWeights, expected);
-        #if DEBUG
+#if DEBUG
         if(activationDerivatives.AsSpan().Contains(double.NaN))
         {
             Console.WriteLine();
@@ -25,7 +25,7 @@ public interface ILayerOptimizer
         {
             Console.WriteLine();
         }
-        #endif
+#endif
         costDerivatives.PointwiseMultiplyInPlace(activationDerivatives);
 
         return costDerivatives;

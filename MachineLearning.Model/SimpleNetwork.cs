@@ -16,7 +16,7 @@ public sealed class SimpleNetwork<TInput, TOutput, TLayer>(TLayer[] layers, IEmb
     }
     public Vector Forward(Vector weights)
     {
-        foreach (var layer in Layers)
+        foreach(var layer in Layers)
         {
             weights = layer.Forward(weights);
         }

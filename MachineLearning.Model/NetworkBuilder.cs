@@ -50,7 +50,7 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
 
     public TNetwork Build()
     {
-        return (TNetwork)TNetwork.Create(Layers.Select(l=>l.Build()).ToArray(), Embedder ?? throw new NullReferenceException("NetworkBuilder needs an embedder!"));
+        return (TNetwork) TNetwork.Create(Layers.Select(l => l.Build()).ToArray(), Embedder ?? throw new NullReferenceException("NetworkBuilder needs an embedder!"));
     }
 }
 

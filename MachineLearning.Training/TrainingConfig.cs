@@ -29,25 +29,25 @@ public sealed record TrainingConfig<TInput, TOutput>
 
     public Epoch<TInput, TOutput> GetEpoch()
     {
-        if (ShuffleTrainingSetPerEpoch)
+        if(ShuffleTrainingSetPerEpoch)
         {
             Shuffle(TrainingSet);
         }
 
-        return new Epoch<TInput, TOutput>((int)MathF.Ceiling(BatchCount), GetBatches());
+        return new Epoch<TInput, TOutput>((int) MathF.Ceiling(BatchCount), GetBatches());
 
         IEnumerable<Batch<TInput, TOutput>> GetBatches()
         {
-            foreach (var i in ..BatchCount)
+            foreach(var i in ..BatchCount)
             {
-                yield return GetTrainingBatch(i*BatchSize, BatchSize).ApplyNoise(InputNoise);
+                yield return GetTrainingBatch(i * BatchSize, BatchSize).ApplyNoise(InputNoise);
             }
         }
 
         void Shuffle<T>(T[] array)
         {
             int n = array.Length;
-            for (int i = n - 1; i > 0; i--)
+            for(int i = n - 1; i > 0; i--)
             {
                 int j = RandomSource.Next(i + 1);
                 (array[i], array[j]) = (array[j], array[i]);

@@ -42,18 +42,18 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
     {
         // Compute the gradient for weights
         var weightGradients = VectorHelper.MultiplyToMatrix(nodeValues, Layer.LastRawInput); // GradientCostWeights.AddInPlaceMultiplied ?
-        #if DEBUG
+#if DEBUG
         if(nodeValues.AsSpan().Contains(double.NaN))
         {
             Console.WriteLine();
         }
-        if (weightGradients.AsSpan().Contains(double.NaN))
+        if(weightGradients.AsSpan().Contains(double.NaN))
         {
             Console.WriteLine();
         }
-        #endif
-        GradientCostWeights.AddInPlace(weightGradients);
-        GradientCostBiases.AddInPlace(nodeValues);
+#endif
+       GradientCostWeights.AddInPlace(weightGradients);
+       GradientCostBiases.AddInPlace(nodeValues);
     }
 
     public void Apply(int dataCounter)
@@ -72,18 +72,17 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
         (SecondMomentWeights, GradientCostWeights).MapInPlaceOnFirst(SecondMomentEstimate);
         Layer.Weights.SubtractInPlace((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
-        double WeightReduction(double firstMoment, double secondMoment){
+        double WeightReduction(double firstMoment, double secondMoment)
+        {
             var mHat = firstMoment / (1 - Math.Pow(Optimizer.Config.FirstDecayRate, Optimizer.Iteration));
             var vHat = secondMoment / (1 - Math.Pow(Optimizer.Config.SecondDecayRate, Optimizer.Iteration));
             return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Config.Epsilon);
         }
-        double FirstMomentEstimate(double lastMoment, double gradient){
-            return Optimizer.Config.FirstDecayRate * lastMoment + (1 - Optimizer.Config.FirstDecayRate) * gradient;
-        }
-        
-        double SecondMomentEstimate(double lastMoment, double gradient){
-            return Optimizer.Config.SecondDecayRate * lastMoment + (1 - Optimizer.Config.SecondDecayRate) * gradient*gradient;
-        }
+        double FirstMomentEstimate(double lastMoment, double gradient) 
+            => (Optimizer.Config.FirstDecayRate * lastMoment) + (1 - Optimizer.Config.FirstDecayRate) * gradient;
+
+        double SecondMomentEstimate(double lastMoment, double gradient) 
+            => (Optimizer.Config.SecondDecayRate * lastMoment) + (1 - Optimizer.Config.SecondDecayRate) * gradient * gradient;
     }
 
     public void GradientCostReset()

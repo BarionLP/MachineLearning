@@ -14,7 +14,7 @@ public interface IOutputResolver<in TOutput>
 
 public sealed class MNISTOutputResolver : IOutputResolver<int>
 {
-    private	readonly FrozenDictionary<int, Vector> _map = new Dictionary<int, Vector>(){
+    private readonly FrozenDictionary<int, Vector> _map = new Dictionary<int, Vector>(){
         { 0, Vector.Of([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])},
         { 1, Vector.Of([0, 1, 0, 0, 0, 0, 0, 0, 0, 0])},
         { 2, Vector.Of([0, 0, 1, 0, 0, 0, 0, 0, 0, 0])},
@@ -26,7 +26,7 @@ public sealed class MNISTOutputResolver : IOutputResolver<int>
         { 8, Vector.Of([0, 0, 0, 0, 0, 0, 0, 0, 1, 0])},
         { 9, Vector.Of([0, 0, 0, 0, 0, 0, 0, 0, 0, 1])},
     }.ToFrozenDictionary();
-    
+
     public Vector Expected(int output)
     {
         return _map[output];

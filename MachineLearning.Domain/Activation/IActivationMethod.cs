@@ -5,12 +5,14 @@ public interface IActivationMethod
     public void Activate(Vector input, Vector result);
     public void Derivative(Vector input, Vector result);
 
-    public Vector Activate(Vector input) {
+    public Vector Activate(Vector input)
+    {
         var result = Vector.Create(input.Count);
         Activate(input, result);
         return result;
     }
-    public Vector Derivative(Vector input) {
+    public Vector Derivative(Vector input)
+    {
         var result = Vector.Create(input.Count);
         Derivative(input, result);
         return result;

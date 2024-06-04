@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace MachineLearning.Model.Embedding;
+namespace MachineLearning.Samples.MNIST;
 
 public sealed class MNISTEmbedder(ImmutableArray<int> _nodeMapping) : IEmbedder<double[], int>
 {

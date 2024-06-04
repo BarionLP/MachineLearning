@@ -1,14 +1,16 @@
 ﻿namespace BarionGPT;
 
-public static class Extensions {
+public static class Extensions
+{
     //public static void InplaceSoftMax(this Vector<double> input, double temperature = 4) {
     //    //var max = input.Maximum();
     //    //input.MapInplace(x => MathF.Exp(x - max)); // Shift values for numerical stability
     //    var sumExp = input.Sum();
     //    input.MapInplace(f => f / sumExp);
     //}
-    
-    public static Vector<double> Softmax(this Vector<double> vector) {
+
+    public static Vector<double> Softmax(this Vector<double> vector)
+    {
         var exp = vector.PointwiseExp();
         var sumExp = exp.Sum();
         return exp.Divide(sumExp);

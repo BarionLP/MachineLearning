@@ -57,11 +57,11 @@ public static class BinaryClassifier
 
         void WriteModelView(int size)
         {
-            foreach (var lineIndex in ..(size / 2))
+            foreach(var lineIndex in ..(size / 2))
             {
-                foreach (var charIndex in ..size)
+                foreach(var charIndex in ..size)
                 {
-                    var result = model.Process([(double)charIndex / size, (double)lineIndex / (size / 2)]);
+                    var result = model.Process([(double) charIndex / size, (double) lineIndex / (size / 2)]);
                     //Console.Write($"{result[0]*100:F0} ");
                     Console.Write(result ? '0' : '.');
                 }
@@ -71,11 +71,11 @@ public static class BinaryClassifier
 
         static void WriteActualView(int size)
         {
-            foreach (var lineIndex in ..(size / 2))
+            foreach(var lineIndex in ..(size / 2))
             {
-                foreach (var charIndex in ..size)
+                foreach(var charIndex in ..size)
                 {
-                    Console.Write(IsInsideShapes((double)charIndex / size, (double)lineIndex / (size / 2)) ? '0' : '.');
+                    Console.Write(IsInsideShapes((double) charIndex / size, (double) lineIndex / (size / 2)) ? '0' : '.');
                 }
                 Console.WriteLine();
             }
@@ -84,7 +84,7 @@ public static class BinaryClassifier
 
     private static IEnumerable<BinaryDataEntry> ConstructTrainingData(int count)
     {
-        foreach (var _ in ..count)
+        foreach(var _ in ..count)
         {
             var x = Random.Shared.NextDouble();
             var y = Random.Shared.NextDouble();

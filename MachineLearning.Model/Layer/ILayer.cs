@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Model.Layer;
 
-public interface ILayer 
+public interface ILayer
 {
     public int InputNodeCount { get; }
     public int OutputNodeCount { get; }

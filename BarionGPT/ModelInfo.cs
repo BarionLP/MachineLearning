@@ -1,6 +1,7 @@
 ﻿namespace BarionGPT;
 
-public sealed record ModelInfo {
+public sealed record ModelInfo
+{
     public string ValidTokens { get; init; } = " abcdefghijklmnopqrstuvwxyz.";
     public int TokenCount => ValidTokens.Length;
     public required int EmbeddingDimensions { get; init; }

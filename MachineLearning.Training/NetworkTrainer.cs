@@ -2,6 +2,7 @@
 using MachineLearning.Model.Layer;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
+using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
@@ -28,20 +29,20 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
         var before = EvaluateShort();
         Optimizer.Init();
         Context.FullReset();
-        //var sw = Stopwatch.StartNew();
-        foreach (var epochIndex in ..Config.EpochCount)
+        var sw = Stopwatch.StartNew();
+        foreach(var epochIndex in ..Config.EpochCount)
         {
             var epoch = Config.GetEpoch();
             var batchCount = 0;
 
-            foreach (var batch in epoch)
+            foreach(var batch in epoch)
             {
                 var evaluation = Context.TrainAndEvaluate(batch);
-                if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount+1 == epoch.BatchCount && Config.DumpEpochEvaluation))
+                if((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = evaluation });
-                    //Console.WriteLine($"Took {sw.Elapsed:ss\\.fff}s");
-                    //sw.Restart();
+                    Console.WriteLine($"Took {sw.Elapsed:ss\\.fff}s");
+                    sw.Restart();
                 }
                 batchCount++;
                 Optimizer.OnBatchCompleted();
@@ -78,13 +79,13 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
         int correctCounter = 0;
         double totalCost = 0;
         int totalCounter = 0;
-        foreach (var entry in batch)
+        foreach(var entry in batch)
         {
             totalCounter++;
             var outputWeights = Network.Forward(Network.Embedder.Embed(entry.Input));
             var output = Network.Embedder.UnEmbed(outputWeights);
 
-            if (output.Equals(entry.Expected))
+            if(output.Equals(entry.Expected))
             {
                 correctCounter++;
             }
@@ -101,7 +102,8 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
     }
 }
 
-public static class ModelTrainer {
+public static class ModelTrainer
+{
     public static NetworkTrainer<TInput, TOutput> Create<TInput, TOutput>(SimpleNetwork<TInput, TOutput, RecordingLayer> model, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
             => new(config, model);
 }

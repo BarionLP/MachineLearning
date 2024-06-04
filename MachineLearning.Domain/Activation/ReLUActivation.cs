@@ -6,7 +6,8 @@
 /// usually bad for output layer because values go uncontrollable high <br/>
 /// can cause death neurons (better <see cref="LeakyReLUActivation"/>) <br/>
 /// </summary>
-public sealed class ReLUActivation : ISimdActivationMethod {
+public sealed class ReLUActivation : ISimdActivationMethod
+{
     public static readonly ReLUActivation Instance = new();
 
     public Weight Activate(Weight input) => Math.Max(0, input);

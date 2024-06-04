@@ -1,6 +1,7 @@
 ﻿using BarionGPT;
 
-var info = new ModelInfo {
+var info = new ModelInfo
+{
     EmbeddingDimensions = 128,
     ContextSize = 64,
     QueryDimensions = 32,
@@ -15,7 +16,8 @@ char predicted;
 
 Console.Write(prompt);
 
-do {
+do
+{
     predicted = model.Process(prompt);
     prompt += predicted;
     Console.Write(predicted);
@@ -27,7 +29,8 @@ prompt = "my name is ";
 
 Console.Write(prompt);
 
-do {
+do
+{
     predicted = model.Process(prompt);
     prompt += predicted;
     Console.Write(predicted);

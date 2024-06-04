@@ -23,9 +23,9 @@ public sealed class ImageDataSource(DirectoryInfo directoryInfo)
 
         var grayscaleValues = new double[image.Width * image.Height];
 
-        for (int y = 0; y < image.Height; y++)
+        for(int y = 0; y < image.Height; y++)
         {
-            for (int x = 0; x < image.Width; x++)
+            for(int x = 0; x < image.Width; x++)
             {
                 grayscaleValues[y * image.Width + x] = image[x, y].R / 255.0;
             }

@@ -7,7 +7,7 @@ public record Epoch<TInput, TOutput>(int BatchCount, IEnumerable<Batch<TInput, T
 {
     public Epoch<TInput, TOutput> ApplyNoise(IInputDataNoise<TInput> inputNoise)
     {
-        foreach (var batch in Batches)
+        foreach(var batch in Batches)
         {
             batch.ApplyNoise(inputNoise);
         }

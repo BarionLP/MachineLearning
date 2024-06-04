@@ -19,7 +19,7 @@ public sealed class RecordingLayer(Matrix Weights, Vector Biases, IActivationMet
     public Vector Forward(Vector input)
     {
         LastRawInput = input;
-        
+
         Weights.Multiply(input, LastWeightedInput);
         LastWeightedInput.AddInPlace(Biases);
 

@@ -7,11 +7,13 @@ namespace MachineLearning.Training.GUI;
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window {
+public partial class MainWindow : Window
+{
     public TrainingProgressTracker ProgressTracker { get; } = new();
-    
 
-    public MainWindow() {
+
+    public MainWindow()
+    {
         InitializeComponent();
         DataContext = this;
 
@@ -21,7 +23,7 @@ public partial class MainWindow : Window {
 
         var trainer = ProgressTracker.CreateLinkedTrainer("Binary Classifier", SKColors.Blue, config, model);
 
-        Loaded += (sender, args) => 
+        Loaded += (sender, args) =>
         {
             Task.Run(trainer.Train);
             //Task.Run(trainerTiny.Train);

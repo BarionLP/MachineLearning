@@ -1,6 +1,6 @@
 ﻿using ModelDefinition = MachineLearning.Model.SimpleNetwork<string, char, MachineLearning.Model.Layer.RecordingLayer>;
 
-namespace MachineLearning.Samples;
+namespace MachineLearning.Samples.Language;
 
 public static class SimpleLM
 {
@@ -11,7 +11,7 @@ public static class SimpleLM
         return NetworkBuilder.Recorded<string, char>(ContextSize * 8)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
             .SetEmbedder(new StringEmbedder(ContextSize))
-            .AddLayer(2048+1024, initializer)
+            .AddLayer(2048 + 1024, initializer)
             .AddLayer(512, initializer)
             .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(initializer).SetActivationMethod(SoftmaxActivation.Instance))
             .Build();
@@ -23,7 +23,7 @@ public static class SimpleLM
         var dataSet = LanguageDataSource.SpeechData(ContextSize).ToArray();
         random.Shuffle(dataSet);
 
-        var trainingSetSize = (int)(dataSet.Length * 0.9);
+        var trainingSetSize = (int) (dataSet.Length * 0.9);
         return new TrainingConfig<string, char>()
         {
             TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
@@ -61,11 +61,13 @@ public static class SimpleLM
         return model;
     }
 
-    public static void Generate(string input, ModelDefinition model) {
+    public static void Generate(string input, ModelDefinition model)
+    {
         input = input.ToLowerInvariant();
         Console.Write(input);
         char prediction;
-        do {
+        do
+        {
             prediction = model.Process(input);
             input += prediction;
             Console.Write(prediction);
@@ -73,11 +75,13 @@ public static class SimpleLM
         Console.WriteLine();
     }
 
-    public static void StartChat(ModelDefinition model) {
+    public static void StartChat(ModelDefinition model)
+    {
         string input;
-        do {
+        do
+        {
             input = Console.ReadLine() ?? string.Empty;
-            SimpleLM.Generate(input, model);
+            Generate(input, model);
         } while(!string.IsNullOrEmpty(input));
     }
 }

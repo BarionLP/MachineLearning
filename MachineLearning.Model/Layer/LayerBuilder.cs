@@ -11,7 +11,8 @@ public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount
     public Vector Biases { get; } = Vector.Create(outputNodeCount);
     public IActivationMethod ActivationMethod { get; set; } = SigmoidActivation.Instance;
 
-    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod activationMethod) {
+    public LayerBuilder<TLayer> SetActivationMethod(IActivationMethod activationMethod)
+    {
         ActivationMethod = activationMethod;
         return this;
     }
@@ -22,5 +23,5 @@ public sealed class LayerBuilder<TLayer>(int inputNodeCount, int outputNodeCount
         return this;
     }
 
-    public TLayer Build() => (TLayer)TLayer.Create(Weights.Copy(), Biases.Copy(), ActivationMethod);
+    public TLayer Build() => (TLayer) TLayer.Create(Weights.Copy(), Biases.Copy(), ActivationMethod);
 }

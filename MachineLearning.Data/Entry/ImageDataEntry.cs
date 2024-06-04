@@ -11,10 +11,11 @@ public sealed record ImageDataEntry(double[] Image, int Digit) : DataEntry<doubl
     {
         var sb = new StringBuilder();
         var i = 0;
-        foreach (var l in ..SIZE)
+        foreach(var l in ..SIZE)
         {
-            if (l > 0) sb.AppendLine();
-            foreach (var c in ..SIZE)
+            if(l > 0)
+                sb.AppendLine();
+            foreach(var c in ..SIZE)
             {
                 sb.Append((Image[i] * 9).ToString("0"));
                 sb.Append(' ');
@@ -30,7 +31,7 @@ public sealed record ImageDataEntry(double[] Image, int Digit) : DataEntry<doubl
     public static ImageDataEntry FromRaw(byte[] rawImage, byte rawDigit)
     {
         var image = new double[rawImage.Length];
-        foreach (var i in ..rawImage.Length)
+        foreach(var i in ..rawImage.Length)
         {
             image[i] = rawImage[i] / 255.0;
         }
@@ -41,11 +42,11 @@ public sealed record ImageDataEntry(double[] Image, int Digit) : DataEntry<doubl
     public void SaveImage(FileInfo fileInfo)
     {
         var image = new Image<Rgba32>(SIZE, SIZE);
-        foreach (var i in ..Image.Length)
+        foreach(var i in ..Image.Length)
         {
             int row = i / SIZE;
             int column = i % SIZE;
-            image[column, row] = new Rgba32((float)Image[i], (float)Image[i], (float)Image[i]);
+            image[column, row] = new Rgba32((float) Image[i], (float) Image[i], (float) Image[i]);
         }
         image.SaveAsPng(fileInfo.FullName);
     }

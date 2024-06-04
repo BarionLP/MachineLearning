@@ -14,17 +14,18 @@ public sealed class TrainingProgressTracker
     public IEnumerable<ISeries<double>> EvaluationSeries => Entries.SelectMany<Entry, LineSeries<double>>(e => [e.Series, e.TrendSeries]);
     private readonly List<Entry> Entries = [];
 
-    public NetworkTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, TrainingConfig<TInput, TOutput> config, SimpleNetwork<TInput, TOutput, RecordingLayer> network) where TInput : notnull where TOutput : notnull {
+    public NetworkTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, TrainingConfig<TInput, TOutput> config, SimpleNetwork<TInput, TOutput, RecordingLayer> network) where TInput : notnull where TOutput : notnull
+    {
         var entry = new Entry(name, color);
-        config = config with 
+        config = config with
         {
-            EvaluationCallback = results => entry.Results.Add(results.Result.CorrectPercentage*100),
+            EvaluationCallback = results => entry.Results.Add(results.Result.CorrectPercentage * 100),
         };
         var trainer = new NetworkTrainer<TInput, TOutput>(config, network);
         Entries.Add(entry);
         return trainer;
     }
-    
+
     public sealed class Entry
     {
         public LineSeries<double> Series { get; }
@@ -45,7 +46,7 @@ public sealed class TrainingProgressTracker
                     Color = color,
                     StrokeThickness = 3
                 },
-                Stroke = new SolidColorPaint 
+                Stroke = new SolidColorPaint
                 {
                     StrokeThickness = 2,
                     Color = color,
@@ -63,7 +64,7 @@ public sealed class TrainingProgressTracker
                     Color = color,
                     StrokeThickness = 0
                 },
-                Stroke = new SolidColorPaint 
+                Stroke = new SolidColorPaint
                 {
                     StrokeThickness = 2,
                     Color = color,
@@ -75,10 +76,11 @@ public sealed class TrainingProgressTracker
         private void UpdateTrends()
         {
             Trends.Clear();
-            if (Results.Count < 10) return;
+            if(Results.Count < 10)
+                return;
 
             int windowSize = 7;
-            for (int i = 0; i < Results.Count; i++)
+            for(int i = 0; i < Results.Count; i++)
             {
                 var window = Results.Skip(Math.Max(0, i - windowSize + 1)).Take(Math.Min(windowSize, i + 1));
                 Trends.Add(window.Average());

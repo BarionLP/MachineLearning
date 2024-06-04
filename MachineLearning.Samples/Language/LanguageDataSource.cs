@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace MachineLearning.Samples;
+namespace MachineLearning.Samples.Language;
 
 public sealed class LanguageDataSource
 {
@@ -10,20 +10,24 @@ public sealed class LanguageDataSource
         var data = GetLines("sentences.txt")
             .Where(s => s.Length <= contextSize);
 
-        foreach (var sentence in data)
+        foreach(var sentence in data)
         {
-            for (var i = 3; i < sentence.Length; i++)
+            for(var i = 3; i < sentence.Length; i++)
             {
                 yield return new(sentence[..i], sentence[i]);
             }
         }
     }
 
-    public static IEnumerable<DataEntry<string, char>> SpeechData(int contextSize) {
-        foreach(var sentence in GetLines("speech.txt")) {
+    public static IEnumerable<DataEntry<string, char>> SpeechData(int contextSize)
+    {
+        foreach(var sentence in GetLines("speech.txt"))
+        {
             var start = 0;
-            for(var i = 4; i < sentence.Length; i++) {
-                if(i-start > contextSize) {
+            for(var i = 4; i < sentence.Length; i++)
+            {
+                if(i - start > contextSize)
+                {
                     start = i - contextSize;
                 }
                 yield return new(sentence[start..i].Trim(), sentence[i]);
@@ -31,25 +35,32 @@ public sealed class LanguageDataSource
         }
     }
 
-    public static IEnumerable<string> GetLines(string path) 
+    public static IEnumerable<string> GetLines(string path)
         => File.ReadAllText(path, Encoding.UTF8).ToLowerInvariant()
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    public static void PrepareData(string sourcePath, string targetPath, bool overrideTarget = false) {
+    public static void PrepareData(string sourcePath, string targetPath, bool overrideTarget = false)
+    {
         var rawData = File.ReadAllText(sourcePath, Encoding.Latin1);
         var sentences = ParseSentences();
 
-        if(overrideTarget) {
+        if(overrideTarget)
+        {
             File.Delete(targetPath);
             File.WriteAllLines(targetPath, sentences, Encoding.UTF8);
-        } else {
+        }
+        else
+        {
             File.AppendAllLines(targetPath, sentences, Encoding.UTF8);
         }
 
-        IEnumerable<string> ParseSentences() {
+        IEnumerable<string> ParseSentences()
+        {
             var start = 0;
-            foreach(var i in ..rawData.Length) {
-                switch(rawData[i]) {
+            foreach(var i in ..rawData.Length)
+            {
+                switch(rawData[i])
+                {
                     case '.':
                     case '?':
                     case '!':

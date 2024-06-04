@@ -14,14 +14,14 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
     internal INetwork<TInput, TOutput, RecordingLayer> Network = network;
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
     internal ImmutableArray<ILayerOptimizer> LayerContexts = network.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
-    internal ILayerOptimizer OutputLayerContext => LayerContexts[^1];
+    internal ILayerOptimizer OutputLayerOptimizer => LayerContexts[^1];
 
     public void Train(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch)
     {
         GradientCostReset();
         var dataCounter = 0;
 
-        foreach (var dataPoint in trainingBatch)
+        foreach(var dataPoint in trainingBatch)
         {
             Update(dataPoint);
             dataCounter++;
@@ -36,18 +36,34 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
         int correctCounter = 0;
         double totalCost = 0;
         var dataCounter = 0;
+        object _lock = new();
 
-        foreach (var dataPoint in trainingBatch)
+        //foreach(var dataPoint in trainingBatch)
+        //{
+        //    var weights = Update(dataPoint);
+        //    var result = Network.Embedder.UnEmbed(weights)!;
+        //    if(result.Equals(dataPoint.Expected))
+        //    {
+        //        correctCounter++;
+        //    }
+        //    dataCounter++;
+        //    totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
+        //}
+
+        Parallel.ForEach(trainingBatch, dataPoint =>
         {
             var weights = Update(dataPoint);
             var result = Network.Embedder.UnEmbed(weights)!;
-            if (result.Equals(dataPoint.Expected))
+            lock(_lock)
             {
-                correctCounter++;
+                if(result.Equals(dataPoint.Expected))
+                {
+                    correctCounter++;
+                }
+                dataCounter++;
+                totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
             }
-            dataCounter++;
-            totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
-        }
+        });
 
         Apply(dataCounter);
         //HasModelErrors();
@@ -62,7 +78,7 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
 
     private void Apply(int dataCounter)
     {
-        foreach (var layer in LayerContexts)
+        foreach(var layer in LayerContexts)
         {
             layer.Apply(dataCounter);
         }
@@ -70,7 +86,7 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
 
     private void GradientCostReset()
     {
-        foreach (var layer in LayerContexts)
+        foreach(var layer in LayerContexts)
         {
             layer.GradientCostReset();
         }
@@ -78,29 +94,9 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
 
     public void FullReset()
     {
-        foreach (var layer in LayerContexts)
+        foreach(var layer in LayerContexts)
         {
             layer.FullReset();
-        }
-    }
-
-    public void HasModelErrors()
-    {
-        foreach (var layer in LayerContexts)
-        {
-            foreach (var ouputNodeIndex in ..layer.Layer.OutputNodeCount)
-            {
-                if(double.IsNaN(layer.Layer.Biases[ouputNodeIndex]) || double.IsInfinity(layer.Layer.Biases[ouputNodeIndex]))
-                {
-                    Debug.WriteLine("Model has invalid values!!!");
-                }
-                foreach (var inputNodeIndex in ..layer.Layer.InputNodeCount){
-                    if(double.IsNaN(layer.Layer.Weights[inputNodeIndex, ouputNodeIndex]) || double.IsInfinity(layer.Layer.Weights[inputNodeIndex, ouputNodeIndex]))
-                    {
-                        Debug.WriteLine("Model has invalid values!!!");
-                    }
-                }
-            }
         }
     }
 
@@ -108,11 +104,11 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
     {
         var result = Network.Forward(Network.Embedder.Embed(data.Input));
 
-        var nodeValues = OutputLayerContext.ComputeOutputLayerErrors(Config.OutputResolver.Expected(data.Expected));
-        OutputLayerContext.Update(nodeValues);
+        var nodeValues = OutputLayerOptimizer.ComputeOutputLayerErrors(Config.OutputResolver.Expected(data.Expected));
+        OutputLayerOptimizer.Update(nodeValues);
 
 
-        for (int hiddenLayerIndex = LayerContexts.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
+        for(int hiddenLayerIndex = LayerContexts.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
         {
             var hiddenLayer = LayerContexts[hiddenLayerIndex];
             nodeValues = hiddenLayer.ComputeHiddenLayerErrors(LayerContexts[hiddenLayerIndex + 1].Layer, nodeValues);

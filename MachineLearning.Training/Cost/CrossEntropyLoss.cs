@@ -13,13 +13,13 @@ public sealed class CrossEntropyLoss : ICostFunction
 
     public double Cost(double outputActivation, double expected)
     {
-        outputActivation = Math.Clamp(outputActivation, EPSILON, 1-EPSILON); //just return 0 or 1?
+        outputActivation = Math.Clamp(outputActivation, EPSILON, 1 - EPSILON); //just return 0 or 1?
         return -(expected * Math.Log(outputActivation) + (1 - expected) * Math.Log(1 - outputActivation));
     }
 
     public double Derivative(double outputActivation, double expected)
     {
-        outputActivation = Math.Clamp(outputActivation, EPSILON, 1-EPSILON); //just return 0 or 1?
+        outputActivation = Math.Clamp(outputActivation, EPSILON, 1 - EPSILON); //just return 0 or 1?
         return (outputActivation - expected) / (outputActivation * (1 - outputActivation));
     }
 }

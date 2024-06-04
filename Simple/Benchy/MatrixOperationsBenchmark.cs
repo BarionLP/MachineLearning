@@ -3,7 +3,8 @@
 namespace Simple.Benchy;
 
 //[SimpleJob]
-public class MatrixOperationsBenchmark {
+public class MatrixOperationsBenchmark
+{
     private Matrix matrix1 = default!;
     private Matrix matrix2 = default!;
     private Vector rowVector = default!;
@@ -18,7 +19,8 @@ public class MatrixOperationsBenchmark {
     public int Columns { get; set; } = 128;
 
     [GlobalSetup]
-    public void Setup() {
+    public void Setup()
+    {
         var random = new Random(69);
         matrix1 = Matrix.Of(Rows, Columns, Enumerable.Range(0, Rows * Columns).Select(n => random.NextDouble()).ToArray());
         matrix2 = Matrix.Of(Rows, Columns, Enumerable.Range(0, Rows * Columns).Select(n => random.NextDouble()).ToArray());
@@ -28,12 +30,14 @@ public class MatrixOperationsBenchmark {
     }
 
     [Benchmark(Baseline = true)]
-    public void VectorMultiply_Loop() {
+    public void VectorMultiply_Loop()
+    {
         matrix1.Multiply(columnVector, rowVector);
     }
 
     [Benchmark]
-    public void VectorMultiply_Simd() {
+    public void VectorMultiply_Simd()
+    {
         matrix1.MultiplySimd(columnVector, rowVector);
     }
 }
