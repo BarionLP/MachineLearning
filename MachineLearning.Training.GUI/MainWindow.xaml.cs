@@ -1,12 +1,5 @@
 ﻿using System.Windows;
-using MachineLearning.Data.Entry;
-using MachineLearning.Data.Noise;
-using MachineLearning.Data.Source;
-using MachineLearning.Domain.Activation;
-using MachineLearning.Model;
-using MachineLearning.Model.Embedding;
-using MachineLearning.Training.Cost;
-using MachineLearning.Training.Optimization;
+using Simple;
 using SkiaSharp;
 
 namespace MachineLearning.Training.GUI;
@@ -22,14 +15,15 @@ public partial class MainWindow : Window {
         InitializeComponent();
         DataContext = this;
 
+        var model = BinaryClassifier.GetModel();
+        var config = BinaryClassifier.GetTrainingConfig();
 
 
-
-        //var trainer = ProgressTracker.CreateLinkedTrainer("Text");
+        var trainer = ProgressTracker.CreateLinkedTrainer("Binary Classifier", SKColors.Blue, config, model);
 
         Loaded += (sender, args) => 
         {
-            //Task.Run(trainer.Train);
+            Task.Run(trainer.Train);
             //Task.Run(trainerTiny.Train);
         };
     }

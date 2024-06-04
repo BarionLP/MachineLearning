@@ -4,8 +4,7 @@ using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.Painting.Effects;
 using MachineLearning.Model;
-using MathNet.Numerics;
-using MathNet.Numerics.LinearRegression;
+using MachineLearning.Model.Layer;
 using SkiaSharp;
 
 namespace MachineLearning.Training.GUI;
@@ -15,7 +14,7 @@ public sealed class TrainingProgressTracker
     public IEnumerable<ISeries<double>> EvaluationSeries => Entries.SelectMany<Entry, LineSeries<double>>(e => [e.Series, e.TrendSeries]);
     private readonly List<Entry> Entries = [];
 
-    public NetworkTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, TrainingConfig<TInput, TOutput> config, RecordingNetwork<TInput, TOutput> network) where TInput : notnull where TOutput : notnull{
+    public NetworkTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, TrainingConfig<TInput, TOutput> config, SimpleNetwork<TInput, TOutput, RecordingLayer> network) where TInput : notnull where TOutput : notnull {
         var entry = new Entry(name, color);
         config = config with 
         {

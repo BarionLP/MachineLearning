@@ -1,5 +1,4 @@
-﻿using Ametrin.Utils.Optional;
-using MachineLearning.Model;
+﻿using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Serialization.Activation;

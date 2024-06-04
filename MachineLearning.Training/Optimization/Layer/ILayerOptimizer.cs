@@ -1,4 +1,3 @@
-using MachineLearning.Domain;
 using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
 
@@ -17,6 +16,16 @@ public interface ILayerOptimizer
     {
         var activationDerivatives = Layer.ActivationFunction.Derivative(Layer.LastWeightedInput);
         var costDerivatives = CostFunction.Derivative(Layer.LastActivatedWeights, expected);
+        #if DEBUG
+        if(activationDerivatives.AsSpan().Contains(double.NaN))
+        {
+            Console.WriteLine();
+        }
+        if(costDerivatives.AsSpan().Contains(double.NaN))
+        {
+            Console.WriteLine();
+        }
+        #endif
         costDerivatives.PointwiseMultiplyInPlace(activationDerivatives);
 
         return costDerivatives;

@@ -1,12 +1,9 @@
-﻿using Ametrin.Utils.Optional;
-using BenchmarkDotNet.Attributes;
-using MachineLearning.Domain;
-using System.Runtime.CompilerServices;
+﻿using BenchmarkDotNet.Attributes;
 using System.Runtime.InteropServices;
 using SimdVector = System.Numerics.Vector<double>;
 using SimdVectorHelper = System.Numerics.Vector;
 
-namespace Simple.Benchy; 
+namespace Simple.Benchy;
 
 public class RandomBenchmarks {
 

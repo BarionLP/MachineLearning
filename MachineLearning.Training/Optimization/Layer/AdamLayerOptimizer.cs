@@ -1,4 +1,3 @@
-using MachineLearning.Domain;
 using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
 
@@ -42,8 +41,17 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
     public void Update(Vector nodeValues)
     {
         // Compute the gradient for weights
-        var weightGradients = VectorHelper.MultiplyToMatrix(Layer.LastRawInput, nodeValues); // GradientCostWeights.AddInPlaceMultiplied ?
-
+        var weightGradients = VectorHelper.MultiplyToMatrix(nodeValues, Layer.LastRawInput); // GradientCostWeights.AddInPlaceMultiplied ?
+        #if DEBUG
+        if(nodeValues.AsSpan().Contains(double.NaN))
+        {
+            Console.WriteLine();
+        }
+        if (weightGradients.AsSpan().Contains(double.NaN))
+        {
+            Console.WriteLine();
+        }
+        #endif
         GradientCostWeights.AddInPlace(weightGradients);
         GradientCostBiases.AddInPlace(nodeValues);
     }

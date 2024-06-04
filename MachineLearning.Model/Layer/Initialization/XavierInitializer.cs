@@ -5,6 +5,7 @@ namespace MachineLearning.Model.Layer.Initialization;
 /// </summary>
 public sealed class XavierInitializer(Random? random = null) : ILayerInitializer
 {
+    public static XavierInitializer Instance { get; } = new();
     public Random Random { get; } = random ?? Random.Shared;
 
     public void Initialize(Matrix weights, Vector biases)

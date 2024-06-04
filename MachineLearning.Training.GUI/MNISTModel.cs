@@ -4,6 +4,7 @@ using MachineLearning.Data.Source;
 using MachineLearning.Domain.Activation;
 using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
+using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
@@ -12,31 +13,37 @@ namespace MachineLearning.Training.GUI;
 
 public class MNISTModel
 {
-static void Create() {
+    public static SimpleNetwork<double[], int, RecordingLayer> GetModel(){
         var initer = new HeInitializer();
-        var networkBuilderHuge = NetworkBuilder.Recorded<double[], int>(784)
-                .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
-                .SetEmbedder(MNISTEmbedder.Instance)
-                .AddLayer(256, initer)
-                .AddLayer(128, initer)
-                .AddLayer(10, builder => builder.SetActivationMethod(SoftmaxActivation.Instance).Initialize(new XavierInitializer()));
-
+        /* 
         var networkBuilderGPT = NetworkBuilder.Recorded<double[], int>(784)
             .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
             .SetEmbedder(MNISTEmbedder.Instance)
             .AddLayer(128, initer)
             .AddLayer(10, builder => builder.SetActivationMethod(SoftmaxActivation.Instance).Initialize(new XavierInitializer()));
+        */
+        var network = NetworkBuilder.Recorded<double[], int>(784)
+                .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
+                .SetEmbedder(MNISTEmbedder.Instance)
+                .AddLayer(256, initer)
+                .AddLayer(128, initer)
+                .AddLayer(10, builder => builder.SetActivationMethod(SoftmaxActivation.Instance).Initialize(new XavierInitializer()))
+                .Build();
 
+        return network;
+    }
+
+    public static TrainingConfig<double[], int> GetTrainingConfig(){
         var mnistDataSource = new MNISTDataSource(new(@"C:\Users\Nation\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
-        var images = new ImageDataSource(new(@"C:\Users\Nation\OneDrive\Digits"));
+        //var images = new ImageDataSource(new(@"C:\Users\Nation\OneDrive\Digits"));
 
-        var config = new TrainingConfig<double[], int>()
+        return new TrainingConfig<double[], int>()
         {
             TrainingSet = mnistDataSource.TrainingSet,
             TestSet = mnistDataSource.TestingSet,
 
             EpochCount = 4,
-            BatchSize = 256 * 2,
+            BatchCount = 128,
 
             Optimizer = new AdamOptimizerConfig
             {
@@ -58,7 +65,5 @@ static void Create() {
 
             DumpEvaluationAfterBatches = 4,
         };
-
-
     }
 }

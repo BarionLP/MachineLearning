@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />
     <ProjectReference Include="..\MachineLearning.Serialization\MachineLearning.Serialization.csproj" />
+    <ProjectReference Include="..\MachineLearning.Samples\MachineLearning.Samples.csproj" />
   </ItemGroup>
 
   <ItemGroup>

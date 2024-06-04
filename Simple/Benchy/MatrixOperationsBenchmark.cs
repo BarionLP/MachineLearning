@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using SimdVector = System.Numerics.Vector<double>;
 
 namespace Simple.Benchy;
 

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-using System.Numerics;
+﻿using BenchmarkDotNet.Attributes;
 using Vector = System.Numerics.Vector<double>;
 
 namespace Simple.Benchy;

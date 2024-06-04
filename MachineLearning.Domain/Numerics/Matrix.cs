@@ -47,7 +47,17 @@ internal readonly struct MatrixFlatArray(int rowCount, int columnCount, Weight[]
         return sb.ToString();
     }
 
+#if DEBUG
+    private int GetFlatIndex(int row, int column)
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(row, RowCount);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(column, ColumnCount);
+
+        return row * ColumnCount + column;
+    }
+#else
     private int GetFlatIndex(int row, int column) => row * ColumnCount + column;
+#endif
 }
 
 
