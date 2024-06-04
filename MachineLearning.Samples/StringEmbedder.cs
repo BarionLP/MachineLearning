@@ -1,4 +1,4 @@
-﻿using MachineLearning.Model.Embedding;
+﻿namespace MachineLearning.Samples;
 
 public sealed class StringEmbedder(int contextSize) : IEmbedder<string, char> {
     public Vector Embed(string input) {

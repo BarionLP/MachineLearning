@@ -1,4 +1,4 @@
-﻿using MachineLearning.Training;
+﻿namespace MachineLearning.Samples;
 
 class CharOutputResolver : IOutputResolver<char> {
     public Vector Expected(char b)

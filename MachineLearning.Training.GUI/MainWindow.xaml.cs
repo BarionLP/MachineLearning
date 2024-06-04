@@ -1,5 +1,5 @@
 ﻿using System.Windows;
-using Simple;
+using MachineLearning.Samples;
 using SkiaSharp;
 
 namespace MachineLearning.Training.GUI;

@@ -1,7 +1,9 @@
-﻿namespace Simple;
+﻿namespace MachineLearning.Samples;
 
-public static class BinaryClassifier {
-    public static SimpleNetwork<double[], bool, RecordingLayer> GetModel(){
+public static class BinaryClassifier
+{
+    public static SimpleNetwork<double[], bool, RecordingLayer> GetModel()
+    {
         var initializer = XavierInitializer.Instance;
         return NetworkBuilder.Recorded<double[], bool>(2)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
@@ -12,12 +14,13 @@ public static class BinaryClassifier {
             .Build();
     }
 
-    public static TrainingConfig<double[], bool> GetTrainingConfig(){
+    public static TrainingConfig<double[], bool> GetTrainingConfig()
+    {
         return new TrainingConfig<double[], bool>()
         {
             TrainingSet = ConstructTrainingData(1028 * 12).ToArray(),
             TestSet = ConstructTrainingData(1028).ToArray(),
-            
+
             EpochCount = 64 * 4,
             BatchCount = 32,
 
@@ -27,16 +30,17 @@ public static class BinaryClassifier {
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
-
             OutputResolver = new OutputResolver(),
 
+            ShuffleTrainingSetPerEpoch = true,
+
             EvaluationCallback = result => Console.WriteLine(result.Dump()),
-            //DumpEvaluationAfterBatches = 128,
         };
     }
 
-    public static void TrainDefault(){
-        
+    public static void TrainDefault()
+    {
+
         var model = GetModel();
         var config = GetTrainingConfig();
         var trainer = new NetworkTrainer<double[], bool>(config, model);
@@ -51,10 +55,13 @@ public static class BinaryClassifier {
         Console.WriteLine("Actual: ");
         WriteActualView(viewSize);
 
-        void WriteModelView(int size) {
-            foreach (var lineIndex in ..(size/2)) {
-                foreach(var charIndex in ..size) {
-                    var result = model.Process([(double) charIndex / size, (double) lineIndex / (size / 2)]);
+        void WriteModelView(int size)
+        {
+            foreach (var lineIndex in ..(size / 2))
+            {
+                foreach (var charIndex in ..size)
+                {
+                    var result = model.Process([(double)charIndex / size, (double)lineIndex / (size / 2)]);
                     //Console.Write($"{result[0]*100:F0} ");
                     Console.Write(result ? '0' : '.');
                 }
@@ -62,10 +69,13 @@ public static class BinaryClassifier {
             }
         }
 
-        static void WriteActualView(int size) {
-            foreach(var lineIndex in ..(size/2)) {
-                foreach(var charIndex in ..size) {
-                    Console.Write(IsInsideShapes((double) charIndex / size, (double) lineIndex / (size/2)) ? '0' : '.');
+        static void WriteActualView(int size)
+        {
+            foreach (var lineIndex in ..(size / 2))
+            {
+                foreach (var charIndex in ..size)
+                {
+                    Console.Write(IsInsideShapes((double)charIndex / size, (double)lineIndex / (size / 2)) ? '0' : '.');
                 }
                 Console.WriteLine();
             }
@@ -90,17 +100,19 @@ public static class BinaryClassifier {
         y = -y;
 
         bool insideCircle = Math.Pow(x, 2) + Math.Pow(y, 2) <= Math.Pow(0.5, 2);
-        bool insideRectangle = (x >= -1.0 && x <= 0.5) && (y >= -0.0 && y <= 0.5);
+        bool insideRectangle = x >= -1.0 && x <= 0.5 && y >= -0.0 && y <= 0.5;
 
         return insideCircle || insideRectangle;
     }
 
-    private sealed class OutputResolver : IOutputResolver<bool> {
+    private sealed class OutputResolver : IOutputResolver<bool>
+    {
         private static readonly Vector TRUE = Vector.Of([1, 0]);
         private static readonly Vector FALSE = Vector.Of([0, 1]);
         public Vector Expected(bool output) => output ? TRUE : FALSE;
     }
-    public sealed class Embedder : IEmbedder<double[], bool>{
+    public sealed class Embedder : IEmbedder<double[], bool>
+    {
         public Vector Embed(double[] input) => Vector.Of(input);
         public bool UnEmbed(Vector input) => input[0] > input[1];
     }

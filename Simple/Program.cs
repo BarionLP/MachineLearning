@@ -1,47 +1,21 @@
-﻿using MachineLearning.Domain.Activation;
-using MachineLearning.Model;
-using MachineLearning.Model.Layer.Initialization;
+﻿using MachineLearning.Model;
+using MachineLearning.Model.Layer;
+using MachineLearning.Samples;
+using MachineLearning.Serialization;
 using MachineLearning.Serialization.Activation;
-using MachineLearning.Training;
-using MachineLearning.Training.Cost;
-using MachineLearning.Training.Optimization;
-using Simple;
 using System.Globalization;
 
 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
 ActivationMethodSerializer.RegisterDefaults();
 
-BinaryClassifier.TrainDefault();
+var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\slm.nnw"));
+
+var model = SimpleLM.TrainDefault(serializer.Load<SimpleNetwork<string, char, RecordingLayer>>(new StringEmbedder(SimpleLM.ContextSize)).ReduceOrThrow());
+
+serializer.Save(model);
 
 return;
-
-int contextSize = 46;
-var dataSet = SimpleSentencesDataSource.GenerateData(contextSize).ToArray();
-new Random(128).Shuffle(dataSet);
-
-var trainingSetSize = (int) (dataSet.Length * 0.9);
-var config = new TrainingConfig<string, char>() {
-    TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
-    TestSet = dataSet.Skip(trainingSetSize).ToArray(),
-
-    EpochCount = 8,
-    BatchCount = trainingSetSize / (128 + 32),
-
-    Optimizer = new AdamOptimizerConfig {
-        LearningRate = 0.08,
-        CostFunction = CrossEntropyLoss.Instance,
-    },
-
-    OutputResolver = new CharOutputResolver(),
-
-    EvaluationCallback = result => Console.WriteLine(result.Dump()),
-    DumpEvaluationAfterBatches = 16,
-
-    RandomSource = new Random(42),
-};
-
-//var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
 /*
 
 var count = 0;
@@ -51,25 +25,6 @@ foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=
 }
 return;
 */
-
-var setupRandom = new Random(69);
-var initializer = new XavierInitializer(setupRandom);
-var network = NetworkBuilder.Recorded<string, char>(contextSize * 8)
-    .SetDefaultActivationMethod(SigmoidActivation.Instance)
-    .SetEmbedder(new StringEmbedder(contextSize))
-    .AddLayer(512, initializer)
-    .AddLayer(256, initializer)
-    .AddLayer(64, initializer)
-    .AddLayer(32, initializer)
-    .AddLayer(8, initializer)
-    .Build();
-
-//var network = serializer.Load<SimpleNetwork<string, char, RecordingLayer>>(new StringEmbedder(contextSize)).ReduceOrThrow();
-var trainer = new NetworkTrainer<string, char>(config, network);
-
-var trainingResults = trainer.Train();
-//Console.WriteLine(trainingResults.DumpShort());
-//Console.WriteLine(trainer.EvaluateShort().DumpCorrectPrecentages());
 
 //serializer.Save(network);
 

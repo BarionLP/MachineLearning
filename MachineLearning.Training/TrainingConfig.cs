@@ -9,7 +9,7 @@ public sealed record TrainingConfig<TInput, TOutput>
 {
     public required DataEntry<TInput, TOutput>[] TrainingSet { get; init; }
     public required DataEntry<TInput, TOutput>[] TestSet { get; init; }
-    public bool ShuffleTrainingSetPerEpoch { get; init; } = true;
+    public bool ShuffleTrainingSetPerEpoch { get; init; } = false;
 
     public required int EpochCount { get; init; }
     public required int BatchCount { get; init; }
