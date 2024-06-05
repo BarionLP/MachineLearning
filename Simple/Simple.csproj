@@ -17,5 +17,11 @@
     <ProjectReference Include="..\MachineLearning.Serialization\MachineLearning.Serialization.csproj" />
     <ProjectReference Include="..\MachineLearning.Samples\MachineLearning.Samples.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <None Update="sentences.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>

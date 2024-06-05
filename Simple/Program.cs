@@ -29,7 +29,6 @@ SimpleLM.TrainDefault(model);
 
 serializer.Save(model);
 
-
 /*
 When scaling up neural network models in size and complexity, various hyperparameters need adjustment to maintain or improve the model’s training efficiency and performance. Here's a table overview that outlines general trends for tweaking key hyperparameters like Epoch Count, Batch Size, Learning Rate, Learning Rate Multiplier, Momentum, and Regularization as the model size increases:
 
