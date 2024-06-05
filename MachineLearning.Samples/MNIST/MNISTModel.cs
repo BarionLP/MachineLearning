@@ -30,7 +30,7 @@ public class MNISTModel
             TrainingSet = dataSource.TrainingSet,
             TestSet = dataSource.TestingSet,
 
-            EpochCount = 4,
+            EpochCount = 8,
             BatchCount = 128,
 
             Optimizer = new AdamOptimizerConfig
@@ -49,6 +49,7 @@ public class MNISTModel
                 MaxAngle = 30,
                 MinScale = 0.8,
                 MaxScale = 1.2,
+                Random = random ?? Random.Shared,
             },
 
             DumpEvaluationAfterBatches = 8,

@@ -26,7 +26,7 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
         // for each epoch 
         // train on all batches
 
-        var before = EvaluateShort();
+        //var before = EvaluateShort();
         Optimizer.Init();
         Context.FullReset();
         var sw = Stopwatch.StartNew();
@@ -61,12 +61,13 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
             };
         }
 
-        return new ModelTrainingResult
-        {
-            EpochCount = Config.EpochCount,
-            Before = before,
-            After = EvaluateShort(),
-        };
+        //return new ModelTrainingResult
+        //{
+        //    EpochCount = Config.EpochCount,
+        //    Before = before,
+        //    After = EvaluateShort(),
+        //};
+        return null;
     }
 
     public ModelEvaluationResult EvaluateShort() => new()

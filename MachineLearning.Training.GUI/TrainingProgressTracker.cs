@@ -14,7 +14,7 @@ public sealed class TrainingProgressTracker
     public IEnumerable<ISeries<double>> EvaluationSeries => Entries.SelectMany<Entry, LineSeries<double>>(e => [e.Series, e.TrendSeries]);
     private readonly List<Entry> Entries = [];
 
-    public NetworkTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, TrainingConfig<TInput, TOutput> config, SimpleNetwork<TInput, TOutput, RecordingLayer> network) where TInput : notnull where TOutput : notnull
+    public NetworkTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, SimpleNetwork<TInput, TOutput, RecordingLayer> network, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
     {
         var entry = new Entry(name, color);
         config = config with

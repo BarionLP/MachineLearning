@@ -1,5 +1,11 @@
-﻿using System.Windows;
+﻿using System.Globalization;
+using System.Windows;
+using MachineLearning.Model;
+using MachineLearning.Model.Layer;
 using MachineLearning.Samples;
+using MachineLearning.Samples.MNIST;
+using MachineLearning.Serialization;
+using MachineLearning.Serialization.Activation;
 using SkiaSharp;
 
 namespace MachineLearning.Training.GUI;
@@ -17,15 +23,22 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = this;
 
-        var model = BinaryClassifier.GetModel();
-        var config = BinaryClassifier.GetTrainingConfig();
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        ActivationMethodSerializer.RegisterDefaults();
 
+        var serializer = new NetworkSerializer<double[], int, RecordingLayer>(AssetManager.GetModelFile("mnist.nnw"));
+        //var model = MNISTModel.GetModel();
+        var model = serializer.Load<SimpleNetwork<double[], int, RecordingLayer>>(MNISTEmbedder.Instance).ReduceOrThrow();
+        var config = MNISTModel.GetTrainingConfig();
 
-        var trainer = ProgressTracker.CreateLinkedTrainer("Binary Classifier", SKColors.Blue, config, model);
+        var trainer = ProgressTracker.CreateLinkedTrainer("Binary Classifier", SKColors.Blue, model, config);
 
-        Loaded += (sender, args) =>
+        Loaded += async (sender, args) =>
         {
-            Task.Run(trainer.Train);
+            StatusLabel.Content = "Training...";
+            await Task.Run(trainer.Train);
+            serializer.Save(model);
+            StatusLabel.Content = "Done!";
             //Task.Run(trainerTiny.Train);
         };
     }

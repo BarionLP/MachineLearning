@@ -1,4 +1,3 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.002.0
@@ -15,13 +14,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Training.GU
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Simple", "Simple\Simple.csproj", "{A72F4D5A-306B-4D52-A298-43B8E3E029FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj", "{F4768C27-F7E1-48ED-A828-5B51E9073939}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj", "{F4768C27-F7E1-48ED-A828-5B51E9073939}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Serialization", "MachineLearning.Serialization\MachineLearning.Serialization.csproj", "{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Serialization", "MachineLearning.Serialization\MachineLearning.Serialization.csproj", "{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Data", "MachineLearning.Data\MachineLearning.Data.csproj", "{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Data", "MachineLearning.Data\MachineLearning.Data.csproj", "{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Samples", "MachineLearning.Samples\MachineLearning.Samples.csproj", "{9E21246A-B637-4411-88E0-B6E47A2D51FD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Samples", "MachineLearning.Samples\MachineLearning.Samples.csproj", "{9E21246A-B637-4411-88E0-B6E47A2D51FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Benchmarks", "MachineLearning.Benchmarks\MachineLearning.Benchmarks.csproj", "{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,6 +70,10 @@ Global
 		{9E21246A-B637-4411-88E0-B6E47A2D51FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9E21246A-B637-4411-88E0-B6E47A2D51FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9E21246A-B637-4411-88E0-B6E47A2D51FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
