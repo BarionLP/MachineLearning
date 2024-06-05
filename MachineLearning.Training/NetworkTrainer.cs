@@ -11,7 +11,7 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
     public TrainingConfig<TInput, TOutput> Config { get; }
     public INetwork<TInput, TOutput, RecordingLayer> Network { get; }
     public IOptimizer Optimizer { get; }
-    internal NetworkTrainingContext<TInput, TOutput> Context { get; }
+    internal ModelTrainingContext<TInput, TOutput> Context { get; }
 
     public NetworkTrainer(TrainingConfig<TInput, TOutput> config, INetwork<TInput, TOutput, RecordingLayer> network)
     {

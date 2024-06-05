@@ -36,12 +36,15 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
 
         SecondMomentBiases = Vector.Create(Layer.OutputNodeCount);
         SecondMomentWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
+
+        weightGradients = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
     }
 
+    private readonly Matrix weightGradients;
     public void Update(Vector nodeValues)
     {
         // Compute the gradient for weights
-        var weightGradients = VectorHelper.MultiplyToMatrix(nodeValues, Layer.LastRawInput); // GradientCostWeights.AddInPlaceMultiplied ?
+        VectorHelper.MultiplyToMatrix(nodeValues, Layer.LastRawInput, weightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
 #if DEBUG
         if(nodeValues.AsSpan().Contains(double.NaN))
         {

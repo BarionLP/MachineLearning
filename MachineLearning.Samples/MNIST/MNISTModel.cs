@@ -10,7 +10,7 @@ public class MNISTModel
     {
         var initializer = new HeInitializer(random);
 
-        var network = NetworkBuilder.Recorded<double[], int>(784)
+        var network = ModelBuilder.Recorded<double[], int>(784)
                 .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
                 .SetEmbedder(MNISTEmbedder.Instance)
                 .AddLayer(256, initializer)

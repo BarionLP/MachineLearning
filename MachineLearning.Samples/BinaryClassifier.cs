@@ -5,7 +5,7 @@ public static class BinaryClassifier
     public static SimpleNetwork<double[], bool, RecordingLayer> GetModel()
     {
         var initializer = XavierInitializer.Instance;
-        return NetworkBuilder.Recorded<double[], bool>(2)
+        return ModelBuilder.Recorded<double[], bool>(2)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
             .SetEmbedder(new Embedder())
             .AddLayer(7, initializer)

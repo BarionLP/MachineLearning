@@ -8,7 +8,7 @@ public static class SimpleLM
     public static ModelDefinition GetModel(Random? random = null)
     {
         var initializer = new XavierInitializer(random);
-        return NetworkBuilder.Recorded<string, char>(ContextSize * 8)
+        return ModelBuilder.Recorded<string, char>(ContextSize * 8)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
             .SetEmbedder(new StringEmbedder(ContextSize))
             .AddLayer(1024, initializer)

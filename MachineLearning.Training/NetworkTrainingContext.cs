@@ -8,11 +8,11 @@ using System.Collections.Immutable;
 
 namespace MachineLearning.Training;
 
-internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, TOutput, RecordingLayer> network, TrainingConfig<TInput, TOutput> config, IOptimizer optimizer)
+internal sealed class ModelTrainingContext<TInput, TOutput>(INetwork<TInput, TOutput, RecordingLayer> model, TrainingConfig<TInput, TOutput> config, IOptimizer optimizer)
 {
-    internal INetwork<TInput, TOutput, RecordingLayer> Network = network;
+    internal INetwork<TInput, TOutput, RecordingLayer> Model = model;
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
-    internal ImmutableArray<ILayerOptimizer> LayerContexts = network.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
+    internal ImmutableArray<ILayerOptimizer> LayerContexts = model.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
     internal ILayerOptimizer OutputLayerOptimizer => LayerContexts[^1];
 
     public void Train(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch)
@@ -35,12 +35,11 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
         int correctCounter = 0;
         double totalCost = 0;
         var dataCounter = 0;
-        object _lock = new();
 
         foreach(var dataPoint in trainingBatch)
         {
            var weights = Update(dataPoint);
-           var result = Network.Embedder.UnEmbed(weights)!;
+           var result = Model.Embedder.UnEmbed(weights)!;
            if(result.Equals(dataPoint.Expected))
            {
                correctCounter++;
@@ -85,7 +84,7 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
 
     private Vector Update(DataEntry<TInput, TOutput> data)
     {
-        var result = Network.Forward(Network.Embedder.Embed(data.Input));
+        var result = Model.Forward(Model.Embedder.Embed(data.Input));
 
         var nodeValues = OutputLayerOptimizer.ComputeOutputLayerErrors(Config.OutputResolver.Expected(data.Expected));
         OutputLayerOptimizer.Update(nodeValues);

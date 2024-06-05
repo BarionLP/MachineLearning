@@ -5,7 +5,7 @@ using MachineLearning.Model.Layer.Initialization;
 
 namespace MachineLearning.Model;
 
-public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputNodeCount) where TNetwork : INetwork<TInput, TOutput, TLayer> where TLayer : ILayer
+public sealed class ModelBuilder<TNetwork, TInput, TOutput, TLayer>(int inputNodeCount) where TNetwork : INetwork<TInput, TOutput, TLayer> where TLayer : ILayer
 {
     private List<LayerBuilder<TLayer>> Layers { get; } = [];
     public int InputNodeCount { get; } = inputNodeCount;
@@ -13,17 +13,17 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
     public IEmbedder<TInput, TOutput>? Embedder { get; set; }
     public IActivationMethod DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
 
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetEmbedder(IEmbedder<TInput, TOutput> embedder)
+    public ModelBuilder<TNetwork, TInput, TOutput, TLayer> SetEmbedder(IEmbedder<TInput, TOutput> embedder)
     {
         Embedder = embedder;
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod activationMethod)
+    public ModelBuilder<TNetwork, TInput, TOutput, TLayer> SetDefaultActivationMethod(IActivationMethod activationMethod)
     {
         DefaultActivationMethod = activationMethod;
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount)
+    public ModelBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount)
     {
         Layers.Add(
             new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
@@ -31,7 +31,7 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
         );
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, ILayerInitializer initializer)
+    public ModelBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, ILayerInitializer initializer)
     {
         Layers.Add(
             new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
@@ -39,7 +39,7 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
         );
         return this;
     }
-    public NetworkBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, Action<LayerBuilder<TLayer>> consumer)
+    public ModelBuilder<TNetwork, TInput, TOutput, TLayer> AddLayer(int nodeCount, Action<LayerBuilder<TLayer>> consumer)
     {
         var layerBuilder = new LayerBuilder<TLayer>(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
             .SetActivationMethod(DefaultActivationMethod);
@@ -54,8 +54,8 @@ public sealed class NetworkBuilder<TNetwork, TInput, TOutput, TLayer>(int inputN
     }
 }
 
-public static class NetworkBuilder
+public static class ModelBuilder
 {
-    public static NetworkBuilder<SimpleNetwork<TInput, TOutput, RecordingLayer>, TInput, TOutput, RecordingLayer> Recorded<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
-    public static NetworkBuilder<SimpleNetwork<TInput, TOutput, SimpleLayer>, TInput, TOutput, SimpleLayer> Simple<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
+    public static ModelBuilder<SimpleNetwork<TInput, TOutput, RecordingLayer>, TInput, TOutput, RecordingLayer> Recorded<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
+    public static ModelBuilder<SimpleNetwork<TInput, TOutput, SimpleLayer>, TInput, TOutput, SimpleLayer> Simple<TInput, TOutput>(int inputNodeCount) => new(inputNodeCount);
 }
