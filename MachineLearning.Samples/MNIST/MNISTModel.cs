@@ -23,7 +23,7 @@ public class MNISTModel
 
     public static TrainingConfig<double[], int> GetTrainingConfig(Random? random = null)
     {
-        var dataSource = new MNISTDataSource(new(@"C:\Users\Barion\OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MNIST_ORG.zip"));
+        var dataSource = new MNISTDataSource(AssetManager.MNISTArchive);
 
         return new TrainingConfig<double[], int>()
         {
@@ -76,7 +76,7 @@ public class MNISTModel
 
         trainer.Train();
 
-        var images = new ImageDataSource(new(@"C:\Users\Barion\OneDrive\Digits"));
+        var images = new ImageDataSource(AssetManager.CustomDigits);
         var correctCounter = 0;
         var counter = 0;
         var previousColor = Console.ForegroundColor;

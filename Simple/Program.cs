@@ -6,7 +6,6 @@ using System.Globalization;
 //Console.WriteLine(LanguageDataSource.SpeechData(SimpleLM.ContextSize).Select(s=>s.Input).Take(128).Dump('\n'));
 //Console.WriteLine(new string(LanguageDataSource.GetLines("speech.txt").Dump(' ').Distinct().Order().ToArray()));
 
-//return;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 

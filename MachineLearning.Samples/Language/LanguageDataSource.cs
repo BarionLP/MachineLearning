@@ -7,7 +7,7 @@ public sealed class LanguageDataSource
     public const string TOKENS = " !\",-.0123456789:;?_abcdefghijklmnopqrstuvwxyz?ßäöü";
     public static IEnumerable<DataEntry<string, char>> SentencesData(int contextSize)
     {
-        var data = GetLines("sentences.txt")
+        var data = GetLines(AssetManager.Sentences.FullName)
             .Where(s => s.Length <= contextSize);
 
         foreach(var sentence in data)
@@ -21,7 +21,7 @@ public sealed class LanguageDataSource
 
     public static IEnumerable<DataEntry<string, char>> SpeechData(int contextSize)
     {
-        foreach(var sentence in GetLines("speech.txt"))
+        foreach(var sentence in GetLines(AssetManager.Speech.FullName))
         {
             var start = 0;
             for(var i = 4; i < sentence.Length; i++)
