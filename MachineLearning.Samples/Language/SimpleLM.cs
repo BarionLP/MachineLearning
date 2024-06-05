@@ -11,8 +11,8 @@ public static class SimpleLM
         return NetworkBuilder.Recorded<string, char>(ContextSize * 8)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
             .SetEmbedder(new StringEmbedder(ContextSize))
-            .AddLayer(2048 + 1024, initializer)
-            .AddLayer(512, initializer)
+            .AddLayer(1024, initializer)
+            .AddLayer(256, initializer) //512
             .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(initializer).SetActivationMethod(SoftmaxActivation.Instance))
             .Build();
     }
@@ -29,19 +29,19 @@ public static class SimpleLM
             TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
             TestSet = dataSet.Skip(trainingSetSize).ToArray(),
 
-            EpochCount = 12,
+            EpochCount = 4,
             BatchCount = 256,
 
             Optimizer = new AdamOptimizerConfig
             {
-                LearningRate = 0.08,
+                LearningRate = 0.09,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
             OutputResolver = new CharOutputResolver(),
 
             EvaluationCallback = result => Console.WriteLine(result.Dump()),
-            DumpEvaluationAfterBatches = 8,
+            DumpEvaluationAfterBatches = 16,
 
             RandomSource = random,
             ShuffleTrainingSetPerEpoch = true,
@@ -52,11 +52,11 @@ public static class SimpleLM
     public static ModelDefinition TrainDefault(ModelDefinition model, Random? random = null)
     {
         var config = GetTrainingConfig(random ?? Random.Shared);
-        var trainer = new NetworkTrainer<string, char>(config, model);
+        var trainer = ModelTrainer.Create(model, config);
 
         trainer.Train();
 
-        Generate("They ", model);
+        Generate("deutschland ", model);
 
         return model;
     }

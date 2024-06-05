@@ -41,7 +41,7 @@ public sealed class NetworkTrainer<TInput, TOutput> where TInput : notnull where
                 if((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = evaluation });
-                    Console.WriteLine($"Took {sw.Elapsed:ss\\.fff}s");
+                    Console.WriteLine($"Took {sw.Elapsed:mm\\:ss\\.fff}s");
                     sw.Restart();
                 }
                 batchCount++;

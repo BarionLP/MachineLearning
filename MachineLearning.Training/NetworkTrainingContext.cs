@@ -5,7 +5,6 @@ using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 using MachineLearning.Training.Optimization.Layer;
 using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
@@ -38,35 +37,19 @@ internal sealed class NetworkTrainingContext<TInput, TOutput>(INetwork<TInput, T
         var dataCounter = 0;
         object _lock = new();
 
-        //foreach(var dataPoint in trainingBatch)
-        //{
-        //    var weights = Update(dataPoint);
-        //    var result = Network.Embedder.UnEmbed(weights)!;
-        //    if(result.Equals(dataPoint.Expected))
-        //    {
-        //        correctCounter++;
-        //    }
-        //    dataCounter++;
-        //    totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
-        //}
-
-        Parallel.ForEach(trainingBatch, dataPoint =>
+        foreach(var dataPoint in trainingBatch)
         {
-            var weights = Update(dataPoint);
-            var result = Network.Embedder.UnEmbed(weights)!;
-            lock(_lock)
-            {
-                if(result.Equals(dataPoint.Expected))
-                {
-                    correctCounter++;
-                }
-                dataCounter++;
-                totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
-            }
-        });
+           var weights = Update(dataPoint);
+           var result = Network.Embedder.UnEmbed(weights)!;
+           if(result.Equals(dataPoint.Expected))
+           {
+               correctCounter++;
+           }
+           dataCounter++;
+           totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
+        }
 
         Apply(dataCounter);
-        //HasModelErrors();
 
         return new()
         {

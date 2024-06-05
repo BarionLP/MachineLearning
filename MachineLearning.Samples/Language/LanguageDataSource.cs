@@ -4,7 +4,7 @@ namespace MachineLearning.Samples.Language;
 
 public sealed class LanguageDataSource
 {
-    public const string TOKENS = " !\",-.0123456789:;?_abcdefghijklmnopqrstuvwxyz?ßäöü";
+    public const string TOKENS = " !\",-.0123456789:;?_abcdefghijklmnopqrstuvwxyzßäöü";
     public static IEnumerable<DataEntry<string, char>> SentencesData(int contextSize)
     {
         var data = GetLines(AssetManager.Sentences.FullName)
@@ -28,7 +28,7 @@ public sealed class LanguageDataSource
             {
                 if(i - start > contextSize)
                 {
-                    start = i - contextSize;
+                    start = sentence.AsSpan()[start..].IndexOf(' ') + 1 + start;
                 }
                 yield return new(sentence[start..i].Trim(), sentence[i]);
             }
