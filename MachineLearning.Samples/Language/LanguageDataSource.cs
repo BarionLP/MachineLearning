@@ -30,7 +30,7 @@ public sealed class LanguageDataSource
                 {
                     start = sentence.AsSpan()[start..].IndexOf(' ') + 1 + start;
                 }
-                yield return new(sentence[start..i].Trim(), sentence[i]);
+                yield return new(sentence[start..i], sentence[i]);
             }
         }
     }
