@@ -9,14 +9,16 @@ public sealed record TrainingConfig<TInput, TOutput>
 {
     public required DataEntry<TInput, TOutput>[] TrainingSet { get; init; }
     public required DataEntry<TInput, TOutput>[] TestSet { get; init; }
+    public bool ShuffleTrainingSetPerEpoch { get; init; } = false;
 
     public required int EpochCount { get; init; }
-    public required int BatchSize { get; init; }
+    public required int BatchCount { get; init; }
+    public int BatchSize => TrainingSet.Length / BatchCount;
 
-    public required IOptimizerConfig<Number> Optimizer { get; init; }
+    public required IOptimizerConfig Optimizer { get; init; }
 
     public IInputDataNoise<TInput> InputNoise { get; init; } = NoInputNoise<TInput>.Instance;
-    public required IOutputResolver<TOutput, Number[]> OutputResolver { get; init; }
+    public required IOutputResolver<TOutput> OutputResolver { get; init; }
 
     public Action<DataSetEvaluation>? EvaluationCallback { get; init; } = null;
     public bool DumpEvaluation => EvaluationCallback is not null;
@@ -27,16 +29,28 @@ public sealed record TrainingConfig<TInput, TOutput>
 
     public Epoch<TInput, TOutput> GetEpoch()
     {
-        return new Epoch<TInput, TOutput>((int)MathF.Ceiling(TrainingSet.Length / (float)BatchSize), GetBatches());
+        if(ShuffleTrainingSetPerEpoch)
+        {
+            Shuffle(TrainingSet);
+        }
+
+        return new Epoch<TInput, TOutput>((int) MathF.Ceiling(BatchCount), GetBatches());
 
         IEnumerable<Batch<TInput, TOutput>> GetBatches()
         {
-            var index = 0;
-            while (index < TrainingSet.Length)
+            foreach(var i in ..BatchCount)
             {
-                var batchSize = Math.Min(TrainingSet.Length - index, BatchSize);
-                yield return GetTrainingBatch(index, batchSize).ApplyNoise(InputNoise);
-                index += batchSize;
+                yield return GetTrainingBatch(i * BatchSize, BatchSize).ApplyNoise(InputNoise);
+            }
+        }
+
+        void Shuffle<T>(T[] array)
+        {
+            int n = array.Length;
+            for(int i = n - 1; i > 0; i--)
+            {
+                int j = RandomSource.Next(i + 1);
+                (array[i], array[j]) = (array[j], array[i]);
             }
         }
     }

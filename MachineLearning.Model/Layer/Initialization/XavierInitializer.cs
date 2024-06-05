@@ -3,23 +3,18 @@ namespace MachineLearning.Model.Layer.Initialization;
 /// <summary>
 /// suited for sigmoid, tanh and softmax activations
 /// </summary>
-public sealed class XavierInitializer(Random? random = null) : ILayerInitializer<double>
+public sealed class XavierInitializer(Random? random = null) : ILayerInitializer
 {
+    public static XavierInitializer Instance { get; } = new();
     public Random Random { get; } = random ?? Random.Shared;
 
-    public void Initialize(double[,] weights, double[] biases)
+    public void Initialize(Matrix weights, Vector biases)
     {
-        var inputCount = weights.GetLength(0);
-        var outputCount = biases.Length;
-        var stddev = Math.Sqrt(2.0 / (inputCount + outputCount));
+        var inputCount = weights.ColumnCount;
+        var outputCount = biases.Count;
+        var standartDeviation = Math.Sqrt(2.0 / (inputCount + outputCount));
 
-        for (int outputNodeIndex = 0; outputNodeIndex < outputCount; outputNodeIndex++)
-        {
-            for (int inputNodeIndex = 0; inputNodeIndex < inputCount; inputNodeIndex++)
-            {
-                weights[inputNodeIndex, outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, stddev);
-            }
-            biases[outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1);
-        }
+        weights.MapInPlace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, standartDeviation));
+        biases.MapInPlace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
     }
 }

@@ -19,7 +19,7 @@ public sealed class RandomInputNoise(float Strength, Random? Random = null) : II
     public double[] Apply(double[] data)
     {
         var result = new double[data.Length];
-        foreach (var i in ..data.Length)
+        foreach(var i in ..data.Length)
         {
             //clamp?
             result[i] = Math.Clamp(data[i] + (Random.NextDouble() - 0.5) * 2 * Strength, 0, 1);

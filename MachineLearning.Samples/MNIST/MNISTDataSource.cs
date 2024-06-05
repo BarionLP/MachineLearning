@@ -1,7 +1,6 @@
 using System.IO.Compression;
-using MachineLearning.Data.Entry;
 
-namespace MachineLearning.Data.Source;
+namespace MachineLearning.Samples.MNIST;
 
 public sealed class MNISTDataSource
 {
@@ -17,7 +16,7 @@ public sealed class MNISTDataSource
         var trainingLabels = ReadLabels(mnistArchive.GetEntry("train-labels.idx1-ubyte")!);
 
         TrainingSet = new ImageDataEntry[trainingImages.Length];
-        foreach (var i in ..trainingImages.Length)
+        foreach(var i in ..trainingImages.Length)
         {
             TrainingSet[i] = ImageDataEntry.FromRaw(trainingImages[i], trainingLabels[i]);
         }
@@ -26,7 +25,7 @@ public sealed class MNISTDataSource
         var testingLabels = ReadLabels(mnistArchive.GetEntry("t10k-labels.idx1-ubyte")!);
 
         TestingSet = new ImageDataEntry[testingImages.Length];
-        foreach (var i in ..testingImages.Length)
+        foreach(var i in ..testingImages.Length)
         {
             TestingSet[i] = ImageDataEntry.FromRaw(testingImages[i], testingLabels[i]);
         }
@@ -43,7 +42,7 @@ public sealed class MNISTDataSource
         var columnCount = reader.ReadInt32BigEndian();
 
         var images = new byte[imageCount][];
-        foreach (var i in ..imageCount)
+        foreach(var i in ..imageCount)
         {
             images[i] = reader.ReadBytes(rowCount * columnCount);
         }
@@ -58,7 +57,7 @@ public sealed class MNISTDataSource
         reader.ReadInt32BigEndian(); // magic starting value
         var labelCount = reader.ReadInt32BigEndian();
         var labels = new byte[labelCount];
-        foreach (var i in ..labelCount)
+        foreach(var i in ..labelCount)
         {
             labels[i] = reader.ReadByte();
         }

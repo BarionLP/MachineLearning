@@ -2,15 +2,15 @@
 
 namespace MachineLearning.Model.Layer;
 
-public interface ILayer<TData>
+public interface ILayer
 {
     public int InputNodeCount { get; }
     public int OutputNodeCount { get; }
-    public TData[,] Weights { get; }
-    public TData[] Biases { get; }
-    public IActivationMethod<TData> ActivationMethod { get; }
+    public Matrix Weights { get; }
+    public Vector Biases { get; }
+    public IActivationMethod ActivationFunction { get; }
 
-    public TData[] Process(TData[] input);
+    public Vector Forward(Vector input);
 
-    public virtual static ILayer<TData> Create(TData[,] weights, TData[] biases, IActivationMethod<TData> activationMethod) => throw new NotImplementedException();
+    public virtual static ILayer Create(Matrix weights, Vector biases, IActivationMethod activationMethod) => throw new NotImplementedException();
 }

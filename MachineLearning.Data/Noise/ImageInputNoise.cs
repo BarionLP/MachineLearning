@@ -15,19 +15,18 @@ public sealed class ImageInputNoise : IInputDataNoise<double[]>
 
     public double[] Apply(double[] data)
     {
-        var transfrom = new Transform2D
+        var transform = new Transform2D
         {
             Scale = Random.NextDouble(MinScale, MaxScale),
             Rotation = Angle.FromDegrees(Random.NextDouble(-MaxAngle, MaxAngle)),
             Offset = (Random.Next(-MaxShift, MaxShift), Random.Next(-MaxShift, MaxShift)),
         };
-        var transfromed = transfrom.ApplySmooth(data, Size);
-        foreach (var i in ..transfromed.Length)
-        {
-            transfromed[i] += (Random.NextDouble() - 0.5) * 2 * NoiseStrength;
-        }
-        return transfromed;
-    }
+        var transformed = transform.ApplySmooth(data, Size);
 
-    private int GetFlatIndex(int x, int y) => x + y * Size;
+        foreach(var i in ..transformed.Length)
+        {
+            transformed[i] += (Random.NextDouble() - 0.5) * 2 * NoiseStrength;
+        }
+        return transformed;
+    }
 }

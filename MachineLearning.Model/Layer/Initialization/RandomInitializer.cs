@@ -4,21 +4,15 @@ namespace MachineLearning.Model.Layer.Initialization;
 /// initializes from a normal distribution.<br/>
 /// not recommended
 /// </summary>
-public sealed class RandomInitializer(Random? random = null) : ILayerInitializer<double>
+public sealed class RandomInitializer(Random? random = null) : ILayerInitializer
 {
     public Random Random { get; } = random ?? Random.Shared;
 
-    public void Initialize(double[,] weights, double[] biases)
+    public void Initialize(Matrix weights, Vector biases)
     {
-        var sqrtInputNodeCount = Math.Sqrt(weights.GetLength(0));
+        var sqrtInputNodeCount = Math.Sqrt(weights.ColumnCount);
 
-        for (int outputNodeIndex = 0; outputNodeIndex < biases.Length; outputNodeIndex++)
-        {
-            for (int inputNodeIndex = 0; inputNodeIndex < weights.GetLength(0); inputNodeIndex++)
-            {
-                weights[inputNodeIndex, outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 1) / sqrtInputNodeCount;
-            }
-            biases[outputNodeIndex] = LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1);
-        }
+        weights.MapInPlace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 1) / sqrtInputNodeCount);
+        biases.MapInPlace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
     }
 }

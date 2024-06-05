@@ -3,11 +3,10 @@ using MachineLearning.Training.Optimization.Layer;
 
 namespace MachineLearning.Training.Optimization;
 
-public interface IOptimizer<TData> 
+public interface IOptimizer
 {
     public void Init() { }
     public void OnBatchCompleted() { }
     public void OnEpochCompleted() { }
-    public ILayerOptimizer<TData> CreateLayerOptimizer(RecordingLayer layer);
-
+    public ILayerOptimizer CreateLayerOptimizer(RecordingLayer layer);
 }

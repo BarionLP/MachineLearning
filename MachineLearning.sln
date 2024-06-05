@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Serializati
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Data", "MachineLearning.Data\MachineLearning.Data.csproj", "{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Samples", "MachineLearning.Samples\MachineLearning.Samples.csproj", "{9E21246A-B637-4411-88E0-B6E47A2D51FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6EEFFECC-C7DF-492B-A1F7-491F353BB55C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E21246A-B637-4411-88E0-B6E47A2D51FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E21246A-B637-4411-88E0-B6E47A2D51FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E21246A-B637-4411-88E0-B6E47A2D51FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E21246A-B637-4411-88E0-B6E47A2D51FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

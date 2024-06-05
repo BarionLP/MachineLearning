@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Frozen;
 
 namespace MachineLearning.Training;
 
@@ -7,28 +7,28 @@ namespace MachineLearning.Training;
 /// </summary>
 /// <typeparam name="TOutput">Network Output type</typeparam>
 /// <typeparam name="TData">Network Weight type</typeparam>
-public interface IOutputResolver<in TOutput, out TData>
+public interface IOutputResolver<in TOutput>
 {
-    public TData Expected(TOutput output);
+    public Vector Expected(TOutput output);
 }
 
-public sealed class MNISTOutputResolver : IOutputResolver<int, Number[]>
+public sealed class MNISTOutputResolver : IOutputResolver<int>
 {
-    public Number[] Expected(int output)
+    private readonly FrozenDictionary<int, Vector> _map = new Dictionary<int, Vector>(){
+        { 0, Vector.Of([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])},
+        { 1, Vector.Of([0, 1, 0, 0, 0, 0, 0, 0, 0, 0])},
+        { 2, Vector.Of([0, 0, 1, 0, 0, 0, 0, 0, 0, 0])},
+        { 3, Vector.Of([0, 0, 0, 1, 0, 0, 0, 0, 0, 0])},
+        { 4, Vector.Of([0, 0, 0, 0, 1, 0, 0, 0, 0, 0])},
+        { 5, Vector.Of([0, 0, 0, 0, 0, 1, 0, 0, 0, 0])},
+        { 6, Vector.Of([0, 0, 0, 0, 0, 0, 1, 0, 0, 0])},
+        { 7, Vector.Of([0, 0, 0, 0, 0, 0, 0, 1, 0, 0])},
+        { 8, Vector.Of([0, 0, 0, 0, 0, 0, 0, 0, 1, 0])},
+        { 9, Vector.Of([0, 0, 0, 0, 0, 0, 0, 0, 0, 1])},
+    }.ToFrozenDictionary();
+
+    public Vector Expected(int output)
     {
-        return output switch
-        {
-            0 => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            1 => [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            2 => [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-            3 => [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            4 => [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            5 => [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-            6 => [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            7 => [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-            8 => [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-            9 => [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            _ => throw new UnreachableException()
-        };
+        return _map[output];
     }
 }

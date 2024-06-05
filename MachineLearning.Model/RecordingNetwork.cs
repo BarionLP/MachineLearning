@@ -1,4 +1,4 @@
-﻿using MachineLearning.Model.Embedding;
+﻿/* using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Model;
@@ -24,4 +24,4 @@ public sealed class RecordingNetwork<TInput, TOutput>(RecordingLayer[] layers, I
 
     public static INetwork<TInput, Number, TOutput, RecordingLayer> Create(RecordingLayer[] layers, IEmbedder<TInput, Number[], TOutput> embedder)
         => new RecordingNetwork<TInput, TOutput>(layers, embedder);
-}
+} */

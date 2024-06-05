@@ -1,46 +1,40 @@
-﻿namespace MachineLearning.Domain.Activation;
+﻿using System.Runtime.InteropServices;
 
-public sealed class SoftmaxActivation : IActivationMethod<double>
+namespace MachineLearning.Domain.Activation;
+
+public sealed class SoftmaxActivation : IActivationMethod
 {
     public static readonly SoftmaxActivation Instance = new();
 
-    public double[] Activate(double[] input)
+    public void Activate(Vector input, Vector result)
     {
-        //var maxInput = input.Max(); // Subtracting max for numerical stability (update derivative!!!)
-        var result = new double[input.Length];
-        var sum = 0.0;
-
-        foreach (var i in ..input.Length)
-        {
-            result[i] = Math.Exp(input[i]/* -maxInput */);
-            sum += result[i];
-        }
-
-        foreach (var i in ..input.Length)
-        {
-            result[i] /= sum;
-        }
-
-        return result;
+        input.Map(Math.Exp, result);
+        var sum = result.Sum();
+        result.DivideInPlace(sum);
     }
 
-    // adapted from Sebastian Lague
-    public double[] Derivative(double[] input)
+    public void Derivative(Vector input, Vector result)
     {
-        var result = new double[input.Length];
+        input.Map(Math.Exp, result);
+        var sum = result.Sum();
+        var inverseSumSquared = 1 / (sum * sum);
+        //result.MapInPlace(ex => (ex * sum - ex * ex) * inverseSumSquared);
 
-        foreach (var i in ..input.Length)
+        ref var vectorPtr = ref MemoryMarshal.GetReference(result.AsSpan());
+        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
+        var mdSize = (nuint) SimdVector.Count;
+        var length = (nuint) result.Count;
+
+        nuint index = 0;
+        for(; index + mdSize <= length; index += mdSize)
         {
-            result[i] = Math.Exp(input[i]);
+            var simdVector = SimdVectorHelper.LoadUnsafe(ref vectorPtr, index);
+            SimdVectorHelper.StoreUnsafe((simdVector * sum - simdVector * simdVector) * inverseSumSquared, ref resultPtr, index);
         }
-        var expSum = result.Sum();
 
-        foreach (var i in ..result.Length)
+        for(; index < length; index++)
         {
-            var ex = result[i];
-            result[i] = (ex * expSum - ex * ex) / (expSum * expSum);
+            result[index] = (result[index] * sum - result[index] * result[index]) * inverseSumSquared;
         }
-
-        return result;
     }
 }

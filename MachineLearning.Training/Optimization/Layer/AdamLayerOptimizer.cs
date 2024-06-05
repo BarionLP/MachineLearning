@@ -3,24 +3,24 @@ using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.Layer;
 
-public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
+public sealed class AdamLayerOptimizer : ILayerOptimizer
 {
     public RecordingLayer Layer { get; }
     public ICostFunction CostFunction => Optimizer.Config.CostFunction;
     public AdamOptimizer Optimizer { get; }
 
-    public readonly Number[] GradientCostBiases;
-    public readonly Number[,] GradientCostWeights;
+    public readonly Vector GradientCostBiases;
+    public readonly Matrix GradientCostWeights;
 
     // formula symbol M 
     // exponentially decaying average of past gradients. It is akin to the mean of the gradients.
-    public readonly Number[] FirstMomentBiases;
-    public readonly Number[,] FirstMomentWeights;
+    public readonly Vector FirstMomentBiases;
+    public readonly Matrix FirstMomentWeights;
 
     // formula symbol V
     // exponentially decaying average of the squared gradients. It is akin to the uncentered variance of the gradients.
-    public readonly Number[] SecondMomentBiases;
-    public readonly Number[,] SecondMomentWeights;
+    public readonly Vector SecondMomentBiases;
+    public readonly Matrix SecondMomentWeights;
 
 
     public AdamLayerOptimizer(AdamOptimizer optimizer, RecordingLayer layer)
@@ -28,31 +28,32 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
         Optimizer = optimizer;
         Layer = layer;
 
-        GradientCostBiases = new Number[Layer.OutputNodeCount];
-        GradientCostWeights = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
+        GradientCostBiases = Vector.Create(Layer.OutputNodeCount);
+        GradientCostWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
 
-        FirstMomentBiases = new Number[Layer.OutputNodeCount];
-        FirstMomentWeights = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
+        FirstMomentBiases = Vector.Create(Layer.OutputNodeCount);
+        FirstMomentWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
 
-        SecondMomentBiases = new Number[Layer.OutputNodeCount];
-        SecondMomentWeights = new Number[Layer.InputNodeCount, Layer.OutputNodeCount];
+        SecondMomentBiases = Vector.Create(Layer.OutputNodeCount);
+        SecondMomentWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
     }
 
-    public void Update(double[] nodeValues)
+    public void Update(Vector nodeValues)
     {
-        foreach (int outputNodeIndex in ..Layer.OutputNodeCount)
+        // Compute the gradient for weights
+        var weightGradients = VectorHelper.MultiplyToMatrix(nodeValues, Layer.LastRawInput); // GradientCostWeights.AddInPlaceMultiplied ?
+#if DEBUG
+        if(nodeValues.AsSpan().Contains(double.NaN))
         {
-            foreach (int inputNodeIndex in ..Layer.InputNodeCount)
-            {
-                // partial derivative cost with respect to weight of current connection
-                var derivativeCostWrtWeight = Layer.LastRawInput[inputNodeIndex] * nodeValues[outputNodeIndex];
-                GradientCostWeights[inputNodeIndex, outputNodeIndex] += derivativeCostWrtWeight;
-            }
-
-            // derivative cost with respect to bias (bias' = 1)
-            var derivativeCostWrtBias = 1 * nodeValues[outputNodeIndex];
-            GradientCostBiases[outputNodeIndex] += derivativeCostWrtBias;
+            Console.WriteLine();
         }
+        if(weightGradients.AsSpan().Contains(double.NaN))
+        {
+            Console.WriteLine();
+        }
+#endif
+       GradientCostWeights.AddInPlace(weightGradients);
+       GradientCostBiases.AddInPlace(nodeValues);
     }
 
     public void Apply(int dataCounter)
@@ -61,59 +62,43 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer<Number>
         var averagedLearningRate = Optimizer.Config.LearningRate / Math.Sqrt(dataCounter);
 
         // parallelizing makes no difference
-        foreach (int outputNodeIndex in ..Layer.OutputNodeCount)
-            {
-            FirstMomentBiases[outputNodeIndex] = FirstMomentEstimate(FirstMomentBiases[outputNodeIndex], GradientCostBiases[outputNodeIndex]);
-            SecondMomentBiases[outputNodeIndex] = SecondMomentEstimate(SecondMomentBiases[outputNodeIndex], GradientCostBiases[outputNodeIndex]);
-            Layer.Biases[outputNodeIndex] -= WeightReduction(FirstMomentBiases[outputNodeIndex], SecondMomentBiases[outputNodeIndex]);
+        // Update biases
+        (FirstMomentBiases, GradientCostBiases).MapInFirst(FirstMomentEstimate);
+        (SecondMomentBiases, GradientCostBiases).MapInFirst(SecondMomentEstimate);
+        Layer.Biases.SubtractInPlace((FirstMomentBiases, SecondMomentBiases).Map(WeightReduction));
 
-            foreach (int inputNodeIndex in ..Layer.InputNodeCount)
-            {
-                FirstMomentWeights[inputNodeIndex, outputNodeIndex] = FirstMomentEstimate(FirstMomentWeights[inputNodeIndex, outputNodeIndex], GradientCostWeights[inputNodeIndex, outputNodeIndex]);
-                SecondMomentWeights[inputNodeIndex, outputNodeIndex] = SecondMomentEstimate(SecondMomentWeights[inputNodeIndex, outputNodeIndex], GradientCostWeights[inputNodeIndex, outputNodeIndex]);
-                Layer.Weights[inputNodeIndex, outputNodeIndex] -= WeightReduction(FirstMomentWeights[inputNodeIndex, outputNodeIndex], SecondMomentWeights[inputNodeIndex, outputNodeIndex]);
+        // Update weights
+        (FirstMomentWeights, GradientCostWeights).MapInPlaceOnFirst(FirstMomentEstimate);
+        (SecondMomentWeights, GradientCostWeights).MapInPlaceOnFirst(SecondMomentEstimate);
+        Layer.Weights.SubtractInPlace((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
-            }
-        }
-
-        double WeightReduction(double firstMoment, double secondMoment){
+        double WeightReduction(double firstMoment, double secondMoment)
+        {
             var mHat = firstMoment / (1 - Math.Pow(Optimizer.Config.FirstDecayRate, Optimizer.Iteration));
             var vHat = secondMoment / (1 - Math.Pow(Optimizer.Config.SecondDecayRate, Optimizer.Iteration));
             return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Config.Epsilon);
         }
-        double FirstMomentEstimate(double lastMoment, double gradient){
-            return Optimizer.Config.FirstDecayRate * lastMoment + (1 - Optimizer.Config.FirstDecayRate) * gradient;
-        }
-        double SecondMomentEstimate(double lastMoment, double gradient){
-            return Optimizer.Config.SecondDecayRate * lastMoment + (1 - Optimizer.Config.SecondDecayRate) * gradient*gradient;
-        }
+        double FirstMomentEstimate(double lastMoment, double gradient) 
+            => (Optimizer.Config.FirstDecayRate * lastMoment) + (1 - Optimizer.Config.FirstDecayRate) * gradient;
+
+        double SecondMomentEstimate(double lastMoment, double gradient) 
+            => (Optimizer.Config.SecondDecayRate * lastMoment) + (1 - Optimizer.Config.SecondDecayRate) * gradient * gradient;
     }
 
     public void GradientCostReset()
     {
-        foreach (var outputNodeIndex in ..Layer.OutputNodeCount)
-        {
-            GradientCostBiases[outputNodeIndex] = 0;
-            foreach (var inputNodeIndex in ..Layer.InputNodeCount)
-            {
-                GradientCostWeights[inputNodeIndex, outputNodeIndex] = 0;
-            }
-        }
+        GradientCostBiases.ResetZero();
+        GradientCostWeights.ResetZero();
     }
 
     public void FullReset()
     {
-        foreach (var outputNodeIndex in ..Layer.OutputNodeCount)
-        {
-            GradientCostBiases[outputNodeIndex] = 0;
-            FirstMomentBiases[outputNodeIndex] = 0;
-            SecondMomentBiases[outputNodeIndex] = 0;
-            foreach (var inputNodeIndex in ..Layer.InputNodeCount)
-            {
-                GradientCostWeights[inputNodeIndex, outputNodeIndex] = 0;
-                FirstMomentWeights[inputNodeIndex, outputNodeIndex] = 0;
-                SecondMomentWeights[inputNodeIndex, outputNodeIndex] = 0;
-            }
-        }
+        GradientCostBiases.ResetZero();
+        FirstMomentBiases.ResetZero();
+        SecondMomentBiases.ResetZero();
+
+        GradientCostWeights.ResetZero();
+        FirstMomentWeights.ResetZero();
+        SecondMomentWeights.ResetZero();
     }
 }

@@ -1,179 +1,33 @@
-﻿using MachineLearning.Domain.Activation;
-using MachineLearning.Model;
-using MachineLearning.Model.Embedding;
+﻿using MachineLearning.Model;
 using MachineLearning.Model.Layer;
-using MachineLearning.Model.Layer.Initialization;
+using MachineLearning.Samples;
+using MachineLearning.Samples.Language;
+using MachineLearning.Samples.MNIST;
 using MachineLearning.Serialization;
 using MachineLearning.Serialization.Activation;
-using MachineLearning.Training;
-using MachineLearning.Training.Cost;
-using MachineLearning.Training.Optimization;
-using Simple;
+using System.Globalization;
+using System.Text;
 
+
+//Console.WriteLine(new string(File.ReadAllText(AssetManager.Speech.FullName, Encoding.UTF8).ToLowerInvariant().Distinct().Order().ToArray()));
+//Console.WriteLine(new string(LanguageDataSource.GetLines(AssetManager.Speech.FullName).Dump(' ').Distinct().Order().ToArray()));
+//Console.WriteLine(LanguageDataSource.SpeechData(32).Select(e=>e.Input).Take(265).Dump('\n'));
+
+//return;
+
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 ActivationMethodSerializer.RegisterDefaults();
 
-int contextSize = 46;
-var dataSet = SimpleSentencesDataSource.GenerateData(contextSize).ToArray();
-new Random(128).Shuffle(dataSet);
+var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\speech.nnw"));
+var model = serializer.Load<SimpleNetwork<string, char, RecordingLayer>>(new StringEmbedder(SimpleLM.ContextSize)).ReduceOrThrow();
+//MNISTModel.TrainDefault(model, MNISTModel.GetTrainingConfig(random));
 
-var trainingSetSize = (int) (dataSet.Length * 0.9);
-var config = new TrainingConfig<string, char>() 
-{
-    TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
-    TestSet = dataSet.Skip(trainingSetSize).ToArray(),
-    
-    EpochCount = 8,
-    BatchSize = 128+32,
+//var random = new Random(69);
+//var random = Random.Shared;
+SimpleLM.TrainDefault(model);
 
-    Optimizer = new AdamOptimizerConfig
-    {
-        LearningRate = 0.08,
-        CostFunction = CrossEntropyLoss.Instance,
-    },
-    
-    OutputResolver = new CharOutputResolver(),
-    
-    EvaluationCallback = result => Console.WriteLine(result.Dump()),
-    DumpEvaluationAfterBatches = 16,
-    
-    RandomSource = new Random(42),
-};
-
-//var serializer = new NetworkSerializer<string, char, RecordingLayer>(new FileInfo(@"C:\Users\Nation\Downloads\sentencesv2.nnw"));
-/*
-
-var count = 0;
-foreach(var item in config.GetRandomTestBatch().ApplyNoise(inputNoise).Select(d=> new MNISTDataPoint(d.Input, d.Expected))){
-    item.SaveImage(new(@$"C:\Users\Nation\Downloads\digits\{count}.png"));
-    count++;
-}
-return;
-*/
-
-var setupRandom = new Random(69);
-var initializer = new XavierInitializer(setupRandom);
-var network = NetworkBuilder.Recorded<string, char>(contextSize * 8)
-    .SetDefaultActivationMethod(SigmoidActivation.Instance)
-    .SetEmbedder(new StringEmbedder(contextSize))
-    .AddLayer(512, initializer)
-    .AddLayer(256, initializer)
-    .AddLayer(64, initializer)
-    .AddLayer(32, initializer)
-    .AddLayer(8, initializer)
-    .Build();
-    
-//var network = serializer.Load<RecordingNetwork<string, char>>(new StringEmbedder(contextSize)).ReduceOrThrow();
-var trainer = new NetworkTrainer<string, char>(config, network);
-
-var trainingResults = trainer.Train();
-//Console.WriteLine(trainingResults.DumpShort());
-//Console.WriteLine(trainer.EvaluateShort().DumpCorrectPrecentages());
-
-//serializer.Save(network);
-
-var data = "They ".ToLowerInvariant();
-Console.Write(data);
-char prediction;
-do {
-    prediction = network.Process(data);
-    data += prediction;
-    Console.Write(prediction);
-}while(prediction != '.' && data.Length < 32);
-Console.WriteLine();
-
-class StringEmbedder(int contextSize) : IEmbedder<string, double[], char>
-{
-    public double[] Embed(string input)
-    {
-        var result = new double[8*input.Length];
-        
-        for(var ic = 0; ic < input.Length; ic++){
-            var c = input[ic];
-            for (int i = 0; i < 8; i++)
-            {
-                result[ic*8+i] = ((c & (1 << i)) != 0) ? 1.0 : 0.0;
-            }
-        }
-
-        return PadLeft(result, contextSize * 8);
-    }
-
-    static double[] PadLeft(double[] originalArray, int totalLength, double paddingValue = 0.0)
-    {
-        if (totalLength <= originalArray.Length)
-        {
-            throw new ArgumentException("Total length must be greater than the length of the original array.");
-        }
-
-        double[] paddedArray = new double[totalLength];
-        int paddingSize = totalLength - originalArray.Length;
-
-        for (int i = 0; i < paddingSize; i++)
-        {
-            paddedArray[i] = paddingValue;
-        }
-
-        for (int i = 0; i < originalArray.Length; i++)
-        {
-            paddedArray[i + paddingSize] = originalArray[i];
-        }
-
-        return paddedArray;
-    }
-
-
-    public char UnEmbed(double[] input)
-    {
-        if (input.Length != 8) throw new ArgumentException("Input length must be 8.");
-
-        byte result = 0;
-
-        for (int i = 0; i < 8; i++)
-        {
-            byte bit = (input[i] >= 0.5) ? (byte)1 : (byte)0;
-            result |= (byte)(bit << i);
-        }
-
-        return (char) result;
-    }
-}
-
-class CharOutputResolver : IOutputResolver<char, double[]>
-{
-    public double[] Expected(char b)
-    {
-        var result = new double[8];
-
-        for (int i = 0; i < 8; i++)
-        {
-            result[i] = ((b & (1 << i)) != 0) ? 1.0 : 0.0;
-        }
-
-        return result;
-    }
-} 
-
-//serializer.Save(network);
-
-//Console.WriteLine(trainer.Evaluate().DumpShort());
-
-/*
-var correctCounter  = 0;
-var counter = 0;
-var previousColor = Console.ForegroundColor;
-foreach(var image in images.DataSet) 
-{
-    var prediction = network.Process(image.Image);
-    if(prediction == image.Digit) correctCounter++;
-
-    Console.ForegroundColor = prediction == image.Digit ? ConsoleColor.Green : ConsoleColor.Red;
-    Console.WriteLine($"Predicted: {prediction}\tActual: {image.Digit}");
-    counter++;
-}
-Console.ForegroundColor = previousColor;
-Console.WriteLine($"Correct: {(double)correctCounter/counter:P0}");
-*/
+serializer.Save(model);
 
 /*
 When scaling up neural network models in size and complexity, various hyperparameters need adjustment to maintain or improve the model’s training efficiency and performance. Here's a table overview that outlines general trends for tweaking key hyperparameters like Epoch Count, Batch Size, Learning Rate, Learning Rate Multiplier, Momentum, and Regularization as the model size increases:

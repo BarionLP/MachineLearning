@@ -5,10 +5,13 @@
 /// helps with death neurons in <see cref="ReLUActivation"/> <br/>
 /// </summary>
 /// <param name="alpha">slope for x &lt; 0</param>
-public sealed class LeakyReLUActivation(Number alpha = 0.01) : ISimpleActivationMethod<Number>
+public sealed class LeakyReLUActivation(Weight alpha = 0.01) : ISimdActivationMethod
 {
     public static readonly LeakyReLUActivation Instance = new();
-    private readonly Number alpha = alpha;
-    public Number Activate(Number input) => input > 0 ? input : alpha * input;
-    public Number Derivative(Number input) => input > 0 ? 1 : alpha;
+    private readonly Weight alpha = alpha;
+    public Weight Activate(Weight input) => input > 0 ? input : alpha * input;
+    public SimdVector Activate(SimdVector input) => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), input, input * alpha);
+
+    public Weight Derivative(Weight input) => input > 0 ? 1 : alpha;
+    public SimdVector Derivative(SimdVector input) => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), SimdVector.One, new SimdVector(alpha));
 }
