@@ -38,19 +38,19 @@ public sealed class StringEmbedder(int contextSize) : IEmbedder<string, char>
 
     public char UnEmbed(Vector input)
     {
-        return LanguageDataSource.TOKENS[IndexOfMax(input)];
+        return LanguageDataSource.TOKENS[GetWeightedRandomIndex(input)];
 
-        //static int GetWeightedRandomIndex(Vector weights)
-        //{
-        //    var value = Random.Shared.NextDouble();
-        //    for(int i = 0; i < weights.Count; i++)
-        //    {
-        //        value -= weights[i];
-        //        if(value < 0)
-        //            return i;
-        //    }
-        //    return weights.Count - 1;
-        //}
+        static int GetWeightedRandomIndex(Vector weights)
+        {
+           var value = Random.Shared.NextDouble();
+           for(int i = 0; i < weights.Count; i++)
+           {
+               value -= weights[i];
+               if(value < 0)
+                   return i;
+           }
+           return weights.Count - 1;
+        }
 
         static int IndexOfMax(Vector weights)
         {
