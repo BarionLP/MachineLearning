@@ -22,7 +22,7 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
         Context = new(model, config, Optimizer);
     }
 
-    public void Train()
+    public void Train(CancellationToken? token = null)
     {
         //var before = EvaluateShort();
         Optimizer.Init();
@@ -44,6 +44,11 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
                 }
                 batchCount++;
                 Optimizer.OnBatchCompleted();
+
+                if(token?.IsCancellationRequested is true){
+                    Optimizer.OnEpochCompleted();
+                    return;
+                }
             }
 
             Optimizer.OnEpochCompleted();
