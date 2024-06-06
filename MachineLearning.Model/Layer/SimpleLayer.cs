@@ -14,10 +14,10 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod
     public Vector Forward(Vector input)
     {
         // TODO: can i just operate on input?
-        Weights.Multiply(input, input);
-        input.AddInPlace(Biases);
-        ActivationFunction.Activate(input, input);
+        var result = Weights.Multiply(input);
+        result.AddInPlace(Biases);
+        ActivationFunction.Activate(result, result);
 
-        return input;
+        return result;
     }
 }

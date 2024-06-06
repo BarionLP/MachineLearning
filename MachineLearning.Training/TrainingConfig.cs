@@ -34,7 +34,7 @@ public sealed record TrainingConfig<TInput, TOutput>
             Shuffle(TrainingSet);
         }
 
-        return new Epoch<TInput, TOutput>((int) MathF.Ceiling(BatchCount), GetBatches());
+        return new Epoch<TInput, TOutput>(BatchCount, GetBatches());
 
         IEnumerable<Batch<TInput, TOutput>> GetBatches()
         {

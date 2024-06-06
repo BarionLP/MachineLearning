@@ -51,7 +51,10 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var reader = new BinaryReader(stream);
         var version = reader.ReadUInt32();
         if(version != VERSION)
+        {
             throw new InvalidDataException();
+        }
+
         var layerCount = reader.ReadInt32();
         var layers = new SimpleLayer[layerCount];
 

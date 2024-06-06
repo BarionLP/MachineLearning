@@ -24,9 +24,6 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
 
     public void Train()
     {
-        // for each epoch 
-        // train on all batches
-
         //var before = EvaluateShort();
         Optimizer.Init();
         Context.FullReset();
