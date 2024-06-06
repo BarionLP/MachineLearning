@@ -8,5 +8,5 @@ public interface IOptimizer
     public void Init() { }
     public void OnBatchCompleted() { }
     public void OnEpochCompleted() { }
-    public ILayerOptimizer CreateLayerOptimizer(RecordingLayer layer);
+    public ILayerOptimizer CreateLayerOptimizer(SimpleLayer layer);
 }

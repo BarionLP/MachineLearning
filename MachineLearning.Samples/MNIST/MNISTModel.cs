@@ -1,6 +1,6 @@
 ﻿using MachineLearning.Data.Noise;
 using MachineLearning.Data.Source;
-using ModelDefinition = MachineLearning.Model.SimpleNetwork<double[], int, MachineLearning.Model.Layer.RecordingLayer>;
+using ModelDefinition = MachineLearning.Model.EmbeddedModel<double[], int>;
 
 namespace MachineLearning.Samples.MNIST;
 
@@ -10,13 +10,12 @@ public class MNISTModel
     {
         var initializer = new HeInitializer(random);
 
-        var network = ModelBuilder.Recorded<double[], int>(784)
+        var network = new ModelBuilder(784)
                 .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
-                .SetEmbedder(MNISTEmbedder.Instance)
                 .AddLayer(256, initializer)
                 .AddLayer(128, initializer)
                 .AddLayer(10, builder => builder.SetActivationMethod(SoftmaxActivation.Instance).Initialize(new XavierInitializer(random)))
-                .Build();
+                .Build(MNISTEmbedder.Instance);
 
         return network;
     }

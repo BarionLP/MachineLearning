@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod Activation) : ILayer
+public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod Activation)
 {
     public int InputNodeCount { get; } = Weights.ColumnCount;
     public int OutputNodeCount { get; } = Biases.Count;
@@ -20,6 +20,4 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod
 
         return input;
     }
-
-    public static ILayer Create(Matrix weights, Vector biases, IActivationMethod activationMethod) => new SimpleLayer(weights, biases, activationMethod);
 }

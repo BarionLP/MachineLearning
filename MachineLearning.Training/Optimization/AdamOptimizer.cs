@@ -12,5 +12,5 @@ public sealed class AdamOptimizer(AdamOptimizerConfig config) : IOptimizer
     {
         Iteration++;
     }
-    public ILayerOptimizer CreateLayerOptimizer(RecordingLayer layer) => new AdamLayerOptimizer(this, layer);
+    public ILayerOptimizer CreateLayerOptimizer(SimpleLayer layer) => new AdamLayerOptimizer(this, layer);
 }

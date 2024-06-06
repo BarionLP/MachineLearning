@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using SimdVector = System.Numerics.Vector<double>;
 using SimdVectorHelper = System.Numerics.Vector;
 
-namespace Simple.Benchy;
+namespace MachineLearning.Benchmarks;
 
 public class RandomBenchmarks
 {

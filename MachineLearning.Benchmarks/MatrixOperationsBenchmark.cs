@@ -1,6 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 
-namespace Simple.Benchy;
+namespace MachineLearning.Benchmarks;
 
 //[SimpleJob]
 public class MatrixOperationsBenchmark

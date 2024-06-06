@@ -5,17 +5,17 @@ namespace MachineLearning.Training.Optimization.Layer;
 
 public interface ILayerOptimizer
 {
-    public RecordingLayer Layer { get; }
+    public SimpleLayer Layer { get; }
     public ICostFunction CostFunction { get; }
-    public void Update(Vector nodeValues);
+    public void Update(Vector nodeValues, LayerSnapshot snapshot);
     public void Apply(int dataCounter);
     public void GradientCostReset();
     public void FullReset();
 
-    public Vector ComputeOutputLayerErrors(Vector expected)
+    public Vector ComputeOutputLayerErrors(Vector expected, LayerSnapshot snapshot)
     {
-        var activationDerivatives = Layer.ActivationFunction.Derivative(Layer.LastWeightedInput);
-        var costDerivatives = CostFunction.Derivative(Layer.LastActivatedWeights, expected);
+        var activationDerivatives = Layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
+        var costDerivatives = CostFunction.Derivative(snapshot.LastActivatedWeights, expected);
 #if DEBUG
         if(activationDerivatives.AsSpan().Contains(double.NaN))
         {
@@ -31,9 +31,9 @@ public interface ILayerOptimizer
         return costDerivatives;
     }
 
-    public Vector ComputeHiddenLayerErrors(RecordingLayer nextLayer, Vector nextErrors)
+    public Vector ComputeHiddenLayerErrors(SimpleLayer nextLayer, Vector nextErrors, LayerSnapshot snapshot)
     {
-        var activationDerivatives = Layer.ActivationFunction.Derivative(Layer.LastWeightedInput);
+        var activationDerivatives = Layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
         var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights); // other option? cannot be simded
         weightedInputDerivatives.PointwiseMultiplyInPlace(activationDerivatives);
 
