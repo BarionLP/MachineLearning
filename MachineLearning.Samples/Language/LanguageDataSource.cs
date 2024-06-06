@@ -2,39 +2,46 @@
 
 namespace MachineLearning.Samples.Language;
 
-public sealed class LanguageDataSource
+public static class LanguageDataSource
 {
     public const string TOKENS = " !\",-.0123456789:;?_abcdefghijklmnopqrstuvwxyzßäöü";
-    public static IEnumerable<DataEntry<string, char>> SentencesData(int contextSize)
-    {
-        var data = GetLines(AssetManager.Sentences.FullName)
-            .Where(s => s.Length <= contextSize);
+    public static IEnumerable<DataEntry<string, char>> SentencesData(int contextSize) 
+        => GetLines(AssetManager.Sentences.FullName).InContextSize(contextSize).ExpandPerChar();
 
-        foreach(var sentence in data)
+    public static IEnumerable<DataEntry<string, char>> SpeechData(int contextSize) 
+        => GetLines(AssetManager.Speech.FullName).SlidingWindow(contextSize);
+
+    public static IEnumerable<string> InContextSize(this IEnumerable<string> data, int contextSize) 
+        => data.Where(s => s.Length <= contextSize);
+
+    public static IEnumerable<DataEntry<string, char>> ExpandPerChar(this IEnumerable<string> data)
+    {
+        foreach (var sentence in data)
         {
-            for(var i = 3; i < sentence.Length; i++)
+            for (var i = 3; i < sentence.Length; i++)
             {
                 yield return new(sentence[..i], sentence[i]);
             }
         }
     }
 
-    public static IEnumerable<DataEntry<string, char>> SpeechData(int contextSize)
+    public static IEnumerable<DataEntry<string, char>> SlidingWindow(this IEnumerable<string> data, int contextSize)
     {
-        foreach(var sentence in GetLines(AssetManager.Speech.FullName))
+        foreach (var sentence in data)
         {
             var start = 0;
-            for(var i = 4; i < sentence.Length; i++)
+            for (var i = 4; i < sentence.Length; i++)
             {
-                if(i - start > contextSize)
+                if (i - start > contextSize)
                 {
                     start = sentence.AsSpan()[start..].IndexOf(' ') + 1 + start;
                 }
-                yield return new(sentence[start..i], sentence[i]);
+                yield return new (sentence[start..i], sentence[i]);
             }
         }
     }
 
+    public static IEnumerable<string> GetLines(FileInfo fileInfo) => GetLines(fileInfo.FullName);
     public static IEnumerable<string> GetLines(string path)
         => File.ReadAllText(path, Encoding.UTF8).ToLowerInvariant()
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
