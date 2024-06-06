@@ -26,9 +26,9 @@ public partial class MainWindow : Window
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         ActivationMethodSerializer.RegisterDefaults();
 
-        var serializer = new NetworkSerializer<double[], int, RecordingLayer>(AssetManager.GetModelFile("mnist.nnw"));
+        var serializer = new ModelSerializer(AssetManager.GetModelFile("mnist.nnw"));
         //var model = MNISTModel.GetModel();
-        var model = serializer.Load<SimpleNetwork<double[], int, RecordingLayer>>(MNISTEmbedder.Instance).ReduceOrThrow();
+        var model = serializer.Load(MNISTEmbedder.Instance).ReduceOrThrow();
         var config = MNISTModel.GetTrainingConfig();
 
         var trainer = ProgressTracker.CreateLinkedTrainer("Binary Classifier", SKColors.Blue, model, config);

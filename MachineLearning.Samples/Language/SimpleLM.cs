@@ -1,4 +1,4 @@
-﻿using ModelDefinition = MachineLearning.Model.SimpleNetwork<string, char, MachineLearning.Model.Layer.RecordingLayer>;
+﻿using ModelDefinition = MachineLearning.Model.EmbeddedModel<string, char>;
 
 namespace MachineLearning.Samples.Language;
 
@@ -8,13 +8,12 @@ public static class SimpleLM
     public static ModelDefinition GetModel(Random? random = null)
     {
         var initializer = new XavierInitializer(random);
-        return ModelBuilder.Recorded<string, char>(ContextSize * 8)
+        return new ModelBuilder(ContextSize * 8)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
-            .SetEmbedder(new StringEmbedder(ContextSize))
             .AddLayer(1024, initializer)
             .AddLayer(256, initializer) //512
             .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(initializer).SetActivationMethod(SoftmaxActivation.Instance))
-            .Build();
+            .Build(new StringEmbedder(ContextSize));
     }
 
     public static TrainingConfig<string, char> GetTrainingConfig(Random? random = null)

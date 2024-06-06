@@ -2,6 +2,7 @@
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Serialization.Activation;
+using System.Collections.Immutable;
 
 namespace MachineLearning.Serialization;
 
@@ -11,17 +12,18 @@ namespace MachineLearning.Serialization;
 /// <typeparam name="TInput">network input type</typeparam>
 /// <typeparam name="TOutput">network output type</typeparam>
 /// <typeparam name="TLayer">layer type</typeparam>
-public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo) where TLayer : ILayer
+public sealed class ModelSerializer(FileInfo fileInfo)
 {
     public const uint VERSION = 2;
 
-    public ResultFlag Save(INetwork<TInput, TOutput, TLayer> network)
+    public ResultFlag Save<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model) => Save(model.InternalModel);
+    public ResultFlag Save(SimpleModel model)
     {
         using var stream = fileInfo.Create();
         var writer = new BinaryWriter(stream);
-        writer.Write(VERSION); // version
-        writer.Write(network.Layers.Length);
-        foreach(var layer in network.Layers)
+        writer.Write(VERSION);
+        writer.Write(model.Layers.Length);
+        foreach(var layer in model.Layers)
         {
             writer.Write(layer.InputNodeCount);
             writer.Write(layer.OutputNodeCount);
@@ -42,8 +44,8 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
         return ResultFlag.Succeeded;
     }
 
-    //TODO: Serialize embedder (is it even possible?!)
-    public Result<TNetwork> Load<TNetwork>(IEmbedder<TInput, TOutput> embedder) where TNetwork : INetwork<TInput, TOutput, TLayer>
+    public Result<EmbeddedModel<TInput, TOutput>> Load<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => Load().Map(model => new EmbeddedModel<TInput, TOutput>(model, embedder));
+    public Result<SimpleModel> Load()
     {
         using var stream = fileInfo.OpenRead();
         var reader = new BinaryReader(stream);
@@ -51,14 +53,14 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
         if(version != VERSION)
             throw new InvalidDataException();
         var layerCount = reader.ReadInt32();
-        var layers = new TLayer[layerCount];
+        var layers = new SimpleLayer[layerCount];
 
         foreach(var layerIndex in ..layerCount)
         {
             var inputNodeCount = reader.ReadInt32();
             var outputNodeCount = reader.ReadInt32();
             var activationMethod = ActivationMethodSerializer.Read(reader);
-            var layerBuilder = new LayerBuilder<TLayer>(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
+            var layerBuilder = new LayerBuilder(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
 
             // decode weights & biases
             foreach(var outputIndex in ..outputNodeCount)
@@ -72,6 +74,6 @@ public sealed class NetworkSerializer<TInput, TOutput, TLayer>(FileInfo fileInfo
             layers[layerIndex] = layerBuilder.Build();
         }
 
-        return (TNetwork) TNetwork.Create(layers, embedder);
+        return new SimpleModel([.. layers]);
     }
 }

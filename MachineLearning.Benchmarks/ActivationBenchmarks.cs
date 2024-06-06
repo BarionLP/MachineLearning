@@ -2,7 +2,7 @@
 using MachineLearning.Domain.Activation;
 using System.Buffers;
 
-namespace Simple.Benchy;
+namespace MachineLearning.Benchmarks;
 
 public class ActivationBenchmarks
 {

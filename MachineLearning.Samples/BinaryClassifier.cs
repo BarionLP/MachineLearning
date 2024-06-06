@@ -2,16 +2,15 @@
 
 public static class BinaryClassifier
 {
-    public static SimpleNetwork<double[], bool, RecordingLayer> GetModel()
+    public static EmbeddedModel<double[], bool> GetModel()
     {
         var initializer = XavierInitializer.Instance;
-        return ModelBuilder.Recorded<double[], bool>(2)
+        return new ModelBuilder(2)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
-            .SetEmbedder(new Embedder())
             .AddLayer(7, initializer)
             .AddLayer(4, initializer)
             .AddLayer(2, initializer)
-            .Build();
+            .Build(new Embedder());
     }
 
     public static TrainingConfig<double[], bool> GetTrainingConfig()
@@ -43,7 +42,7 @@ public static class BinaryClassifier
 
         var model = GetModel();
         var config = GetTrainingConfig();
-        var trainer = new NetworkTrainer<double[], bool>(config, model);
+        var trainer = ModelTrainer.Create(model, config);
 
         trainer.Train();
 

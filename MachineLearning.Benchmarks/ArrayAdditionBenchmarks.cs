@@ -1,7 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Vector = System.Numerics.Vector<double>;
 
-namespace Simple.Benchy;
+namespace MachineLearning.Benchmarks;
 
 public class ArrayAdditionBenchmarks
 {

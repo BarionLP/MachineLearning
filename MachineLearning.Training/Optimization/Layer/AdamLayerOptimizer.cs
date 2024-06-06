@@ -5,7 +5,7 @@ namespace MachineLearning.Training.Optimization.Layer;
 
 public sealed class AdamLayerOptimizer : ILayerOptimizer
 {
-    public RecordingLayer Layer { get; }
+    public SimpleLayer Layer { get; }
     public ICostFunction CostFunction => Optimizer.Config.CostFunction;
     public AdamOptimizer Optimizer { get; }
 
@@ -23,7 +23,7 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
     public readonly Matrix SecondMomentWeights;
 
 
-    public AdamLayerOptimizer(AdamOptimizer optimizer, RecordingLayer layer)
+    public AdamLayerOptimizer(AdamOptimizer optimizer, SimpleLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;
@@ -36,27 +36,26 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
 
         SecondMomentBiases = Vector.Create(Layer.OutputNodeCount);
         SecondMomentWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
-
-        weightGradients = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
     }
 
-    private readonly Matrix weightGradients;
-    public void Update(Vector nodeValues)
+    public void Update(Vector nodeValues, LayerSnapshot snapshot)
     {
         // Compute the gradient for weights
-        VectorHelper.MultiplyToMatrix(nodeValues, Layer.LastRawInput, weightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
+        VectorHelper.MultiplyToMatrix(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
 #if DEBUG
         if(nodeValues.AsSpan().Contains(double.NaN))
         {
             Console.WriteLine();
         }
-        if(weightGradients.AsSpan().Contains(double.NaN))
+        if(snapshot.WeightGradients.AsSpan().Contains(double.NaN))
         {
             Console.WriteLine();
         }
 #endif
-       GradientCostWeights.AddInPlace(weightGradients);
-       GradientCostBiases.AddInPlace(nodeValues);
+
+        // lock when multi threading
+        GradientCostWeights.AddInPlace(snapshot.WeightGradients);
+        GradientCostBiases.AddInPlace(nodeValues);
     }
 
     public void Apply(int dataCounter)
