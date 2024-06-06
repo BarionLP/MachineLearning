@@ -93,20 +93,27 @@ public sealed class LayerSnapshot(int inputNodes, int outputNodes)
     public Vector LastActivatedWeights = Vector.Create(outputNodes);
     public Matrix WeightGradients = Matrix.Create(outputNodes, inputNodes);
 
+    private static readonly object _lock = new();
     public static LayerSnapshot Get(SimpleLayer layer)
     {
-        var list = _registry.GetOrCreate(layer, static ()=> []);
-        if(list.Count == 0)
+        lock(_lock)
         {
-            return new LayerSnapshot(layer.InputNodeCount, layer.OutputNodeCount);
-        }
+            var list = _registry.GetOrCreate(layer, static ()=> []);
+            if(list.Count == 0)
+            {
+                return new LayerSnapshot(layer.InputNodeCount, layer.OutputNodeCount);
+            }
 
-        return list.Dequeue();
+            return list.Dequeue();
+        }
     }
 
     public static void Return(SimpleLayer layer, LayerSnapshot snapshot)
     {
-        _registry[layer].Enqueue(snapshot);
+        lock(_lock)
+        {
+            _registry[layer].Enqueue(snapshot);
+        }
     }
 }
 

@@ -37,18 +37,35 @@ internal sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput
         int correctCounter = 0;
         double totalCost = 0;
         var dataCounter = 0;
+        object _lock = new();
 
-        foreach(var dataPoint in trainingBatch)
+        //foreach(var dataPoint in trainingBatch)
+        //{
+        //   var weights = Update(dataPoint);
+        //   var result = Embedder.UnEmbed(weights)!;
+        //   if(result.Equals(dataPoint.Expected))
+        //   {
+        //       correctCounter++;
+        //   }
+        //   dataCounter++;
+        //   totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
+        //}
+
+        Parallel.ForEach(trainingBatch, (dataPoint) =>
         {
-           var weights = Update(dataPoint);
-           var result = Embedder.UnEmbed(weights)!;
-           if(result.Equals(dataPoint.Expected))
-           {
-               correctCounter++;
-           }
-           dataCounter++;
-           totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
-        }
+            var weights = Update(dataPoint);
+            var result = Embedder.UnEmbed(weights)!;
+
+            lock(_lock)
+            {
+                if(result.Equals(dataPoint.Expected))
+                {
+                    correctCounter++;
+                }
+                dataCounter++;
+                totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
+            }
+        });
 
         Apply(dataCounter);
 

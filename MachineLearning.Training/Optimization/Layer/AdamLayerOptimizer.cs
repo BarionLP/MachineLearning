@@ -38,6 +38,7 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
         SecondMomentWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
     }
 
+    private readonly object _lock = new();
     public void Update(Vector nodeValues, LayerSnapshot snapshot)
     {
         // Compute the gradient for weights
@@ -53,9 +54,11 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
         }
 #endif
 
-        // lock when multi threading
-        GradientCostWeights.AddInPlace(snapshot.WeightGradients);
-        GradientCostBiases.AddInPlace(nodeValues);
+        lock(_lock)
+        { 
+            GradientCostWeights.AddInPlace(snapshot.WeightGradients);
+            GradientCostBiases.AddInPlace(nodeValues);
+        }
     }
 
     public void Apply(int dataCounter)
