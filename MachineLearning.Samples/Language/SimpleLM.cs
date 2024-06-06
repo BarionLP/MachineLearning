@@ -20,7 +20,7 @@ public static class SimpleLM
     public static TrainingConfig<string, char> GetTrainingConfig(Random? random = null)
     {
         random ??= Random.Shared;
-        var dataSet = LanguageDataSource.SpeechData(ContextSize).ToArray();
+        var dataSet = LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(ContextSize).ExpandPerChar().ToArray();
         random.Shuffle(dataSet);
 
         var trainingSetSize = (int) (dataSet.Length * 0.9);
@@ -29,7 +29,7 @@ public static class SimpleLM
             TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
             TestSet = dataSet.Skip(trainingSetSize).ToArray(),
 
-            EpochCount = 4,
+            EpochCount = 1,
             BatchCount = 256,
 
             Optimizer = new AdamOptimizerConfig
@@ -61,6 +61,7 @@ public static class SimpleLM
         return model;
     }
 
+    private const string EndSymbols = ".!?";
     public static void Generate(string input, ModelDefinition model)
     {
         input = input.ToLowerInvariant();
@@ -71,7 +72,7 @@ public static class SimpleLM
             prediction = model.Process(input);
             input += prediction;
             Console.Write(prediction);
-        } while(prediction != '.' && input.Length < ContextSize);
+        } while(!EndSymbols.Contains(prediction) && input.Length < ContextSize);
         Console.WriteLine();
     }
 
