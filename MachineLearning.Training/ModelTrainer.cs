@@ -2,6 +2,7 @@
 using MachineLearning.Model.Layer;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
@@ -35,7 +36,7 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
 
             foreach(var batch in epoch)
             {
-                var evaluation = Context.TrainAndEvaluate(batch);
+                var evaluation = Context.TrainAndEvaluate(batch, true);
                 if((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = evaluation });
@@ -60,7 +61,6 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
                 CurrentEpoch = epochIndex + 1,
                 MaxEpoch = Config.EpochCount,
                 LearnRate = Config.Optimizer.LearningRate,
-
             };
         }
 
@@ -87,33 +87,36 @@ public static class ModelTrainer
 
 public sealed class LayerSnapshot(int inputNodes, int outputNodes)
 {
-    private static readonly Dictionary<SimpleLayer, Queue<LayerSnapshot>> _registry = [];
+    private static readonly ConcurrentDictionary<SimpleLayer, ConcurrentQueue<LayerSnapshot>> _registry = [];
     public Vector LastRawInput = Vector.Empty;
-    public Vector LastWeightedInput = Vector.Create(outputNodes);
-    public Vector LastActivatedWeights = Vector.Create(outputNodes);
-    public Matrix WeightGradients = Matrix.Create(outputNodes, inputNodes);
+    public readonly Vector LastWeightedInput = Vector.Create(outputNodes);
+    public readonly Vector LastActivatedWeights = Vector.Create(outputNodes);
+    public readonly Matrix WeightGradients = Matrix.Create(outputNodes, inputNodes);
+    //private bool _isUsed = true;
 
-    private static readonly object _lock = new();
+    //private static readonly object _lock = new();
     public static LayerSnapshot Get(SimpleLayer layer)
     {
-        lock(_lock)
+        var queue = _registry.GetOrAdd(layer, static (layer) => []);
+        
+        if (queue.TryDequeue(out var snapshot))
         {
-            var list = _registry.GetOrCreate(layer, static ()=> []);
-            if(list.Count == 0)
-            {
-                return new LayerSnapshot(layer.InputNodeCount, layer.OutputNodeCount);
-            }
-
-            return list.Dequeue();
+            //Debug.Assert(!snapshot._isUsed);
+            //snapshot._isUsed = true;
+            return snapshot;
         }
+
+        return new LayerSnapshot(layer.InputNodeCount, layer.OutputNodeCount);
     }
 
     public static void Return(SimpleLayer layer, LayerSnapshot snapshot)
     {
-        lock(_lock)
-        {
-            _registry[layer].Enqueue(snapshot);
-        }
+        //Debug.Assert(snapshot._isUsed);
+        //snapshot.LastWeightedInput.ResetZero();
+        //snapshot.LastActivatedWeights.ResetZero();
+        //snapshot.WeightGradients.ResetZero();
+        //snapshot._isUsed = false;
+        _registry[layer].Enqueue(snapshot);
     }
 }
 

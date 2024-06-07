@@ -73,8 +73,8 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
         Layer.Biases.SubtractInPlace((FirstMomentBiases, SecondMomentBiases).Map(WeightReduction));
 
         // Update weights
-        (FirstMomentWeights, GradientCostWeights).MapInPlaceOnFirst(FirstMomentEstimate);
-        (SecondMomentWeights, GradientCostWeights).MapInPlaceOnFirst(SecondMomentEstimate);
+        (FirstMomentWeights, GradientCostWeights).MapInFirst(FirstMomentEstimate);
+        (SecondMomentWeights, GradientCostWeights).MapInFirst(SecondMomentEstimate);
         Layer.Weights.SubtractInPlace((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
         double WeightReduction(double firstMoment, double secondMoment)

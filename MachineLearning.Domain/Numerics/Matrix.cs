@@ -70,7 +70,6 @@ internal readonly struct MatrixFlatArray(int rowCount, int columnCount, Weight[]
 
 public static class MatrixHelper
 {
-
     public static Vector Multiply(this Matrix matrix, Vector vector)
     {
         var result = Vector.Create(matrix.RowCount);
@@ -103,7 +102,6 @@ public static class MatrixHelper
         var rowCount = (nuint) matrix.RowCount;
         var columnCount = (nuint) matrix.ColumnCount;
 
-
         for(nuint row = 0; row < rowCount; row++)
         {
             nuint rowOffset = row * columnCount;
@@ -135,6 +133,7 @@ public static class MatrixHelper
     }
     public static void Map(this Matrix matrix, Func<Weight, Weight> map, Matrix result)
     {
+        AssertCountEquals(matrix, result);
         var dataSize = (nuint) matrix.FlatCount;
         for(nuint i = 0; i < dataSize; i++)
         {
@@ -142,7 +141,7 @@ public static class MatrixHelper
         }
     }
 
-    public static void MapInPlaceOnFirst(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map) => matrices.Map(matrices.a, map);
+    public static void MapInFirst(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map) => matrices.Map(matrices.a, map);
     public static Matrix Map(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map)
     {
         var result = Matrix.Create(matrices.a.RowCount, matrices.a.ColumnCount);
@@ -151,6 +150,7 @@ public static class MatrixHelper
     }
     public static void Map(this (Matrix a, Matrix b) matrices, Matrix result, Func<Weight, Weight, Weight> map)
     {
+        AssertCountEquals(matrices.a, matrices.b, result);
         var dataSize = (nuint) matrices.a.FlatCount;
         for(nuint i = 0; i < dataSize; i++)
         {
@@ -172,6 +172,7 @@ public static class MatrixHelper
     //TODO: test
     public static void Add(this Matrix left, Matrix right, Matrix result)
     {
+        AssertCountEquals(left, right, result);
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
@@ -206,6 +207,7 @@ public static class MatrixHelper
     //TODO: test
     public static void Subtract(this Matrix left, Matrix right, Matrix result)
     {
+        AssertCountEquals(left, right, result);
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
@@ -240,20 +242,15 @@ public static class MatrixHelper
         matrix.AsSpan().Clear();
     }
 
-    private static void ThrowIfSizeMismatch(Matrix a, Matrix b)
+
+    const string MATRIX_COUNT_MISMATCH = "Matrices must match in size";
+    private static void AssertCountEquals(Matrix a, Matrix b)
     {
-        if(a.RowCount != b.RowCount
-        || a.ColumnCount != b.ColumnCount)
-        {
-            throw new ArgumentException("Matrices have to match in Size");
-        }
+        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount, MATRIX_COUNT_MISMATCH);
     }
-    private static void ThrowIfSizeMismatch(Matrix a, Matrix b, Matrix c)
+    private static void AssertCountEquals(Matrix a, Matrix b, Matrix c)
     {
-        if(a.RowCount != b.RowCount || b.RowCount != c.RowCount
-        || a.ColumnCount != b.ColumnCount || b.ColumnCount != c.ColumnCount)
-        {
-            throw new ArgumentException("Matrices have to match in Size");
-        }
+        Debug.Assert(a.RowCount == b.RowCount && b.RowCount == c.RowCount && 
+                     a.ColumnCount == b.ColumnCount && b.ColumnCount == c.ColumnCount, MATRIX_COUNT_MISMATCH);
     }
 }

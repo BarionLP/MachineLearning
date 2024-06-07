@@ -63,6 +63,7 @@ public static class VectorHelper
     }
     public static void Map(this Vector vector, Func<Weight, Weight> map, Vector result)
     {
+        AssertCountEquals(vector, result);
         for(int i = 0; i < vector.Count; i++)
         {
             result[i] = map.Invoke(vector[i]);
@@ -72,6 +73,7 @@ public static class VectorHelper
     public static void MapInPlace(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap) => vector.Map(simdMap, fallbackMap, vector);
     public static void Map(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap, Vector result)
     {
+        AssertCountEquals(vector, result);
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
@@ -99,7 +101,8 @@ public static class VectorHelper
     }
     public static void Map(this (Vector a, Vector b) vectors, Func<Weight, Weight, Weight> map, Vector result)
     {
-        for(int i = 0; i < vectors.a.Count; i++)
+        AssertCountEquals(vectors.a, vectors.b, result);
+        for (int i = 0; i < vectors.a.Count; i++)
         {
             result[i] = map.Invoke(vectors.a[i], vectors.b[i]);
         }
@@ -114,6 +117,7 @@ public static class VectorHelper
     }
     public static void PointwiseMultiply(this Vector left, Vector right, Vector result)
     {
+        AssertCountEquals(left, right, result);
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
@@ -168,6 +172,8 @@ public static class VectorHelper
     public static void MultiplyToMatrix(Vector rowVector, Vector columnVector, Matrix result)
     {
 
+        Debug.Assert(rowVector.Count == result.RowCount);
+        Debug.Assert(columnVector.Count == result.ColumnCount);
         MultiplyToMatrixSimd(rowVector, columnVector, result);
         //for(int row = 0; row < rowVector.Count; row++) {
         //    for(int column = 0; column < columnVector.Count; column++) {
@@ -176,7 +182,7 @@ public static class VectorHelper
         //}
     }
 
-    public static void MultiplyToMatrixSimd(Vector rowVector, Vector columnVector, Matrix result)
+    private static void MultiplyToMatrixSimd(Vector rowVector, Vector columnVector, Matrix result)
     {
         int rowCount = rowVector.Count;
         int colCount = columnVector.Count;
@@ -219,6 +225,7 @@ public static class VectorHelper
     }
     public static void Multiply(this Vector vector, Weight factor, Vector result)
     {
+        AssertCountEquals(vector, result);
         ref var leftPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
@@ -259,6 +266,7 @@ public static class VectorHelper
     }
     public static void Add(this Vector left, Vector right, Vector result)
     {
+        AssertCountEquals(left, right, result);
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
@@ -288,6 +296,7 @@ public static class VectorHelper
     }
     public static void Subtract(this Vector left, Vector right, Vector result)
     {
+        AssertCountEquals(left, right, result);
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
@@ -336,18 +345,13 @@ public static class VectorHelper
         vector.AsSpan().Clear();
     }
 
-    private static void ThrowIfSizeMismatch(Vector a, Vector b)
+    const string VECTORS_MUST_MATCH = "Vectors must match in size";
+    private static void AssertCountEquals(Vector a, Vector b)
     {
-        if(a.Count != b.Count)
-        {
-            throw new ArgumentException("Vectors have to match in Size");
-        }
+        Debug.Assert(a.Count == b.Count, VECTORS_MUST_MATCH);
     }
-    private static void ThrowIfSizeMismatch(Vector a, Vector b, Vector c)
+    private static void AssertCountEquals(Vector a, Vector b, Vector c)
     {
-        if(a.Count != b.Count || b.Count != c.Count)
-        {
-            throw new ArgumentException("Vectors have to match in Size");
-        }
+        Debug.Assert(a.Count == b.Count && a.Count == b.Count, VECTORS_MUST_MATCH);
     }
 }

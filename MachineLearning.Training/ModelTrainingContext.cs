@@ -31,41 +31,47 @@ internal sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput
         Apply(dataCounter);
     }
 
-    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch)
+    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch, bool multithread)
     {
         GradientCostReset();
         int correctCounter = 0;
         double totalCost = 0;
         var dataCounter = 0;
-        object _lock = new();
 
-        //foreach(var dataPoint in trainingBatch)
-        //{
-        //   var weights = Update(dataPoint);
-        //   var result = Embedder.UnEmbed(weights)!;
-        //   if(result.Equals(dataPoint.Expected))
-        //   {
-        //       correctCounter++;
-        //   }
-        //   dataCounter++;
-        //   totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
-        //}
-
-        Parallel.ForEach(trainingBatch, (dataPoint) =>
+        if (multithread)
         {
-            var weights = Update(dataPoint);
-            var result = Embedder.UnEmbed(weights)!;
-
-            lock(_lock)
+            object _lock = new();
+            Parallel.ForEach(trainingBatch, (dataPoint) =>
             {
-                if(result.Equals(dataPoint.Expected))
+                var weights = Update(dataPoint);
+                var result = Embedder.UnEmbed(weights)!;
+
+                lock (_lock)
+                {
+                    if (result.Equals(dataPoint.Expected))
+                    {
+                        correctCounter++;
+                    }
+                    dataCounter++;
+                    totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
+                }
+            });
+        }
+        else
+        {
+            foreach (var dataPoint in trainingBatch)
+            {
+                var weights = Update(dataPoint);
+                var result = Embedder.UnEmbed(weights)!;
+                if (result.Equals(dataPoint.Expected))
                 {
                     correctCounter++;
                 }
                 dataCounter++;
                 totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
             }
-        });
+        }
+
 
         Apply(dataCounter);
 
@@ -108,7 +114,6 @@ internal sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput
 
         var nodeValues = OutputLayerOptimizer.ComputeOutputLayerErrors(Config.OutputResolver.Expected(data.Expected), snapshots[^1]);
         OutputLayerOptimizer.Update(nodeValues, snapshots[^1]);
-        LayerSnapshot.Return(OutputLayerOptimizer.Layer, snapshots[^1]);
 
 
         for(int hiddenLayerIndex = LayerOptimizers.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
@@ -116,7 +121,12 @@ internal sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput
             var hiddenLayer = LayerOptimizers[hiddenLayerIndex];
             nodeValues = hiddenLayer.ComputeHiddenLayerErrors(LayerOptimizers[hiddenLayerIndex + 1].Layer, nodeValues, snapshots[hiddenLayerIndex]);
             hiddenLayer.Update(nodeValues, snapshots[hiddenLayerIndex]);
-            LayerSnapshot.Return(hiddenLayer.Layer, snapshots[hiddenLayerIndex]);
+        }
+
+
+        //TODO: verfy zip performance
+        foreach(var (layer, snapshot) in Model.Layers.Zip(snapshots)){
+            LayerSnapshot.Return(layer, snapshot);
         }
 
         return result;
