@@ -53,10 +53,18 @@ public static class SimpleLM
         var config = GetTrainingConfig(random ?? Random.Shared);
         var trainer = ModelTrainer.Create(model, config);
         var cts = new CancellationTokenSource();
+        Task.Run(() =>
+        {
+            Console.ReadKey();
+            cts.Cancel();
+            Console.CursorLeft--;
+            Console.WriteLine("Canceling...");
+        });
 
         //cts.CancelAfter(TimeSpan.FromSeconds(30));
         Console.WriteLine("Starting Training...");
         trainer.Train(cts.Token);
+        Console.WriteLine("Training Done!");
 
         Generate("deutschland ", model);
 
