@@ -1,7 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
-using Vector = System.Numerics.Vector<double>;
-
-namespace MachineLearning.Benchmarks;
+﻿namespace MachineLearning.Benchmarks;
 
 public class ArrayAdditionBenchmarks
 {
@@ -37,13 +34,13 @@ public class ArrayAdditionBenchmarks
     {
 
         double[] result = new double[array1.Length];
-        int simdLength = Vector.Count;
+        int simdLength = SimdVector.Count;
         int i = 0;
 
         for(; i <= array1.Length - simdLength; i += simdLength)
         {
-            var vec1 = new Vector(array1, i);
-            var vec2 = new Vector(array2, i);
+            var vec1 = new SimdVector(array1, i);
+            var vec2 = new SimdVector(array2, i);
             (vec1 + vec2).CopyTo(result, i);
         }
 

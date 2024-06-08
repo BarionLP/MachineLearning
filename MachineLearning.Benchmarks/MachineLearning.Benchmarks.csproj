@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />
+    <ProjectReference Include="..\MachineLearning.Samples\MachineLearning.Samples.csproj" />
   </ItemGroup>
 
 </Project>
