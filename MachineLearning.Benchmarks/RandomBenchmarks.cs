@@ -1,14 +1,8 @@
-﻿using BenchmarkDotNet.Attributes;
-using System.Runtime.InteropServices;
-using SimdVector = System.Numerics.Vector<double>;
-using SimdVectorHelper = System.Numerics.Vector;
-
-namespace MachineLearning.Benchmarks;
+﻿namespace MachineLearning.Benchmarks;
 
 public class RandomBenchmarks
 {
 
-    //private double[] array = default!;
     private Vector left = default!;
     private Vector right = default!;
     private Vector result = default!;

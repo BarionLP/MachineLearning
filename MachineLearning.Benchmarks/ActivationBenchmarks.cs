@@ -1,5 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
-using MachineLearning.Domain.Activation;
+﻿using MachineLearning.Domain.Activation;
 using System.Buffers;
 
 namespace MachineLearning.Benchmarks;

@@ -1,6 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
-
-namespace MachineLearning.Benchmarks;
+﻿namespace MachineLearning.Benchmarks;
 
 //[SimpleJob]
 public class MatrixOperationsBenchmark

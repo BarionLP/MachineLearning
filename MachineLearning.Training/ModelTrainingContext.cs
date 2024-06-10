@@ -9,7 +9,7 @@ using System.Collections.Immutable;
 
 namespace MachineLearning.Training;
 
-internal sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config, IOptimizer optimizer)
+public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config, IOptimizer optimizer)
 {
     internal SimpleModel Model = model.InternalModel;
     internal IEmbedder<TInput, TOutput> Embedder = model.Embedder;

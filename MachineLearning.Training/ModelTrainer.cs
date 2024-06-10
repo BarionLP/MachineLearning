@@ -13,7 +13,7 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
     public TrainingConfig<TInput, TOutput> Config { get; }
     public EmbeddedModel<TInput, TOutput> Model { get; }
     public IOptimizer Optimizer { get; }
-    internal ModelTrainingContext<TInput, TOutput> Context { get; }
+    public ModelTrainingContext<TInput, TOutput> Context { get; }
 
     public ModelTrainer(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config)
     {
