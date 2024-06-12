@@ -5,6 +5,9 @@ using MachineLearning.Training.Optimization;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("MachineLearning.Benchmarks")]
 
 namespace MachineLearning.Training;
 
@@ -13,7 +16,7 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
     public TrainingConfig<TInput, TOutput> Config { get; }
     public EmbeddedModel<TInput, TOutput> Model { get; }
     public IOptimizer Optimizer { get; }
-    public ModelTrainingContext<TInput, TOutput> Context { get; }
+    internal ModelTrainingContext<TInput, TOutput> Context { get; }
 
     public ModelTrainer(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config)
     {

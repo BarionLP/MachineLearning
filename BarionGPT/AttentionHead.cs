@@ -3,11 +3,11 @@
 public sealed class AttentionHead(ModelInfo info)
 {
     public ModelInfo Info { get; } = info;
-    public DenseMatrix QueryMatrix = DenseMatrix.CreateRandom(info.QueryDimensions, info.EmbeddingDimensions, info.InitialDistribution);
-    public DenseMatrix KeyMatrix = DenseMatrix.CreateRandom(info.QueryDimensions, info.EmbeddingDimensions, info.InitialDistribution);
+    public DenseMatrix QueryWeights = DenseMatrix.CreateRandom(info.QueryDimensions, info.EmbeddingDimensions, info.InitialDistribution);
+    public DenseMatrix KeyWeights = DenseMatrix.CreateRandom(info.QueryDimensions, info.EmbeddingDimensions, info.InitialDistribution);
 
-    public DenseMatrix ValueDownMatrix = DenseMatrix.CreateRandom(info.QueryDimensions, info.EmbeddingDimensions, info.InitialDistribution);
-    public DenseMatrix ValueUpMatrix = DenseMatrix.CreateRandom(info.EmbeddingDimensions, info.QueryDimensions, info.InitialDistribution);
+    public DenseMatrix ValueDownWeights = DenseMatrix.CreateRandom(info.QueryDimensions, info.EmbeddingDimensions, info.InitialDistribution);
+    public DenseMatrix ValueUpWeights = DenseMatrix.CreateRandom(info.EmbeddingDimensions, info.QueryDimensions, info.InitialDistribution);
 
     private double QueryDimensionsRoot = Math.Sqrt(info.QueryDimensions);
     public DenseMatrix GetEmbeddingDelta(DenseMatrix input)
@@ -18,17 +18,17 @@ public sealed class AttentionHead(ModelInfo info)
         for(int i = 0; i < input.ColumnCount; i++)
         {
             //multiply each token vector by the QueryMatrix
-            var query = QueryMatrix.Multiply(input.Column(i));
+            var query = QueryWeights.Multiply(input.Column(i));
             queryEmbedding.SetColumn(i, query);
 
             //multiply each token vector by the KeyMatrix
-            var key = KeyMatrix.Multiply(input.Column(i));
+            var key = KeyWeights.Multiply(input.Column(i));
             keyEmbedding.SetColumn(i, key);
 
             //calculate the change to a token vector v this token vector would produce if this token attends to v
             //to be more efficient the change gets projected into the query space and back to the embedding space
-            var valueDown = ValueDownMatrix.Multiply(input.Column(i));
-            var valueUp = ValueUpMatrix.Multiply(valueDown);
+            var valueDown = ValueDownWeights.Multiply(input.Column(i));
+            var valueUp = ValueUpWeights.Multiply(valueDown);
             valueVectors.SetColumn(i, valueUp);
         }
 

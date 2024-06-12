@@ -33,9 +33,9 @@ public class MatrixOperationsBenchmark
         matrix1.Multiply(columnVector, rowVector);
     }
 
-    [Benchmark]
-    public void VectorMultiply_Simd()
-    {
-        matrix1.MultiplySimd(columnVector, rowVector);
-    }
+    //[Benchmark]
+    //public void VectorMultiply_Simd()
+    //{
+    //    MatriMultiplySimd(columnVector, rowVector);
+    //}
 }

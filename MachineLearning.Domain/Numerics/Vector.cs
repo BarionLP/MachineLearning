@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace MachineLearning.Domain.Numerics;
 
@@ -26,6 +27,35 @@ internal readonly struct VectorSimple(int count, Weight[] storage) : Vector
     public Span<Weight> this[int index, int count] => new(_storage, index, count); // has built-in bound checks
     public Span<Weight> AsSpan() => new(_storage, 0, Count);
     public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("F2")))}]";
+}
+
+internal readonly struct MatrixRowReference(int _rowIndex, MatrixFlat _matrix) : Vector
+{
+    private readonly int _startIndex = _rowIndex * _matrix.ColumnCount;
+    private readonly MatrixFlat _matrix = _matrix;
+
+    public ref double this[int index] => ref _matrix.AsSpan()[index];
+
+    public ref double this[nuint index] => ref _matrix.AsSpan()[(int)index];
+
+    public Span<double> this[int index, int count] => AsSpan().Slice(index, count);
+
+    public int Count => _matrix.ColumnCount;
+
+    public Span<double> AsSpan() => _matrix.AsSpan().Slice(_startIndex, _matrix.ColumnCount);
+
+    public override string ToString()
+    {
+        var builder = new StringBuilder("[");
+        var data = AsSpan();
+        for(int i = 0; i < data.Length; i++)
+        {
+            if(i > 0) builder.Append(' ');
+            builder.Append(data[i]);
+        }
+        builder.Append(']');
+        return builder.ToString();
+    }
 }
 
 public static class VectorHelper
@@ -190,19 +220,19 @@ public static class VectorHelper
         if(rowCount == 0 || colCount == 0 || rowCount * colCount != result.FlatCount)
             throw new ArgumentException("Invalid dimensions for the vectors or result matrix.");
 
-        int simdLength = SimdVector.Count;
+        int mdSize = SimdVector.Count;
 
         for(int row = 0; row < rowCount; row++)
         {
             var rowValue = new SimdVector(rowVector[row]);
 
             int col;
-            for(col = 0; col <= colCount - simdLength; col += simdLength)
+            for(col = 0; col <= colCount - mdSize; col += mdSize)
             {
                 var colValues = new SimdVector(columnVector.AsSpan().Slice(col, SimdVector.Count));
                 var resultValues = rowValue * colValues;
 
-                for(int i = 0; i < simdLength; i++)
+                for(int i = 0; i < mdSize; i++)
                 {
                     result[row, col + i] = resultValues[i];
                 }
@@ -229,17 +259,17 @@ public static class VectorHelper
         ref var leftPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
-        nuint length = (nuint) vector.Count;
+        nuint totalSize = (nuint) vector.Count;
 
         nuint index = 0;
-        for(; index + mdSize <= length; index += mdSize)
+        for(; index + mdSize <= totalSize; index += mdSize)
         {
             var md = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
             SimdVectorHelper.StoreUnsafe(md * factor, ref resultPtr, index);
         }
 
         // TODO: does unsafe pointer math helps significantly? (see sum method) improve in other methods too
-        for(; index < length; index++)
+        for(; index < totalSize; index++)
         {
             result[index] = vector[index] * factor;
         }
@@ -264,24 +294,26 @@ public static class VectorHelper
         Add(left, right, result);
         return result;
     }
+
     public static void Add(this Vector left, Vector right, Vector result)
     {
         AssertCountEquals(left, right, result);
+        
         ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
-        nuint length = (nuint) left.Count;
+        nuint totalSize = (nuint) left.Count;
 
         nuint index = 0;
-        for(; index + mdSize <= length; index += mdSize)
+        for(; index + mdSize <= totalSize; index += mdSize)
         {
             var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
             var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
             SimdVectorHelper.StoreUnsafe(vec1 + vec2, ref resultPtr, index);
         }
 
-        for(; index < length; index++)
+        for(; index < totalSize; index++)
         {
             result[index] = left[index] + right[index];
         }
@@ -301,17 +333,17 @@ public static class VectorHelper
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
-        nuint length = (nuint) left.Count;
+        nuint totalSize = (nuint) left.Count;
 
         nuint index = 0;
-        for(; index + mdSize <= length; index += mdSize)
+        for(; index + mdSize <= totalSize; index += mdSize)
         {
             var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
             var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
             SimdVectorHelper.StoreUnsafe(vec1 - vec2, ref resultPtr, index);
         }
 
-        for(; index < length; index++)
+        for(; index < totalSize; index++)
         {
             result[index] = left[index] - right[index];
         }

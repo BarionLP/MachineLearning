@@ -2,7 +2,6 @@
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Serialization.Activation;
-using System.Collections.Immutable;
 
 namespace MachineLearning.Serialization;
 
@@ -48,13 +47,18 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     public Result<SimpleModel> Load()
     {
         using var stream = fileInfo.OpenRead();
-        var reader = new BinaryReader(stream);
+        using var reader = new BinaryReader(stream);
         var version = reader.ReadUInt32();
-        if(version != VERSION)
-        {
-            throw new InvalidDataException();
-        }
 
+        return version switch
+        {
+            2 => LoadV2(reader),
+            _ => throw new InvalidDataException(),
+        };
+    }
+
+    private static SimpleModel LoadV2(BinaryReader reader)
+    {
         var layerCount = reader.ReadInt32();
         var layers = new SimpleLayer[layerCount];
 

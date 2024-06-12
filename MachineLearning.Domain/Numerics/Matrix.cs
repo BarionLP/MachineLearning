@@ -12,32 +12,33 @@ public interface Matrix
     public int FlatCount { get; }
     public ref Weight this[int row, int column] { get; }
     public ref Weight this[nuint flatIndex] { get; }
+    internal Vector Storage { get; }
 
     public Span<Weight> AsSpan();
 
-    public static Matrix Create(int rowCount, int columnCount) => new MatrixFlatArray(rowCount, columnCount, new Weight[rowCount * columnCount]);
-    public static Matrix Of(int rowCount, int columnCount, Weight[] storage)
+    public static Matrix Create(int rowCount, int columnCount) => new MatrixFlat(rowCount, columnCount, Vector.Create(rowCount * columnCount));
+    public static Matrix Of(int rowCount, int columnCount, double[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
+    public static Matrix Of(int rowCount, int columnCount, Vector storage)
     {
-        if(storage.Length / columnCount != rowCount)
+        if(storage.Count / columnCount != rowCount)
         {
             throw new ArgumentException("storage size does not match specified");
         }
 
-        return new MatrixFlatArray(rowCount, columnCount, storage);
+        return new MatrixFlat(rowCount, columnCount, storage);
     }
 }
 
-internal readonly struct MatrixFlatArray(int rowCount, int columnCount, Weight[] storage) : Matrix
+internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storage) : Matrix
 {
-    private readonly Weight[] _storage = storage;
+    public Vector Storage { get; } = storage;
     public int RowCount { get; } = rowCount;
     public int ColumnCount { get; } = columnCount;
-    public int FlatCount => _storage.Length;
+    public int FlatCount => Storage.Count;
 
-    public ref Weight this[int row, int column] => ref _storage[GetFlatIndex(row, column)];
-    public ref Weight this[nuint flatIndex] => ref _storage[flatIndex];
-    public Span<Weight> AsSpan() => _storage.AsSpan();
-    //public Span<Weight> AsSpan(int flatStartIndex, int length) => _storage.AsSpan(flatStartIndex, length);
+    public ref Weight this[int row, int column] => ref Storage[GetFlatIndex(row, column)];
+    public ref Weight this[nuint flatIndex] => ref Storage[flatIndex];
+    public Span<Weight> AsSpan() => Storage.AsSpan();
 
     public override string ToString()
     {
@@ -54,17 +55,15 @@ internal readonly struct MatrixFlatArray(int rowCount, int columnCount, Weight[]
         return sb.ToString();
     }
 
-#if DEBUG
-    private int GetFlatIndex(int row, int column)
+    internal int GetFlatIndex(int row, int column)
     {
+        #if DEBUG
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(row, RowCount);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(column, ColumnCount);
+        #endif
 
         return row * ColumnCount + column;
     }
-#else
-    private int GetFlatIndex(int row, int column) => row * ColumnCount + column;
-#endif
 }
 
 
@@ -89,7 +88,7 @@ public static class MatrixHelper
         //}
     }
 
-    public static void MultiplySimd(this Matrix matrix, Vector vector, Vector result)
+    public static void MultiplySimd(Matrix matrix, Vector vector, Vector result)
     {
         Debug.Assert(vector.Count == matrix.ColumnCount);
         Debug.Assert(result.Count == matrix.RowCount);
@@ -134,11 +133,7 @@ public static class MatrixHelper
     public static void Map(this Matrix matrix, Func<Weight, Weight> map, Matrix result)
     {
         AssertCountEquals(matrix, result);
-        var dataSize = (nuint) matrix.FlatCount;
-        for(nuint i = 0; i < dataSize; i++)
-        {
-            result[i] = map.Invoke(matrix[i]);
-        }
+        matrix.Storage.Map(map, result.Storage);
     }
 
     public static void MapInFirst(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map) => matrices.Map(matrices.a, map);
@@ -151,11 +146,8 @@ public static class MatrixHelper
     public static void Map(this (Matrix a, Matrix b) matrices, Matrix result, Func<Weight, Weight, Weight> map)
     {
         AssertCountEquals(matrices.a, matrices.b, result);
-        var dataSize = (nuint) matrices.a.FlatCount;
-        for(nuint i = 0; i < dataSize; i++)
-        {
-            result[i] = map.Invoke(matrices.a[i], matrices.b[i]);
-        }
+
+        (matrices.a.Storage, matrices.b.Storage).Map(map, result.Storage);
     }
 
     public static void AddInPlace(this Matrix left, Matrix right)
@@ -169,28 +161,11 @@ public static class MatrixHelper
         return result;
     }
 
-    //TODO: test
     public static void Add(this Matrix left, Matrix right, Matrix result)
     {
         AssertCountEquals(left, right, result);
-        ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
-        ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
-        var mdSize = (nuint) SimdVector.Count;
-        nuint dataSize = (nuint) left.FlatCount;
-
-        nuint index = 0;
-        for(; index + mdSize <= dataSize; index += mdSize)
-        {
-            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-            SimdVectorHelper.StoreUnsafe(vec1 + vec2, ref resultPtr, index);
-        }
-
-        for(; index < dataSize; index++)
-        {
-            result[index] = left[index] + right[index];
-        }
+        
+        left.Storage.Add(right.Storage, result.Storage);
     }
 
     public static void SubtractInPlace(this Matrix left, Matrix right)
@@ -204,31 +179,13 @@ public static class MatrixHelper
         return result;
     }
 
-    //TODO: test
     public static void Subtract(this Matrix left, Matrix right, Matrix result)
     {
         AssertCountEquals(left, right, result);
-        ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
-        ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
-        var mdSize = (nuint) SimdVector.Count;
-        nuint dataSize = (nuint) left.FlatCount;
 
-        nuint index = 0;
-        for(; index + mdSize <= dataSize; index += mdSize)
-        {
-            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-            SimdVectorHelper.StoreUnsafe(vec1 - vec2, ref resultPtr, index);
-        }
-
-        for(; index < dataSize; index++)
-        {
-            result[index] = left[index] - right[index];
-        }
+        left.Storage.Subtract(right.Storage, result.Storage);
     }
 
-    //TODO: test
     public static Matrix Copy(this Matrix matrix)
     {
         var copy = Matrix.Create(matrix.RowCount, matrix.ColumnCount);
@@ -236,14 +193,12 @@ public static class MatrixHelper
         return copy;
     }
 
-    //TODO: test
     public static void ResetZero(this Matrix matrix)
     {
         matrix.AsSpan().Clear();
     }
 
-
-    const string MATRIX_COUNT_MISMATCH = "Matrices must match in size";
+    const string MATRIX_COUNT_MISMATCH = "matrices must match in size!";
     private static void AssertCountEquals(Matrix a, Matrix b)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount, MATRIX_COUNT_MISMATCH);
