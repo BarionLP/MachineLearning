@@ -4,7 +4,7 @@ namespace MachineLearning.Samples.Language;
 
 public static class LanguageDataSource
 {
-    public const string TOKENS = " !\",-.0123456789:;?_abcdefghijklmnopqrstuvwxyzßäöü";
+    public const string TOKENS = " !\",-.0123456789:;?_abcdefghijklmnopqrstuvwxyzßäöü"; // add: %
     public static IEnumerable<DataEntry<string, char>> SentencesData(int contextSize) 
         => GetLines(AssetManager.Sentences.FullName).InContextSize(contextSize).ExpandPerChar();
 
@@ -41,6 +41,8 @@ public static class LanguageDataSource
         }
     }
 
+    public static IEnumerable<char> GetInvalidChars(IEnumerable<string> lines) => lines.SelectMany(l => l.Where(c => !TOKENS.Contains(c)));
+
     public static IEnumerable<string> GetLines(FileInfo fileInfo) => GetLines(fileInfo.FullName);
     public static IEnumerable<string> GetLines(string path)
         => File.ReadAllText(path, Encoding.UTF8).ToLowerInvariant()
@@ -48,7 +50,7 @@ public static class LanguageDataSource
 
     public static void PrepareData(string sourcePath, string targetPath, bool overrideTarget = false)
     {
-        var rawData = File.ReadAllText(sourcePath, Encoding.Latin1);
+        var rawData = File.ReadAllText(sourcePath, Encoding.UTF8);
         var sentences = ParseSentences();
 
         if(overrideTarget)

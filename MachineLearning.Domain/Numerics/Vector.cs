@@ -34,9 +34,9 @@ internal readonly struct MatrixRowReference(int _rowIndex, MatrixFlat _matrix) :
     private readonly int _startIndex = _rowIndex * _matrix.ColumnCount;
     private readonly MatrixFlat _matrix = _matrix;
 
-    public ref double this[int index] => ref _matrix.AsSpan()[index];
+    public ref double this[int index] => ref AsSpan()[index];
 
-    public ref double this[nuint index] => ref _matrix.AsSpan()[(int)index];
+    public ref double this[nuint index] => ref AsSpan()[(int)index];
 
     public Span<double> this[int index, int count] => AsSpan().Slice(index, count);
 
@@ -51,7 +51,7 @@ internal readonly struct MatrixRowReference(int _rowIndex, MatrixFlat _matrix) :
         for(int i = 0; i < data.Length; i++)
         {
             if(i > 0) builder.Append(' ');
-            builder.Append(data[i]);
+            builder.Append(data[i].ToString("F2"));
         }
         builder.Append(']');
         return builder.ToString();
@@ -107,16 +107,16 @@ public static class VectorHelper
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
-        var length = (nuint) vector.Count;
+        var totalSize = (nuint) vector.Count;
 
         nuint index = 0;
-        for(; index + mdSize <= length; index += mdSize)
+        for(; index + mdSize <= totalSize; index += mdSize)
         {
             var simdVector = SimdVectorHelper.LoadUnsafe(ref vectorPtr, index);
             SimdVectorHelper.StoreUnsafe(simdMap.Invoke(simdVector), ref resultPtr, index);
         }
 
-        for(; index < length; index++)
+        for(; index < totalSize; index++)
         {
             result[index] = fallbackMap.Invoke(vector[index]);
         }
@@ -152,17 +152,17 @@ public static class VectorHelper
         ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
-        var length = (nuint) left.Count;
+        var totalSize = (nuint) left.Count;
 
         nuint index = 0;
-        for(; index + mdSize <= length; index += mdSize)
+        for(; index + mdSize <= totalSize; index += mdSize)
         {
             var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
             var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
             SimdVectorHelper.StoreUnsafe(vec1 * vec2, ref resultPtr, index);
         }
 
-        for(; index < length; index++)
+        for(; index < totalSize; index++)
         {
             result[index] = left[index] * right[index];
         }

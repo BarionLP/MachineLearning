@@ -15,6 +15,7 @@ public interface Matrix
     internal Vector Storage { get; }
 
     public Span<Weight> AsSpan();
+    public Vector Row(int rowIndex);
 
     public static Matrix Create(int rowCount, int columnCount) => new MatrixFlat(rowCount, columnCount, Vector.Create(rowCount * columnCount));
     public static Matrix Of(int rowCount, int columnCount, double[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
@@ -39,6 +40,8 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
     public ref Weight this[int row, int column] => ref Storage[GetFlatIndex(row, column)];
     public ref Weight this[nuint flatIndex] => ref Storage[flatIndex];
     public Span<Weight> AsSpan() => Storage.AsSpan();
+
+    public Vector Row(int rowIndex) => new MatrixRowReference(rowIndex, this);
 
     public override string ToString()
     {
@@ -120,6 +123,18 @@ public static class MatrixHelper
             }
 
             result[row] = sum;
+        }
+    }
+
+    public static void Multiply(this Matrix left, Matrix right, Matrix result)
+    {
+        Debug.Assert(left.RowCount == result.RowCount);
+
+        for(int rowIndex = 0; rowIndex < left.RowCount; rowIndex++)
+        {
+            var row = left.Row(rowIndex);
+            var resultRow = result.Row(rowIndex);
+            right.Multiply(row, resultRow);
         }
     }
 

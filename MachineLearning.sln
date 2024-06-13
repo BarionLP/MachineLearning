@@ -22,7 +22,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Data", "Mac
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Samples", "MachineLearning.Samples\MachineLearning.Samples.csproj", "{9E21246A-B637-4411-88E0-B6E47A2D51FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Benchmarks", "MachineLearning.Benchmarks\MachineLearning.Benchmarks.csproj", "{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Benchmarks", "MachineLearning.Benchmarks\MachineLearning.Benchmarks.csproj", "{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Transformer", "MachineLearning.Transformer\MachineLearning.Transformer.csproj", "{57714506-D69C-43BA-B920-37E941A14933}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +32,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{57714506-D69C-43BA-B920-37E941A14933}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57714506-D69C-43BA-B920-37E941A14933}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57714506-D69C-43BA-B920-37E941A14933}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57714506-D69C-43BA-B920-37E941A14933}.Release|Any CPU.Build.0 = Release|Any CPU
 		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Release|Any CPU.ActiveCfg = Release|Any CPU
