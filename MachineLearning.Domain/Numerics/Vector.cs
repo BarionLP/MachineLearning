@@ -84,6 +84,34 @@ public static class VectorHelper
         return result;
     }
 
+    public static Weight Dot(this Vector left, Vector right)
+    {
+        AssertCountEquals(left, right);
+        ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
+        ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
+        var mdSize = (nuint)SimdVector.Count;
+        var totalSize = (nuint)left.Count;
+
+        var accumulator = SimdVector.Zero;
+
+        nuint index = 0;
+        for (; index + mdSize <= totalSize; index += mdSize)
+        {
+            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
+            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
+            accumulator += vec1 * vec2;
+        }
+
+        var result = SimdVectorHelper.Sum(accumulator);
+
+        for (; index < totalSize; index++)
+        {
+            result += left[index] * right[index];
+        }
+        
+        return result;
+    }
+
     public static void MapInPlace(this Vector vector, Func<Weight, Weight> map) => vector.Map(map, vector);
     public static Vector Map(this Vector vector, Func<Weight, Weight> map)
     {

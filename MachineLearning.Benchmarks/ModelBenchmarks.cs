@@ -5,7 +5,7 @@ using MachineLearning.Training;
 
 namespace MachineLearning.Benchmarks;
 
-[MemoryDiagnoser()]
+[MemoryDiagnoser]
 public class ModelBenchmarks
 {
     private IEnumerable<DataEntry<double[], int>> dataSet = [];
