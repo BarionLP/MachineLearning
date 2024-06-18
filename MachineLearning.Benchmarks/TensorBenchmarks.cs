@@ -10,7 +10,7 @@ public class TensorBenchmarks
     private Vector result_v = default!;
     private Tensor<double> result_t = default!;
 
-    [Params(2048*2)]
+    [Params(255, 2048*8)]
     public int Size;
 
     [GlobalSetup]
@@ -23,7 +23,7 @@ public class TensorBenchmarks
         result_v = Vector.Create(Size);
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Vector_Add() {
         vector.Add(vector, result_v);
     }
@@ -35,7 +35,7 @@ public class TensorBenchmarks
         TensorPrimitives.Add(inSpan, inSpan, outSpan);
     }
     
-    [Benchmark]
+    [Benchmark] //fastest (replace in .net 9)
     public void Vector_Primitives_Add() {
         TensorPrimitives.Add(vector.AsSpan(), vector.AsSpan(), result_v.AsSpan());
     }

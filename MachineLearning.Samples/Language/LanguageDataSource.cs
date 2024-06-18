@@ -41,12 +41,13 @@ public static class LanguageDataSource
         }
     }
 
-    public static IEnumerable<char> GetInvalidChars(IEnumerable<string> lines) => lines.SelectMany(l => l.Where(c => !TOKENS.Contains(c)));
+    public static IEnumerable<(string, IEnumerable<char>)> GetInvalidChars(IEnumerable<string> lines) => lines.Select(l => (l, l.Where(c => !TOKENS.Contains(c)))).Where(pair => pair.Item2.Any());
 
     public static IEnumerable<string> GetLines(FileInfo fileInfo) => GetLines(fileInfo.FullName);
     public static IEnumerable<string> GetLines(string path)
         => File.ReadAllText(path, Encoding.UTF8).ToLowerInvariant()
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            //.Select(line => line.Replace('-', TOKENS[4]));
 
     public static void PrepareData(string sourcePath, string targetPath, bool overrideTarget = false)
     {
