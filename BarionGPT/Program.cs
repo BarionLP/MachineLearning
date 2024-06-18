@@ -54,7 +54,6 @@ Console.WriteLine();
 
 
 /*
-Matrix multiplication m*n means multiplying every column of n by m; m*n != m*n
+Matrix multiplication m*n means multiplying every column of n by m; m*n != m*n (every row, just this project is doing it wrong)
 Matrix Vector multiplication m*v means taking the dot product of every row of m with v
  */
-
