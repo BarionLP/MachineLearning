@@ -4,22 +4,22 @@ namespace MachineLearning.Samples.Language;
 
 public static class SimpleLM
 {
-    public const int ContextSize = 256;
+    public const int CONTEXT_SIZE = 256;
     public static ModelDefinition GetModel(Random? random = null)
     {
         var initializer = new XavierInitializer(random);
-        return new ModelBuilder(ContextSize * 8)
+        return new ModelBuilder(CONTEXT_SIZE * 8)
             .SetDefaultActivationMethod(SigmoidActivation.Instance)
             .AddLayer(1024, initializer)
             .AddLayer(256, initializer) //512
             .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(initializer).SetActivationMethod(SoftmaxActivation.Instance))
-            .Build(new StringEmbedder(ContextSize));
+            .Build(new StringEmbedder(CONTEXT_SIZE, LanguageDataSource.TOKENS, true));
     }
 
     public static TrainingConfig<string, char> GetTrainingConfig(Random? random = null)
     {
         random ??= Random.Shared;
-        var dataSet = LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(ContextSize).ExpandPerChar().ToArray();
+        var dataSet = LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(CONTEXT_SIZE).ExpandPerChar().ToArray();
         random.Shuffle(dataSet);
 
         var trainingSetSize = (int) (dataSet.Length * 0.9);
@@ -37,7 +37,7 @@ public static class SimpleLM
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
-            OutputResolver = new CharOutputResolver(),
+            OutputResolver = new CharOutputResolver(LanguageDataSource.TOKENS),
 
             EvaluationCallback = result => Console.WriteLine(result.Dump()),
             DumpEvaluationAfterBatches = 16,
@@ -52,19 +52,7 @@ public static class SimpleLM
     {
         var config = GetTrainingConfig(random ?? Random.Shared);
         var trainer = ModelTrainer.Create(model, config);
-        var cts = new CancellationTokenSource();
-        Task.Run(() =>
-        {
-            Console.ReadKey();
-            cts.Cancel();
-            Console.CursorLeft--;
-            Console.WriteLine("Canceling...");
-        });
-
-        //cts.CancelAfter(TimeSpan.FromSeconds(30));
-        Console.WriteLine("Starting Training...");
-        trainer.Train(cts.Token);
-        Console.WriteLine("Training Done!");
+        trainer.TrainConsoleCancelable();
 
         Generate("deutschland ", model);
 
@@ -82,7 +70,7 @@ public static class SimpleLM
             prediction = model.Process(input);
             input += prediction;
             Console.Write(prediction);
-        } while(!EndSymbols.Contains(prediction) && input.Length < ContextSize);
+        } while(!EndSymbols.Contains(prediction) && input.Length < CONTEXT_SIZE);
         Console.WriteLine();
     }
 

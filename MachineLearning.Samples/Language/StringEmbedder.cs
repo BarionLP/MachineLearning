@@ -3,7 +3,7 @@ using System.Text;
 
 namespace MachineLearning.Samples.Language;
 
-public sealed class StringEmbedder(int contextSize) : IEmbedder<string, char>
+public sealed class StringEmbedder(int contextSize, string tokens, bool weightedRandom) : IEmbedder<string, char>
 {
     public Vector Embed(string input)
     {
@@ -38,7 +38,11 @@ public sealed class StringEmbedder(int contextSize) : IEmbedder<string, char>
 
     public char UnEmbed(Vector input)
     {
-        return LanguageDataSource.TOKENS[GetWeightedRandomIndex(input)];
+        if(weightedRandom) {
+            return tokens[GetWeightedRandomIndex(input)];
+        }else{
+            return tokens[IndexOfMax(input)];
+        }
 
         static int GetWeightedRandomIndex(Vector weights)
         {

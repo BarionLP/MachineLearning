@@ -26,6 +26,29 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
         Context = new(model, config, Optimizer);
     }
 
+    public void TrainConsoleCancelable()
+    {
+        var cts = new CancellationTokenSource();
+        Task.Run(() =>
+        {
+            while (!cts.IsCancellationRequested)
+            {
+                if (Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
+                {
+                    Console.WriteLine("Canceling...");
+                    cts.Cancel();
+                    break;
+                }
+                Thread.Sleep(500);
+            }
+        });
+
+        Console.WriteLine("Starting Training...");
+        Train(cts.Token);
+        cts.Cancel();
+        Console.WriteLine("Training Done!");
+    }
+
     public void Train(CancellationToken? token = null)
     {
         //var before = EvaluateShort();
@@ -33,15 +56,15 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
         Context.FullReset();
         var sw = Stopwatch.StartNew();
         var cachedEvaluation = DataSetEvaluationResult.ZERO;
-        foreach(var epochIndex in ..Config.EpochCount)
+        foreach (var epochIndex in ..Config.EpochCount)
         {
             var epoch = Config.GetEpoch();
             var batchCount = 0;
 
-            foreach(var batch in epoch)
+            foreach (var batch in epoch)
             {
                 cachedEvaluation += Context.TrainAndEvaluate(batch, true);
-                if((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
+                if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
                     cachedEvaluation = DataSetEvaluationResult.ZERO;
@@ -51,7 +74,8 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
                 batchCount++;
                 Optimizer.OnBatchCompleted();
 
-                if(token?.IsCancellationRequested is true){
+                if (token?.IsCancellationRequested is true)
+                {
                     Optimizer.OnEpochCompleted();
                     return;
                 }
@@ -103,7 +127,7 @@ public sealed class LayerSnapshot(int inputNodes, int outputNodes)
     public static LayerSnapshot Get(SimpleLayer layer)
     {
         var queue = _registry.GetOrAdd(layer, static (layer) => []);
-        
+
         if (queue.TryDequeue(out var snapshot))
         {
             //Debug.Assert(!snapshot._isUsed);
@@ -140,7 +164,7 @@ public static class LayerExtensions
 
     public static Vector Forward(this SimpleModel model, Vector weights, ImmutableArray<LayerSnapshot> snapshots)
     {
-        foreach(var (layer, snapshot) in model.Layers.Zip(snapshots))
+        foreach (var (layer, snapshot) in model.Layers.Zip(snapshots))
         {
             weights = layer.Forward(weights, snapshot);
         }
