@@ -1,11 +1,11 @@
 ﻿using MachineLearning.Data.Entry;
 using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
-using MachineLearning.Model.Layer;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 using MachineLearning.Training.Optimization.Layer;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
@@ -17,22 +17,9 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
     internal ImmutableArray<ILayerOptimizer> LayerOptimizers = model.InternalModel.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
     internal ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[^1];
 
-    public void Train(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch)
-    {
-        GradientCostReset();
-        var dataCounter = 0;
-
-        foreach(var dataPoint in trainingBatch)
-        {
-            Update(dataPoint);
-            dataCounter++;
-        }
-
-        Apply(dataCounter);
-    }
-
     public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch, bool multithread)
     {
+        var sw = Stopwatch.StartNew();
         GradientCostReset();
         int correctCounter = 0;
         double totalCost = 0;
@@ -80,6 +67,7 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
             TotalCount = dataCounter,
             CorrectCount = correctCounter,
             TotalCost = totalCost,
+            TotalElapsedTime = sw.Elapsed,
         };
     }
 
@@ -124,7 +112,7 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
         }
 
 
-        //TODO: verfy zip performance
+        //TODO: verify zip performance
         foreach(var (layer, snapshot) in Model.Layers.Zip(snapshots)){
             LayerSnapshot.Return(layer, snapshot);
         }

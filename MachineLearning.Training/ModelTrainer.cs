@@ -54,7 +54,6 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
         //var before = EvaluateShort();
         Optimizer.Init();
         Context.FullReset();
-        var sw = Stopwatch.StartNew();
         var cachedEvaluation = DataSetEvaluationResult.ZERO;
         foreach (var epochIndex in ..Config.EpochCount)
         {
@@ -68,8 +67,6 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
                     cachedEvaluation = DataSetEvaluationResult.ZERO;
-                    Console.WriteLine($"Took {sw.Elapsed:m\\:ss\\.fff}");
-                    sw.Restart();
                 }
                 batchCount++;
                 Optimizer.OnBatchCompleted();
