@@ -8,7 +8,7 @@ public class MatrixOperationsBenchmark
     private Vector rowVector = default!;
     private Vector columnVector = default!;
     private Matrix resultMatrix = default!;
-    private Matrix resultVector = default!;
+    //private Matrix resultVector = default!;
 
     //[Params(16, 128, 512)]
     public int Rows { get; set; } = 128;

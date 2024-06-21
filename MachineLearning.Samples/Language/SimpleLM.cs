@@ -4,23 +4,23 @@ namespace MachineLearning.Samples.Language;
 
 public static class SimpleLM
 {
-    public const int ContextSize = 256 + 64;
+    public const int CONTEXT_SIZE = 256 + 64;
     public static ModelDefinition GetModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
-        return new ModelBuilder(ContextSize * 8)
+        return new ModelBuilder(CONTEXT_SIZE * 8)
             .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
             .AddLayer(2048, initializer)
             .AddLayer(512, initializer)
             .AddLayer(128, initializer)
             .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(new XavierInitializer(random)).SetActivationMethod(SoftmaxActivation.Instance))
-            .Build(new StringEmbedder(ContextSize));
+            .Build(new StringEmbedder(CONTEXT_SIZE, LanguageDataSource.TOKENS, true));
     }
 
     public static TrainingConfig<string, char> GetTrainingConfig(Random? random = null)
     {
         random ??= Random.Shared;
-        var dataSet = LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(ContextSize).ExpandPerChar().ToArray();
+        var dataSet = LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(CONTEXT_SIZE).ExpandPerChar().ToArray();
         random.Shuffle(dataSet);
 
         var trainingSetSize = (int) (dataSet.Length * 0.9);
@@ -38,7 +38,7 @@ public static class SimpleLM
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
-            OutputResolver = new CharOutputResolver(),
+            OutputResolver = new CharOutputResolver(LanguageDataSource.TOKENS),
 
             EvaluationCallback = result => Console.WriteLine(result.Dump()),
             DumpEvaluationAfterBatches = 32,
@@ -53,26 +53,7 @@ public static class SimpleLM
     {
         var config = GetTrainingConfig(random ?? Random.Shared);
         var trainer = ModelTrainer.Create(model, config);
-        using var cts = new CancellationTokenSource();
-        Task.Run(() =>
-        {
-            while(!cts.IsCancellationRequested)
-            {
-                if(Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
-                {
-                    Console.WriteLine("Canceling...");
-                    cts.Cancel();
-                    break;
-                }
-                Thread.Sleep(500);
-            }
-        });
-
-        //cts.CancelAfter(TimeSpan.FromSeconds(30));
-        Console.WriteLine("Starting Training...");
-        trainer.Train(cts.Token);
-        cts.Cancel();
-        Console.WriteLine("Training Done!");
+        trainer.TrainConsoleCancelable();
 
         Generate("Männer, ", model);
 
@@ -90,7 +71,7 @@ public static class SimpleLM
             prediction = model.Process(input);
             input += prediction;
             Console.Write(prediction);
-        } while(!EndSymbols.Contains(prediction) && input.Length < ContextSize);
+        } while(!EndSymbols.Contains(prediction) && input.Length < CONTEXT_SIZE);
         Console.WriteLine();
     }
 

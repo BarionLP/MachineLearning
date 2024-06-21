@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Benchmarks;
 
-[MemoryDiagnoser]
+[MemoryDiagnoser(false)]
 public class TensorBenchmarks
 {
     private Tensor<double> tensor = default!;
@@ -35,8 +35,11 @@ public class TensorBenchmarks
         TensorPrimitives.Add(inSpan, inSpan, outSpan);
     }
     
-    [Benchmark] //fastest (replace in .net 9)
+    [Benchmark]
     public void Vector_Primitives_Add() {
         TensorPrimitives.Add(vector.AsSpan(), vector.AsSpan(), result_v.AsSpan());
     }
+
+    //TensorPrimitives is faster (keep my type and use AsSpan())
+
 }
