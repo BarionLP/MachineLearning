@@ -28,7 +28,7 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
 
     public void TrainConsoleCancelable()
     {
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         Task.Run(() =>
         {
             while (!cts.IsCancellationRequested)
