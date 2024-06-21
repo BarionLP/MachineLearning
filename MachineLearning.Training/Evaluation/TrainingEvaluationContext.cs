@@ -7,5 +7,5 @@ public sealed class TrainingEvaluationContext
     public required int CurrentBatch { get; init; }
     public required int MaxBatch { get; init; }
     public required double LearnRate { get; init; }
-    public string Dump() => $"epoch {CurrentEpoch}/{MaxEpoch}\tbatch {CurrentBatch}/{MaxBatch}\tlearnRate {LearnRate:P}";
+    public string Dump() => $"epoch {CurrentEpoch}/{MaxEpoch}\tbatch {CurrentBatch}/{MaxBatch}";
 }
