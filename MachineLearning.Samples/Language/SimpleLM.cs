@@ -4,15 +4,16 @@ namespace MachineLearning.Samples.Language;
 
 public static class SimpleLM
 {
-    public const int ContextSize = 256;
+    public const int ContextSize = 256 + 64;
     public static ModelDefinition GetModel(Random? random = null)
     {
-        var initializer = new XavierInitializer(random);
+        var initializer = new HeInitializer(random);
         return new ModelBuilder(ContextSize * 8)
-            .SetDefaultActivationMethod(SigmoidActivation.Instance)
-            .AddLayer(1024, initializer)
-            .AddLayer(256, initializer) //512
-            .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(initializer).SetActivationMethod(SoftmaxActivation.Instance))
+            .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
+            .AddLayer(2048, initializer)
+            .AddLayer(512, initializer)
+            .AddLayer(128, initializer)
+            .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(new XavierInitializer(random)).SetActivationMethod(SoftmaxActivation.Instance))
             .Build(new StringEmbedder(ContextSize));
     }
 
@@ -28,19 +29,19 @@ public static class SimpleLM
             TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
             TestSet = dataSet.Skip(trainingSetSize).ToArray(),
 
-            EpochCount = 1,
+            EpochCount = 8,
             BatchCount = 256,
 
             Optimizer = new AdamOptimizerConfig
             {
-                LearningRate = 0.09,
+                LearningRate = 0.01,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
             OutputResolver = new CharOutputResolver(),
 
             EvaluationCallback = result => Console.WriteLine(result.Dump()),
-            DumpEvaluationAfterBatches = 16,
+            DumpEvaluationAfterBatches = 32,
 
             RandomSource = random,
             ShuffleTrainingSetPerEpoch = true,
@@ -52,21 +53,28 @@ public static class SimpleLM
     {
         var config = GetTrainingConfig(random ?? Random.Shared);
         var trainer = ModelTrainer.Create(model, config);
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         Task.Run(() =>
         {
-            Console.ReadKey();
-            cts.Cancel();
-            Console.CursorLeft--;
-            Console.WriteLine("Canceling...");
+            while(!cts.IsCancellationRequested)
+            {
+                if(Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
+                {
+                    Console.WriteLine("Canceling...");
+                    cts.Cancel();
+                    break;
+                }
+                Thread.Sleep(500);
+            }
         });
 
         //cts.CancelAfter(TimeSpan.FromSeconds(30));
         Console.WriteLine("Starting Training...");
         trainer.Train(cts.Token);
+        cts.Cancel();
         Console.WriteLine("Training Done!");
 
-        Generate("deutschland ", model);
+        Generate("Männer, ", model);
 
         return model;
     }
@@ -92,7 +100,11 @@ public static class SimpleLM
         do
         {
             input = Console.ReadLine() ?? string.Empty;
+            if(string.IsNullOrEmpty(input))
+            {
+                return;
+            }
             Generate(input, model);
-        } while(!string.IsNullOrEmpty(input));
+        } while(true);
     }
 }
