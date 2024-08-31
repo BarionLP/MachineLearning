@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -62,6 +63,8 @@ public static class VectorHelper
 {
     public static Weight Sum(this Vector vector)
     {
+        // seems to be slower
+        // return TensorPrimitives.Sum<double>(vector.AsSpan());
         ref var ptr = ref MemoryMarshal.GetReference(vector.AsSpan());
         nuint length = (nuint) vector.Count;
 
@@ -87,29 +90,7 @@ public static class VectorHelper
     public static Weight Dot(this Vector left, Vector right)
     {
         AssertCountEquals(left, right);
-        ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
-        ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
-        var mdSize = (nuint)SimdVector.Count;
-        var totalSize = (nuint)left.Count;
-
-        var accumulator = SimdVector.Zero;
-
-        nuint index = 0;
-        for (; index + mdSize <= totalSize; index += mdSize)
-        {
-            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-            accumulator += vec1 * vec2;
-        }
-
-        var result = SimdVectorHelper.Sum(accumulator);
-
-        for (; index < totalSize; index++)
-        {
-            result += left[index] * right[index];
-        }
-        
-        return result;
+        return TensorPrimitives.Dot<double>(left.AsSpan(), right.AsSpan());
     }
 
     public static void MapInPlace(this Vector vector, Func<Weight, Weight> map) => vector.Map(map, vector);
@@ -176,24 +157,7 @@ public static class VectorHelper
     public static void PointwiseMultiply(this Vector left, Vector right, Vector result)
     {
         AssertCountEquals(left, right, result);
-        ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
-        ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
-        var mdSize = (nuint) SimdVector.Count;
-        var totalSize = (nuint) left.Count;
-
-        nuint index = 0;
-        for(; index + mdSize <= totalSize; index += mdSize)
-        {
-            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-            SimdVectorHelper.StoreUnsafe(vec1 * vec2, ref resultPtr, index);
-        }
-
-        for(; index < totalSize; index++)
-        {
-            result[index] = left[index] * right[index];
-        }
+        TensorPrimitives.Multiply(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
 
     public static Vector Multiply(this Vector vector, Matrix matrix)
@@ -284,23 +248,7 @@ public static class VectorHelper
     public static void Multiply(this Vector vector, Weight factor, Vector result)
     {
         AssertCountEquals(vector, result);
-        ref var leftPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
-        var mdSize = (nuint) SimdVector.Count;
-        nuint totalSize = (nuint) vector.Count;
-
-        nuint index = 0;
-        for(; index + mdSize <= totalSize; index += mdSize)
-        {
-            var md = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-            SimdVectorHelper.StoreUnsafe(md * factor, ref resultPtr, index);
-        }
-
-        // TODO: does unsafe pointer math helps significantly? (see sum method) improve in other methods too
-        for(; index < totalSize; index++)
-        {
-            result[index] = vector[index] * factor;
-        }
+        TensorPrimitives.Multiply(vector.AsSpan(), factor, result.AsSpan());
     }
 
     public static void DivideInPlace(this Vector vector, Weight divisor) => Divide(vector, divisor, vector);
@@ -326,25 +274,7 @@ public static class VectorHelper
     public static void Add(this Vector left, Vector right, Vector result)
     {
         AssertCountEquals(left, right, result);
-        
-        ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
-        ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
-        var mdSize = (nuint) SimdVector.Count;
-        nuint totalSize = (nuint) left.Count;
-
-        nuint index = 0;
-        for(; index + mdSize <= totalSize; index += mdSize)
-        {
-            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-            SimdVectorHelper.StoreUnsafe(vec1 + vec2, ref resultPtr, index);
-        }
-
-        for(; index < totalSize; index++)
-        {
-            result[index] = left[index] + right[index];
-        }
+        TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
 
     public static void SubtractInPlace(this Vector left, Vector right) => Subtract(left, right, left);
@@ -357,24 +287,7 @@ public static class VectorHelper
     public static void Subtract(this Vector left, Vector right, Vector result)
     {
         AssertCountEquals(left, right, result);
-        ref var leftPtr = ref MemoryMarshal.GetReference(left.AsSpan());
-        ref var rightPtr = ref MemoryMarshal.GetReference(right.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
-        var mdSize = (nuint) SimdVector.Count;
-        nuint totalSize = (nuint) left.Count;
-
-        nuint index = 0;
-        for(; index + mdSize <= totalSize; index += mdSize)
-        {
-            var vec1 = SimdVectorHelper.LoadUnsafe(ref leftPtr, index);
-            var vec2 = SimdVectorHelper.LoadUnsafe(ref rightPtr, index);
-            SimdVectorHelper.StoreUnsafe(vec1 - vec2, ref resultPtr, index);
-        }
-
-        for(; index < totalSize; index++)
-        {
-            result[index] = left[index] - right[index];
-        }
+        TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
 
     //TODO: test

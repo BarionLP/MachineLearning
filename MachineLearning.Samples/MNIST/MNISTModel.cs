@@ -6,6 +6,8 @@ namespace MachineLearning.Samples.MNIST;
 
 public class MNISTModel
 {
+    public static IEmbedder<double[], int> GetEmbedder() => MNISTEmbedder.Instance;
+
     public static ModelDefinition GetModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
@@ -15,7 +17,7 @@ public class MNISTModel
                 .AddLayer(256, initializer)
                 .AddLayer(128, initializer)
                 .AddLayer(10, builder => builder.SetActivationMethod(SoftmaxActivation.Instance).Initialize(new XavierInitializer(random)))
-                .Build(MNISTEmbedder.Instance);
+                .Build(GetEmbedder());
 
         return network;
     }
@@ -74,17 +76,21 @@ public class MNISTModel
     {
         var trainer = ModelTrainer.Create(model, config);
 
-        trainer.Train();
+        //trainer.Train();
 
         var images = new ImageDataSource(AssetManager.CustomDigits);
+        Benchmark(model, images);
+    }
+
+    public static void Benchmark(ModelDefinition model, ImageDataSource dataSource) {
         var correctCounter = 0;
         var counter = 0;
         var previousColor = Console.ForegroundColor;
-        foreach(var image in images.DataSet)
+        foreach (var image in dataSource.DataSet)
         {
             var prediction = model.Process(image.Image);
 
-            if(prediction == image.Digit)
+            if (prediction == image.Digit)
             {
                 correctCounter++;
             }
@@ -94,6 +100,6 @@ public class MNISTModel
             counter++;
         }
         Console.ForegroundColor = previousColor;
-        Console.WriteLine($"Correct: {(double) correctCounter / counter:P0}");
+        Console.WriteLine($"Correct: {(double)correctCounter / counter:P0}");
     }
 }

@@ -22,8 +22,8 @@ public sealed class AttentionHead(ModelInfo info)
         var keyEmbedding = Matrix.Create(input.RowCount, Info.QueryDimensions); // key of each token (row)
         var valueVectors = Matrix.Create(input.RowCount, Info.EmbeddingDimensions); // value of each token (row)
 
-        input.Multiply(QueryWeights, queryEmbedding);
-        input.Multiply(KeyWeights, keyEmbedding);
+        input.MultiplyRowwise(QueryWeights, queryEmbedding);
+        input.MultiplyRowwise(KeyWeights, keyEmbedding);
         
         
         var valueDown = Vector.Create(Info.QueryDimensions);

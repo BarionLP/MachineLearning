@@ -21,7 +21,7 @@ public interface Matrix
     public static Matrix Of(int rowCount, int columnCount, double[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
     public static Matrix Of(int rowCount, int columnCount, Vector storage)
     {
-        if(storage.Count / columnCount != rowCount)
+        if(storage.Count != columnCount * rowCount)
         {
             throw new ArgumentException("storage size does not match specified");
         }
@@ -126,7 +126,7 @@ public static class MatrixHelper
         }
     }
 
-    public static void Multiply(this Matrix left, Matrix right, Matrix result)
+    public static void MultiplyRowwise(this Matrix left, Matrix right, Matrix result)
     {
         Debug.Assert(left.RowCount == result.RowCount);
 
