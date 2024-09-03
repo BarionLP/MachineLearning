@@ -1,4 +1,6 @@
-﻿namespace MachineLearning.Transformer;
+﻿using MachineLearning.Domain.Numerics.Initialization;
+
+namespace MachineLearning.Transformer;
 
 public sealed record ModelInfo
 {
@@ -6,7 +8,9 @@ public sealed record ModelInfo
     public int TokenCount => ValidTokens.Length;
     public required int EmbeddingDimensions { get; init; }
     public required int ContextSize { get; init; }
-    public required int QueryDimensions { get; init; }
-    public required int AttentionHeadCount { get; init; }
+    public required int KeyQueryDimensions { get; init; }
+    public required int AttentionHeadCountPerBlock { get; init; }
+    public required int AttentionBlockCount { get; init; }
+    public required IInitializer Initializer { get; init; }
     public double Temperature { get; init; } = 1.5;
 }
