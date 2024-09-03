@@ -1,20 +1,18 @@
-﻿using System.Numerics.Tensors;
-using BenchmarkDotNet.Running;
+﻿using BenchmarkDotNet.Running;
 using MachineLearning.Benchmarks;
 
+var tests = new TensorBenchmarks();
+tests.GlobalSetup();
 
-var Size = 8;
-var random = new Random(69);
-var data = Enumerable.Range(0, Size).Select(v => random.NextDouble()).ToArray();
-var tensor = Tensor.Create(data, [Size]);
-var vector = Vector.Of(data);
+Console.WriteLine(tests.vector_l);
+Console.WriteLine(tests.vector_r);
 
-var tensor2 = Tensor.Add(tensor, tensor);
+Console.WriteLine("Results:");
+tests.MyVector();
+Console.WriteLine(tests.result_v);
+tests.Vector_Primitives();
+Console.WriteLine(tests.result_v);
 
-Console.WriteLine($"[{string.Join(' ', tensor.Select(d => d.ToString("F2")))}]");
-Console.WriteLine($"[{string.Join(' ', tensor2.Select(d => d.ToString("F2")))}]");
-Console.WriteLine(vector);
-
-//TensorPrimitives.Add(tensor.AsReadOnlyTensorSpan(), (ReadOnlySpan<double>)vector.AsSpan(), tensor2.AsTensorSpan());
+tests.Vector_Primitives();
 
 BenchmarkRunner.Run<TensorBenchmarks>();

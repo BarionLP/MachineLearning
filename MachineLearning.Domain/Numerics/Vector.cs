@@ -19,6 +19,7 @@ public interface Vector
     public static Vector Of(Weight[] array) => new VectorSimple(array.Length, array);
 }
 
+// stores its own count to allow longer arrays from ArrayPool as storage
 internal readonly struct VectorSimple(int count, Weight[] storage) : Vector
 {
     private readonly Weight[] _storage = storage;
@@ -49,9 +50,9 @@ internal readonly struct MatrixRowReference(int _rowIndex, MatrixFlat _matrix) :
     {
         var builder = new StringBuilder("[");
         var data = AsSpan();
-        for(int i = 0; i < data.Length; i++)
+        for (int i = 0; i < data.Length; i++)
         {
-            if(i > 0) builder.Append(' ');
+            if (i > 0) builder.Append(' ');
             builder.Append(data[i].ToString("F2"));
         }
         builder.Append(']');
@@ -66,20 +67,20 @@ public static class VectorHelper
         // seems to be slower
         // return TensorPrimitives.Sum<double>(vector.AsSpan());
         ref var ptr = ref MemoryMarshal.GetReference(vector.AsSpan());
-        nuint length = (nuint) vector.Count;
+        nuint length = (nuint)vector.Count;
 
         var accumulator = SimdVector.Zero;
         nuint index = 0;
 
-        var limit = length - (nuint) SimdVector.Count;
-        for(; index < limit; index += (nuint) SimdVector.Count)
+        var limit = length - (nuint)SimdVector.Count;
+        for (; index < limit; index += (nuint)SimdVector.Count)
         {
             accumulator += SimdVectorHelper.LoadUnsafe(ref ptr, index);
         }
 
         var result = SimdVectorHelper.Sum(accumulator);
 
-        for(; index < length; index++)
+        for (; index < length; index++)
         {
             result += Unsafe.Add(ref ptr, index);
         }
@@ -93,6 +94,29 @@ public static class VectorHelper
         return TensorPrimitives.Dot<double>(left.AsSpan(), right.AsSpan());
     }
 
+    public static void PointwiseExpInPlace(this Vector vector) => PointwiseExp(vector, vector);
+    public static void PointwiseExp(this Vector vector, Vector destination)
+    {
+        TensorPrimitives.Exp(vector.AsSpan(), destination.AsSpan());
+    }
+
+    public static void SoftMaxInPlace(this Vector vector) => SoftMax(vector, vector);
+    public static Vector SoftMax(this Vector vector) {
+        var result = Vector.Create(vector.Count);
+        SoftMax(vector, result);
+        return result;
+    }
+
+    public static void SoftMax(this Vector vector, Vector destination)
+    {
+        vector.PointwiseExp(destination);
+        var sum = destination.Sum();
+        destination.DivideInPlace(sum);
+        
+        // was slower in .net 9.preview.7
+        //TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());
+    }
+
     public static void MapInPlace(this Vector vector, Func<Weight, Weight> map) => vector.Map(map, vector);
     public static Vector Map(this Vector vector, Func<Weight, Weight> map)
     {
@@ -103,7 +127,7 @@ public static class VectorHelper
     public static void Map(this Vector vector, Func<Weight, Weight> map, Vector result)
     {
         AssertCountEquals(vector, result);
-        for(int i = 0; i < vector.Count; i++)
+        for (int i = 0; i < vector.Count; i++)
         {
             result[i] = map.Invoke(vector[i]);
         }
@@ -115,17 +139,17 @@ public static class VectorHelper
         AssertCountEquals(vector, result);
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
-        var mdSize = (nuint) SimdVector.Count;
-        var totalSize = (nuint) vector.Count;
+        var mdSize = (nuint)SimdVector.Count;
+        var totalSize = (nuint)vector.Count;
 
         nuint index = 0;
-        for(; index + mdSize <= totalSize; index += mdSize)
+        for (; index + mdSize <= totalSize; index += mdSize)
         {
             var simdVector = SimdVectorHelper.LoadUnsafe(ref vectorPtr, index);
             SimdVectorHelper.StoreUnsafe(simdMap.Invoke(simdVector), ref resultPtr, index);
         }
 
-        for(; index < totalSize; index++)
+        for (; index < totalSize; index++)
         {
             result[index] = fallbackMap.Invoke(vector[index]);
         }
@@ -172,10 +196,10 @@ public static class VectorHelper
         Debug.Assert(vector.Count == matrix.RowCount);
         Debug.Assert(result.Count == matrix.ColumnCount);
 
-        for(int column = 0; column < matrix.ColumnCount; column++)
+        for (int column = 0; column < matrix.ColumnCount; column++)
         {
             result[column] = 0;
-            for(int row = 0; row < matrix.RowCount; row++)
+            for (int row = 0; row < matrix.RowCount; row++)
             {
                 result[column] += vector[row] * matrix[row, column];
             }
@@ -209,28 +233,28 @@ public static class VectorHelper
         int rowCount = rowVector.Count;
         int colCount = columnVector.Count;
 
-        if(rowCount == 0 || colCount == 0 || rowCount * colCount != result.FlatCount)
+        if (rowCount == 0 || colCount == 0 || rowCount * colCount != result.FlatCount)
             throw new ArgumentException("Invalid dimensions for the vectors or result matrix.");
 
         int mdSize = SimdVector.Count;
 
-        for(int row = 0; row < rowCount; row++)
+        for (int row = 0; row < rowCount; row++)
         {
             var rowValue = new SimdVector(rowVector[row]);
 
             int col;
-            for(col = 0; col <= colCount - mdSize; col += mdSize)
+            for (col = 0; col <= colCount - mdSize; col += mdSize)
             {
                 var colValues = new SimdVector(columnVector.AsSpan().Slice(col, SimdVector.Count));
                 var resultValues = rowValue * colValues;
 
-                for(int i = 0; i < mdSize; i++)
+                for (int i = 0; i < mdSize; i++)
                 {
                     result[row, col + i] = resultValues[i];
                 }
             }
 
-            for(; col < colCount; col++)
+            for (; col < colCount; col++)
             {
                 result[row, col] = rowVector[row] * columnVector[col];
             }
@@ -277,6 +301,19 @@ public static class VectorHelper
         TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
 
+    public static void SubtractPointwiseInPlace(this Vector left, Weight right) => SubtractPointwise(left, right, left);
+    public static Vector SubtractPointwise(this Vector left, Weight right)
+    {
+        var result = Vector.Create(left.Count);
+        SubtractPointwise(left, right, result);
+        return result;
+    }
+    public static void SubtractPointwise(this Vector left, Weight right, Vector result)
+    {
+        AssertCountEquals(left, result);
+        TensorPrimitives.Subtract(left.AsSpan(), right, result.AsSpan());
+    }
+    
     public static void SubtractInPlace(this Vector left, Vector right) => Subtract(left, right, left);
     public static Vector Subtract(this Vector left, Vector right)
     {
@@ -294,14 +331,18 @@ public static class VectorHelper
     public static int MaximumIndex(this Vector vector)
     {
         var maxIndex = 0;
-        for(int i = 1; i < vector.Count; i++)
+        for (int i = 1; i < vector.Count; i++)
         {
-            if(vector[i] > vector[maxIndex])
+            if (vector[i] > vector[maxIndex])
             {
                 maxIndex = i;
             }
         }
         return maxIndex;
+    }
+
+    public static Weight Max(this Vector vector) {
+        return TensorPrimitives.Max<Weight>(vector.AsSpan());
     }
 
     //TODO: test
@@ -310,6 +351,14 @@ public static class VectorHelper
         var copy = Vector.Create(vector.Count);
         vector.AsSpan().CopyTo(copy.AsSpan());
         return copy;
+    }
+
+    //TODO: test
+    public static void CopyTo(this Vector vector, Vector target)
+    {
+        AssertCountEquals(vector, target);
+        vector.AsSpan().CopyTo(target.AsSpan());
+        return;
     }
 
     //TODO: test

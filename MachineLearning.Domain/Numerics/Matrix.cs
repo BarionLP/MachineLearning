@@ -15,15 +15,16 @@ public interface Matrix
     internal Vector Storage { get; }
 
     public Span<Weight> AsSpan();
-    public Vector Row(int rowIndex);
+    public Vector RowRef(int rowIndex);
 
+    public static Matrix CreateSquare(int size) => Create(size, size);
     public static Matrix Create(int rowCount, int columnCount) => new MatrixFlat(rowCount, columnCount, Vector.Create(rowCount * columnCount));
     public static Matrix Of(int rowCount, int columnCount, double[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
     public static Matrix Of(int rowCount, int columnCount, Vector storage)
     {
         if(storage.Count != columnCount * rowCount)
         {
-            throw new ArgumentException("storage size does not match specified");
+            throw new ArgumentException("storage size does not match specified dimensions");
         }
 
         return new MatrixFlat(rowCount, columnCount, storage);
@@ -41,7 +42,7 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
     public ref Weight this[nuint flatIndex] => ref Storage[flatIndex];
     public Span<Weight> AsSpan() => Storage.AsSpan();
 
-    public Vector Row(int rowIndex) => new MatrixRowReference(rowIndex, this);
+    public Vector RowRef(int rowIndex) => new MatrixRowReference(rowIndex, this);
 
     public override string ToString()
     {
@@ -132,8 +133,8 @@ public static class MatrixHelper
 
         for(int rowIndex = 0; rowIndex < left.RowCount; rowIndex++)
         {
-            var row = left.Row(rowIndex);
-            var resultRow = result.Row(rowIndex);
+            var row = left.RowRef(rowIndex);
+            var resultRow = result.RowRef(rowIndex);
             right.Multiply(row, resultRow);
         }
     }

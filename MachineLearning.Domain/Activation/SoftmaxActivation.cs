@@ -6,19 +6,12 @@ public sealed class SoftmaxActivation : IActivationMethod
 {
     public static readonly SoftmaxActivation Instance = new();
 
-    public void Activate(Vector input, Vector result)
-    {
-        input.Map(Math.Exp, result);
-        var sum = result.Sum();
-        result.DivideInPlace(sum);
-    }
-
+    public void Activate(Vector input, Vector result) => input.SoftMax(result);
     public void Derivative(Vector input, Vector result)
     {
-        input.Map(Math.Exp, result);
+        input.PointwiseExp(result);
         var sum = result.Sum();
         var inverseSumSquared = 1 / (sum * sum);
-        //result.MapInPlace(ex => (ex * sum - ex * ex) * inverseSumSquared);
 
         ref var vectorPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
