@@ -1,53 +1,50 @@
 ﻿using MachineLearning.Samples.Language;
+using MachineLearning.Serialization;
+using System;
 
 namespace MachineLearning.Samples.Logic;
 
-public static class LogicModel
+public sealed class LogicModel : ISample<string, char>
 {
     public const int CONTEXT_SIZE = 24;
-    public const string TOKENS = "0123456789+-*/^;";
+    public const string TOKENS = "0123456789+-*/^\0";
 
-    public static StringEmbedder GetEmbedder() => new(CONTEXT_SIZE, TOKENS, false);
+    public static IEmbedder<string, char> Embedder { get; } = new StringEmbedder(CONTEXT_SIZE, TOKENS, false);
+    public static IOutputResolver<char> OutputResolver { get; } = new CharOutputResolver(TOKENS);
+    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("logic.nnw"));
     public static EmbeddedModel<string, char> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
         return new ModelBuilder(CONTEXT_SIZE * 8)
-            .SetDefaultActivationMethod(SigmoidActivation.Instance)
+            .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
+            .AddLayer(512, initializer)
+            .AddLayer(512, initializer)
             .AddLayer(256, initializer)
             .AddLayer(TOKENS.Length, initializer, SoftmaxActivation.Instance)
-            .Build(GetEmbedder());
+            .Build(Embedder);
     }
 
-    public static TrainingConfig<string, char> GetTrainingConfig(Random? random = null)
+    public static TrainingConfig<string, char> DefaultTrainingConfig(Random? random = null) => new()
     {
-        return new TrainingConfig<string, char>()
+        TrainingSet = LogicalStatementSource.GenerateAdditionStatements(1024, random).ToArray(),
+        TestSet = LogicalStatementSource.GenerateAdditionStatements(128 * 2, random).ToArray(),
+
+        EpochCount = 32,
+        BatchCount = 512 * 3,
+
+        Optimizer = new AdamWOptimizer
         {
-            TrainingSet = LogicalStatementSource.GenerateAdditionStatements(1024, random).ToArray(),
-            TestSet = LogicalStatementSource.GenerateAdditionStatements(128, random).ToArray(),
+            LearningRate = 0.1,
+            CostFunction = CrossEntropyLoss.Instance,
+        },
 
-            EpochCount = 16,
-            BatchCount = 512*2,
+        OutputResolver = new CharOutputResolver(TOKENS),
 
-            Optimizer = new AdamOptimizer
-            {
-                LearningRate = 0.1,
-                CostFunction = CrossEntropyLoss.Instance,
-            },
+        DumpEvaluationAfterBatches = 32,
+        EvaluationCallback = result => Console.WriteLine(result.Dump()),
 
-            OutputResolver = new CharOutputResolver(TOKENS),
-
-            DumpEvaluationAfterBatches = 32,
-            EvaluationCallback = result => Console.WriteLine(result.Dump()),
-
-            ShuffleTrainingSetPerEpoch = true,
-            RandomSource = random ?? Random.Shared,
-        };
-    }
-
-    public static void Train(EmbeddedModel<string, char> model, TrainingConfig<string, char> config) {
-        var trainer = ModelTrainer.Create(model, config);
-        trainer.TrainConsoleCancelable();
-    }
+        RandomSource = random ?? Random.Shared,
+    };
 
     public static void OpenChat(EmbeddedModel<string, char> model) {
         string input;
@@ -70,7 +67,7 @@ public static class LogicModel
         {
             var prediction = model.Process(input);
             input += prediction;
-            if (prediction == ';')
+            if (prediction == '\0')
             {
                 break;
             }
@@ -78,4 +75,13 @@ public static class LogicModel
 
         return input;
     }
+
+    public static EmbeddedModel<string, char> TrainDefault(EmbeddedModel<string, char>? model = null, TrainingConfig<string, char>? trainingConfig = null, Random? random = null)
+    {
+        var trainer = ModelTrainer.Create(model ?? CreateModel(random), trainingConfig ?? DefaultTrainingConfig(random));
+        trainer.TrainConsole();
+        return trainer.Model;
+    }
+
+    public static IEnumerable<DataEntry<string, char>> GetTrainingSet(Random? random = null) => LogicalStatementSource.GenerateAdditionStatements(1024, random);
 }

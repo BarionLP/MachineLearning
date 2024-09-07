@@ -81,9 +81,9 @@ public static class TransformerTest
 
 public sealed class RandomInitializer : IInitializer
 {
-    public void Initialize(Vector vector)
+    public void Initialize(Span<Weight> vector)
     {
-        vector.MapInPlace(s => Random.Shared.NextDouble());
+        SpanOperations.Map(vector, vector, s => Random.Shared.NextDouble());
     }
 }
 

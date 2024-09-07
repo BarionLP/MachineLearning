@@ -7,6 +7,8 @@ public sealed class StringEmbedder(int contextSize, string tokens, bool weighted
 {
     public Vector Embed(string input)
     {
+        Debug.Assert(input.Length <= contextSize);
+        
         var bytes = Encoding.Latin1.GetBytes(input);
         var result = Vector.Create(8 * bytes.Length);
 

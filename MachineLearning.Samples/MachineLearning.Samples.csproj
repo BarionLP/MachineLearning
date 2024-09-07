@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\MachineLearning.Serialization\MachineLearning.Serialization.csproj" />
     <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />
     <ProjectReference Include="..\MachineLearning.Model\MachineLearning.Model.csproj" />
   </ItemGroup>
@@ -9,6 +10,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
 </Project>

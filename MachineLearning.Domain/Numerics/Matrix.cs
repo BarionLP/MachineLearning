@@ -1,21 +1,24 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
+using System.Numerics.Tensors;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MachineLearning.Domain.Numerics;
 
-// must be a continuous chunk of memory for current simd to work 
+// must be a row major continuous chunk of memory for current simd to work 
 public interface Matrix
 {
+    public static readonly Matrix Empty = new MatrixFlat(0, 0, Vector.Empty);
+    
     public int RowCount { get; }
     public int ColumnCount { get; }
     public int FlatCount { get; }
     public ref Weight this[int row, int column] { get; }
     public ref Weight this[nuint flatIndex] { get; }
-    internal Vector Storage { get; }
+
 
     public Span<Weight> AsSpan();
-    public Vector RowRef(int rowIndex);
 
     public static Matrix CreateSquare(int size) => Create(size, size);
     public static Matrix Create(int rowCount, int columnCount) => new MatrixFlat(rowCount, columnCount, Vector.Create(rowCount * columnCount));
@@ -44,7 +47,6 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
     public ref Weight this[nuint flatIndex] => ref Storage[flatIndex];
     public Span<Weight> AsSpan() => Storage.AsSpan();
 
-    public Vector RowRef(int rowIndex) => new MatrixRowReference(rowIndex, this);
 
     public override string ToString()
     {
@@ -70,6 +72,35 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
 
         return row * ColumnCount + column;
     }
+}
+
+internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : Matrix
+{
+    private readonly int _startIndex = tensor.RowCount * tensor.ColumnCount * layerIndex;
+    private readonly Tensor _tensor = tensor;
+
+    public int RowCount => _tensor.RowCount;
+    public int ColumnCount => _tensor.ColumnCount;
+    public int FlatCount => RowCount * FlatCount;
+
+    public ref Weight this[int row, int column] => ref AsSpan()[row * ColumnCount + column];
+    public ref Weight this[nuint index] => ref AsSpan()[(int) index];
+
+    public Span<Weight> AsSpan() => _tensor.AsSpan().Slice(_startIndex, FlatCount);
+
+    //public override string ToString()
+    //{
+    //    var builder = new StringBuilder("[");
+    //    var data = AsSpan();
+    //    for(int i = 0; i < data.Length; i++)
+    //    {
+    //        if(i > 0)
+    //            builder.Append(' ');
+    //        builder.Append(data[i].ToString("F2"));
+    //    }
+    //    builder.Append(']');
+    //    return builder.ToString();
+    //}
 }
 
 
@@ -208,7 +239,7 @@ public static class MatrixHelper
     public static void Map(this Matrix matrix, Func<Weight, Weight> map, Matrix result)
     {
         AssertCountEquals(matrix, result);
-        matrix.Storage.Map(map, result.Storage);
+        SpanOperations.Map(matrix.AsSpan(), result.AsSpan(), map);
     }
 
     public static void MapInFirst(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map) => matrices.Map(matrices.a, map);
@@ -221,8 +252,7 @@ public static class MatrixHelper
     public static void Map(this (Matrix a, Matrix b) matrices, Matrix result, Func<Weight, Weight, Weight> map)
     {
         AssertCountEquals(matrices.a, matrices.b, result);
-
-        (matrices.a.Storage, matrices.b.Storage).Map(map, result.Storage);
+        SpanOperations.Map(matrices.a.AsSpan(), matrices.b.AsSpan(), result.AsSpan(), map);
     }
 
     public static void AddInPlace(this Matrix left, Matrix right)
@@ -239,8 +269,7 @@ public static class MatrixHelper
     public static void Add(this Matrix left, Matrix right, Matrix result)
     {
         AssertCountEquals(left, right, result);
-        
-        left.Storage.Add(right.Storage, result.Storage);
+        TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
 
     public static void SubtractInPlace(this Matrix left, Matrix right)
@@ -257,9 +286,10 @@ public static class MatrixHelper
     public static void Subtract(this Matrix left, Matrix right, Matrix result)
     {
         AssertCountEquals(left, right, result);
-
-        left.Storage.Subtract(right.Storage, result.Storage);
+        TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
+
+    public static Vector RowRef(this Matrix matrix, int rowIndex) => new MatrixRowReference(rowIndex, matrix);
 
     public static Matrix Copy(this Matrix matrix)
     {
@@ -274,10 +304,14 @@ public static class MatrixHelper
     }
 
     const string MATRIX_COUNT_MISMATCH = "matrices must match in size!";
+    
+    [Conditional("DEBUG")]
     private static void AssertCountEquals(Matrix a, Matrix b)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount, MATRIX_COUNT_MISMATCH);
     }
+
+    [Conditional("DEBUG")]
     private static void AssertCountEquals(Matrix a, Matrix b, Matrix c)
     {
         Debug.Assert(a.RowCount == b.RowCount && b.RowCount == c.RowCount && 

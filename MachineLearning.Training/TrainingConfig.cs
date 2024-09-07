@@ -2,6 +2,7 @@
 using MachineLearning.Data.Noise;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
+using System.Text;
 
 namespace MachineLearning.Training;
 
@@ -9,7 +10,7 @@ public sealed record TrainingConfig<TInput, TOutput>
 {
     public required DataEntry<TInput, TOutput>[] TrainingSet { get; init; }
     public required DataEntry<TInput, TOutput>[] TestSet { get; init; }
-    public bool ShuffleTrainingSetPerEpoch { get; init; } = false;
+    public bool ShuffleTrainingSetPerEpoch { get; init; } = true;
 
     public required int EpochCount { get; init; }
     public required int BatchCount { get; init; }
@@ -64,4 +65,22 @@ public sealed record TrainingConfig<TInput, TOutput>
     public Batch<TInput, TOutput> GetRandomTestBatch() => GetRandomTestBatch(BatchSize);
     public Batch<TInput, TOutput> GetRandomTestBatch(int batchSize)
         => Batch.CreateRandom(TestSet, batchSize, RandomSource);
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine();
+        sb.AppendLine("Training Config:");
+        sb.AppendLine($"{TrainingSet.Length} Training Entries");
+        sb.AppendLine($"{TestSet.Length} Test Entries");
+        sb.AppendLine("Training for");
+        sb.AppendLine($" - {EpochCount} epochs");
+        sb.AppendLine($"  - {BatchCount} batches");
+        sb.AppendLine($"   - {BatchSize} entries");
+        sb.AppendLine($"{Optimizer.GetType().Name} activated");
+
+        if(ShuffleTrainingSetPerEpoch) sb.AppendLine("Shuffling every epoch");
+        sb.AppendLine();
+        return sb.ToString();
+    }
 }

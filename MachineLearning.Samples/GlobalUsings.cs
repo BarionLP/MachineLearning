@@ -9,3 +9,5 @@ global using MachineLearning.Model.Layer.Initialization;
 global using MachineLearning.Training;
 global using MachineLearning.Training.Cost;
 global using MachineLearning.Training.Optimization.Adam;
+global using MachineLearning.Training.Optimization.AdamW;
+global using MachineLearning.Training.Optimization.SGDMomentum;

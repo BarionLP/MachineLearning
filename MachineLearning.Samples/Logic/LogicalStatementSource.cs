@@ -11,7 +11,7 @@ public static class LogicalStatementSource
             {
                 var result = a + b;
                 var statement = $"{a}+{b}=";
-                var resultString = $"{result};";
+                var resultString = $"{result}\0";
 
                 foreach (var sub in resultString)
                 {

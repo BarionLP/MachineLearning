@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Samples.Language;
 
-public static class SimpleLM
+public sealed class SimpleLM : ISample<string, char>
 {
     public const int CONTEXT_SIZE = 256 + 64;
     public static ModelDefinition CreateModel(Random? random = null)
@@ -17,16 +17,16 @@ public static class SimpleLM
             .Build(new StringEmbedder(CONTEXT_SIZE, LanguageDataSource.TOKENS, true));
     }
 
-    public static TrainingConfig<string, char> GetTrainingConfig(Random? random = null)
+    public static TrainingConfig<string, char> DefaultTrainingConfig(Random? random = null)
     {
         random ??= Random.Shared;
-        var dataSet = LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(CONTEXT_SIZE).ExpandPerChar().ToArray();
+        var dataSet = GetTrainingSet().ToArray();
         random.Shuffle(dataSet);
 
         var trainingSetSize = (int) (dataSet.Length * 0.9);
         return new TrainingConfig<string, char>()
         {
-            TrainingSet = dataSet.ToArray(),
+            TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
             TestSet = dataSet.Skip(trainingSetSize).ToArray(),
 
             EpochCount = 8,
@@ -50,11 +50,11 @@ public static class SimpleLM
     
     public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig<string, char>? config = null, Random? random = null)
     {
-        config ??= GetTrainingConfig(random);
         model ??= CreateModel(random);
+        config ??= DefaultTrainingConfig(random);
 
         var trainer = ModelTrainer.Create(model, config);
-        trainer.TrainConsoleCancelable();
+        trainer.TrainConsole();
 
         return model;
     }
@@ -87,4 +87,6 @@ public static class SimpleLM
             Generate(input, model);
         } while(true);
     }
+
+    public static IEnumerable<DataEntry<string, char>> GetTrainingSet(Random? random = null) => LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(CONTEXT_SIZE).ExpandPerChar();
 }

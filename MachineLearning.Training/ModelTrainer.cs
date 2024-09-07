@@ -4,7 +4,6 @@ using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("MachineLearning.Benchmarks")]
@@ -26,24 +25,28 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
         Context = new(model, config, Optimizer);
     }
 
-    public void TrainConsoleCancelable()
+    public void TrainConsole(bool cancelable = true)
     {
         using var cts = new CancellationTokenSource();
-        Task.Run(async () =>
+        if(cancelable)
         {
-            while (!cts.IsCancellationRequested)
+            Task.Run(async () =>
             {
-                if (Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
+                while(!cts.IsCancellationRequested)
                 {
-                    Console.WriteLine("Canceling...");
-                    cts.Cancel();
-                    break;
+                    if(Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
+                    {
+                        Console.WriteLine("Canceling...");
+                        cts.Cancel();
+                        break;
+                    }
+                    await Task.Delay(500);
                 }
-                await Task.Delay(500);
-            }
-        });
+            });
+        }
 
-        Console.WriteLine($"Batch Size: {Config.BatchSize}");
+        Console.WriteLine($"Training {Model}");
+        Console.WriteLine(Config.ToString());
         Console.WriteLine("Starting Training...");
         Train(cts.Token);
         cts.Cancel();
@@ -119,17 +122,13 @@ public sealed class LayerSnapshot(int inputNodes, int outputNodes)
     public readonly Vector LastWeightedInput = Vector.Create(outputNodes);
     public readonly Vector LastActivatedWeights = Vector.Create(outputNodes);
     public readonly Matrix WeightGradients = Matrix.Create(outputNodes, inputNodes);
-    //private bool _isUsed = true;
 
-    //private static readonly object _lock = new();
     public static LayerSnapshot Get(SimpleLayer layer)
     {
         var queue = _registry.GetOrAdd(layer, static (layer) => []);
 
         if (queue.TryDequeue(out var snapshot))
         {
-            //Debug.Assert(!snapshot._isUsed);
-            //snapshot._isUsed = true;
             return snapshot;
         }
 
@@ -138,11 +137,6 @@ public sealed class LayerSnapshot(int inputNodes, int outputNodes)
 
     public static void Return(SimpleLayer layer, LayerSnapshot snapshot)
     {
-        //Debug.Assert(snapshot._isUsed);
-        //snapshot.LastWeightedInput.ResetZero();
-        //snapshot.LastActivatedWeights.ResetZero();
-        //snapshot.WeightGradients.ResetZero();
-        //snapshot._isUsed = false;
         _registry[layer].Enqueue(snapshot);
     }
 }

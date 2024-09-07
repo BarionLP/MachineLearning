@@ -33,10 +33,10 @@ internal readonly struct VectorSimple(int count, Weight[] storage) : Vector
     public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("F2")))}]";
 }
 
-internal readonly struct MatrixRowReference(int _rowIndex, MatrixFlat _matrix) : Vector
+internal readonly struct MatrixRowReference(int _rowIndex, Matrix _matrix) : Vector
 {
     private readonly int _startIndex = _rowIndex * _matrix.ColumnCount;
-    private readonly MatrixFlat _matrix = _matrix;
+    private readonly Matrix _matrix = _matrix;
 
     public ref double this[int index] => ref AsSpan()[index];
 
@@ -128,10 +128,7 @@ public static class VectorHelper
     public static void Map(this Vector vector, Func<Weight, Weight> map, Vector result)
     {
         AssertCountEquals(vector, result);
-        for (int i = 0; i < vector.Count; i++)
-        {
-            result[i] = map.Invoke(vector[i]);
-        }
+        SpanOperations.Map(vector.AsSpan(), result.AsSpan(), map);
     }
 
     public static void MapInPlace(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap) => vector.Map(simdMap, fallbackMap, vector);
@@ -228,7 +225,6 @@ public static class VectorHelper
         }
     }
 
-
     public static Matrix MultiplyToMatrix(Vector rowVector, Vector columnVector)
     {
         var result = Matrix.Create(rowVector.Count, columnVector.Count);
@@ -261,11 +257,6 @@ public static class VectorHelper
                 var resultValues = rowValue * columnValues;
 
                 SimdVectorHelper.StoreUnsafe(resultValues, ref resultPtr, rowOffset + column);
-
-                //for(nuint i = 0; i < mdSize; i++)
-                //{
-                //    result[rowOffset + column + i] = resultValues[(int)i];
-                //}
             }
 
             for(; column < columnCount; column++)
@@ -377,7 +368,6 @@ public static class VectorHelper
         TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
 
-    //TODO: test
     public static int MaximumIndex(this Vector vector)
     {
         var maxIndex = 0;
@@ -391,9 +381,7 @@ public static class VectorHelper
         return maxIndex;
     }
 
-    public static Weight Max(this Vector vector) {
-        return TensorPrimitives.Max<Weight>(vector.AsSpan());
-    }
+    public static Weight Max(this Vector vector) => TensorPrimitives.Max<Weight>(vector.AsSpan());
 
     //TODO: test
     public static Vector Copy(this Vector vector)
@@ -408,20 +396,17 @@ public static class VectorHelper
     {
         AssertCountEquals(vector, target);
         vector.AsSpan().CopyTo(target.AsSpan());
-        return;
     }
 
-    //TODO: test
-    public static void ResetZero(this Vector vector)
-    {
-        vector.AsSpan().Clear();
-    }
+    public static void ResetZero(this Vector vector) => vector.AsSpan().Clear();
 
     const string VECTORS_MUST_MATCH = "Vectors must match in size";
+    [Conditional("DEBUG")]
     private static void AssertCountEquals(Vector a, Vector b)
     {
         Debug.Assert(a.Count == b.Count, VECTORS_MUST_MATCH);
     }
+    [Conditional("DEBUG")]
     private static void AssertCountEquals(Vector a, Vector b, Vector c)
     {
         Debug.Assert(a.Count == b.Count && a.Count == b.Count, VECTORS_MUST_MATCH);
