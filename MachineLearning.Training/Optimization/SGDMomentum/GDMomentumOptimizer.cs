@@ -1,18 +1,28 @@
-/* using MachineLearning.Training.Cost;
+using MachineLearning.Model.Layer;
+using MachineLearning.Training.Cost;
 
-namespace MachineLearning.Training.Optimization;
+namespace MachineLearning.Training.Optimization.SGDMomentum;
 
-public sealed class GDMomentumOptimizerConfig : IOptimizerConfig<double>
+public sealed class GDMomentumOptimizer : IOptimizer
 {
-    public required double LearningRate { get; init; } = 0.7;
-    public double LearningRateEpochMultiplier { get; init; } = 1;
-    public required double Momentum { get; init; } = 0.85;
-    public required double Regularization { get; init; } = 0.01;
+    public required double InitialLearningRate { get; init; } = 0.7;
+    public double LearningRateEpochMultiplier { get; init; } = 0.94;
+    public double Momentum { get; init; } = 0.85;
+    public double Regularization { get; init; } = 0.01;
     public ICostFunction CostFunction { get; init; } = MeanSquaredErrorCost.Instance;
+    public double LearningRate { get; private set; }
 
-    public IOptimizer<double> CreateOptimizer() => new GDMomentumOptimizer(this);
+    public void Init()
+    {
+        LearningRate = InitialLearningRate;
+    }
+
+    public void OnEpochCompleted()
+    {
+        LearningRate *= LearningRateEpochMultiplier;
+    }
+    public ILayerOptimizer CreateLayerOptimizer(SimpleLayer layer) => new GDMomentumLayerOptimizer(this, layer);
 }
- */
 
 /*
 When scaling up neural network models in size and complexity, various hyperparameters need adjustment to maintain or improve the model’s training efficiency and performance. Here's a table overview that outlines general trends for tweaking key hyperparameters like Epoch Count, Batch Size, Learning Rate, Learning Rate Multiplier, Momentum, and Regularization as the model size increases:

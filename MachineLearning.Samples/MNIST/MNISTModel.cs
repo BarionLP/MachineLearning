@@ -8,7 +8,7 @@ public class MNISTModel
 {
     public static IEmbedder<double[], int> GetEmbedder() => MNISTEmbedder.Instance;
 
-    public static ModelDefinition GetModel(Random? random = null)
+    public static ModelDefinition CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
 
@@ -16,7 +16,7 @@ public class MNISTModel
                 .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
                 .AddLayer(256, initializer)
                 .AddLayer(128, initializer)
-                .AddLayer(10, builder => builder.SetActivationMethod(SoftmaxActivation.Instance).Initialize(new XavierInitializer(random)))
+                .AddLayer(10, new XavierInitializer(random), SoftmaxActivation.Instance)
                 .Build(GetEmbedder());
 
         return network;
@@ -34,7 +34,7 @@ public class MNISTModel
             EpochCount = 8,
             BatchCount = 128,
 
-            Optimizer = new AdamOptimizerConfig
+            Optimizer = new AdamOptimizer
             {
                 LearningRate = 0.1,
                 CostFunction = CrossEntropyLoss.Instance,
@@ -64,7 +64,7 @@ public class MNISTModel
 
     public static ModelDefinition TrainDefault(Random? random = null)
     {
-        var model = GetModel(random);
+        var model = CreateModel(random);
         var config = GetTrainingConfig(random);
 
         TrainDefault(model, config);

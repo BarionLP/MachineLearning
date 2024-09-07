@@ -10,7 +10,7 @@ public sealed class AttentionBlock(ModelInfo Info)
     public Matrix Process(Matrix input) {
         var result = Matrix.Create(input.RowCount, input.ColumnCount);
         foreach(var head in Heads) {
-            input.AddInPlace(head.GetEmbeddingDelta(input));
+            //input.AddInPlace(head.GetEmbeddingDelta(input));
         }
         return result;
     }

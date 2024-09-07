@@ -15,7 +15,7 @@ public class ModelBenchmarks
     public void Setup(){
         var source = new MNISTDataSource(AssetManager.MNISTArchive);
         dataSet = source.TrainingSet.Take(256).ToArray();
-        trainer = new ModelTrainer<double[], int>(MNISTModel.GetModel(), MNISTModel.GetTrainingConfig());
+        trainer = new ModelTrainer<double[], int>(MNISTModel.CreateModel(), MNISTModel.GetTrainingConfig());
     }
 
     [Benchmark]

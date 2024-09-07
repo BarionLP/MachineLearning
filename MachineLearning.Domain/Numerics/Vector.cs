@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Data.Common;
+using System.Diagnostics;
 using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -64,8 +66,7 @@ public static class VectorHelper
 {
     public static Weight Sum(this Vector vector)
     {
-        // seems to be slower
-        // return TensorPrimitives.Sum<double>(vector.AsSpan());
+        // return TensorPrimitives.Sum<double>(vector.AsSpan()); // seems to be slower
         ref var ptr = ref MemoryMarshal.GetReference(vector.AsSpan());
         nuint length = (nuint)vector.Count;
 
@@ -190,18 +191,39 @@ public static class VectorHelper
         vector.Multiply(matrix, result);
         return result;
     }
-    // cannot be simded because row entries in matrix are not next to each other in memory
+
     public static void Multiply(this Vector vector, Matrix matrix, Vector result)
     {
+        //Story time: swapping loops increased performance by 85 % because of increased cache hits (before simd impl)
         Debug.Assert(vector.Count == matrix.RowCount);
         Debug.Assert(result.Count == matrix.ColumnCount);
 
-        for (int column = 0; column < matrix.ColumnCount; column++)
+        result.ResetZero();
+
+        ref var matrixPtr = ref MemoryMarshal.GetReference(matrix.AsSpan());
+        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
+        var mdSize = (nuint) SimdVector.Count;
+        var rowCount = (nuint) matrix.RowCount;
+        var columnCount = (nuint) matrix.ColumnCount;
+
+
+        for(nuint row = 0; row < rowCount; row++)
         {
-            result[column] = 0;
-            for (int row = 0; row < matrix.RowCount; row++)
+            var rowValue = new SimdVector(vector[row]);
+            var rowOffset = row * columnCount;
+            nuint column = 0;
+            for(; column <= columnCount - mdSize; column += mdSize)
             {
-                result[column] += vector[row] * matrix[row, column];
+                var resultValues = SimdVectorHelper.LoadUnsafe(ref resultPtr, column);
+                var matrixValues = SimdVectorHelper.LoadUnsafe(ref matrixPtr, rowOffset + column);
+                resultValues += rowValue * matrixValues;
+
+                SimdVectorHelper.StoreUnsafe(resultValues, ref resultPtr, column);
+            }
+
+            for(; column < columnCount; column++)
+            {
+                result[column] += vector[row] * matrix[rowOffset + column];
             }
         }
     }
@@ -214,27 +236,55 @@ public static class VectorHelper
         return result;
     }
 
-    // TODO: simd and test
     public static void MultiplyToMatrix(Vector rowVector, Vector columnVector, Matrix result)
     {
-
         Debug.Assert(rowVector.Count == result.RowCount);
         Debug.Assert(columnVector.Count == result.ColumnCount);
-        MultiplyToMatrixSimd(rowVector, columnVector, result);
-        //for(int row = 0; row < rowVector.Count; row++) {
-        //    for(int column = 0; column < columnVector.Count; column++) {
-        //        result[row, column] = rowVector[row] * columnVector[column];
-        //    }
-        //}
+
+        ref var columnPtr = ref MemoryMarshal.GetReference(columnVector.AsSpan());
+        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
+
+        var rowCount = (nuint) rowVector.Count;
+        var columnCount = (nuint) columnVector.Count;
+
+        nuint mdSize = (nuint) SimdVector.Count;
+
+        for(nuint row = 0; row < rowCount; row++)
+        {
+            var rowValue = new SimdVector(rowVector[row]);
+            var rowOffset = row * columnCount;
+
+            nuint column = 0;
+            for(; column <= columnCount - mdSize; column += mdSize)
+            {
+                var columnValues = SimdVectorHelper.LoadUnsafe(ref columnPtr, column);
+                var resultValues = rowValue * columnValues;
+
+                SimdVectorHelper.StoreUnsafe(resultValues, ref resultPtr, rowOffset + column);
+
+                //for(nuint i = 0; i < mdSize; i++)
+                //{
+                //    result[rowOffset + column + i] = resultValues[(int)i];
+                //}
+            }
+
+            for(; column < columnCount; column++)
+            {
+                result[rowOffset + column] = rowVector[row] * columnVector[column];
+            }
+        }
     }
 
-    private static void MultiplyToMatrixSimd(Vector rowVector, Vector columnVector, Matrix result)
+    public static void MultiplyToMatrixSimd(Vector rowVector, Vector columnVector, Matrix result)
     {
+        Debug.Assert(rowVector.Count == result.RowCount);
+        Debug.Assert(columnVector.Count == result.ColumnCount);
+
         int rowCount = rowVector.Count;
         int colCount = columnVector.Count;
 
-        if (rowCount == 0 || colCount == 0 || rowCount * colCount != result.FlatCount)
-            throw new ArgumentException("Invalid dimensions for the vectors or result matrix.");
+        //if (rowCount == 0 || colCount == 0 || rowCount * colCount != result.FlatCount)
+        //    throw new ArgumentException("Invalid dimensions for the vectors or result matrix.");
 
         int mdSize = SimdVector.Count;
 

@@ -30,27 +30,52 @@ public static class TransformerTest
 {
     public static void Main()
     {
-        var model = new Model(new()
+        //var model = new Model(new()
+        //{
+        //    ValidTokens = " 0123456789.",
+        //    EmbeddingDimensions = 8,
+        //    ContextSize = 128,
+        //    KeyQueryDimensions = 12,
+        //    AttentionBlockCount = 1,
+        //    AttentionHeadCountPerBlock = 1,
+        //    Temperature = 1.2,
+        //    Initializer = new RandomInitializer(),
+        //});
+
+        //model.Initialize();
+
+        //var testMessage = "3.1415";
+        //DebugHelper.PrintTokenMatrix(testMessage, model.Embedder.Embedd(testMessage));
+        //DebugHelper.PrintTokenMatrix(model.Info.ValidTokens, model.Embedder.EmbeddingMatrix);
+
+        //Console.WriteLine(model.Embedder.Unembed(Vector.Of([1,1,1,1,1,1,1,1])));
+
+        //model.AttentionBlock.Process(model.Embedder.Embedd(testMessage));
+
+        var info = new ModelInfo()
         {
             ValidTokens = " 0123456789.",
-            EmbeddingDimensions = 8,
-            ContextSize = 128,
-            KeyQueryDimensions = 12,
+            EmbeddingDimensions = 4,
+            ContextSize = 4,
+            KeyQueryDimensions = 2,
             AttentionBlockCount = 1,
             AttentionHeadCountPerBlock = 1,
             Temperature = 1.2,
             Initializer = new RandomInitializer(),
-        });
+        };
 
-        model.Initialize();
+        var head = new AttentionHead(info);
 
-        var testMessage = "3.1415";
-        DebugHelper.PrintTokenMatrix(testMessage, model.Embedder.Embedd(testMessage));
-        DebugHelper.PrintTokenMatrix(model.Info.ValidTokens, model.Embedder.EmbeddingMatrix);
+        head.Initialize(head.Info.Initializer);
 
-        Console.WriteLine(model.Embedder.Unembed(Vector.Of([1,1,1,1,1,1,1,1])));
+        var pass = AttentionHead.HeadPass.Allocate(info);
+        pass.input.MapInPlace(_ => 1);
 
-        model.AttentionBlock.Process(model.Embedder.Embedd(testMessage));
+        var result = head.GetEmbeddingDelta(pass);
+
+        var loss = (pass.input, result).Map((input, result) => 0.5 * Math.Pow(result - input, 2));
+
+        head.BackwardPass(loss, pass);
     }
 }
 

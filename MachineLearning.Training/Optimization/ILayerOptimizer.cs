@@ -1,7 +1,7 @@
 using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
 
-namespace MachineLearning.Training.Optimization.Layer;
+namespace MachineLearning.Training.Optimization;
 
 public interface ILayerOptimizer
 {

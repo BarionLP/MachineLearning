@@ -29,6 +29,8 @@ public interface Matrix
 
         return new MatrixFlat(rowCount, columnCount, storage);
     }
+
+    public static Matrix OfSize(Matrix template) => Create(template.RowCount, template.ColumnCount);
 }
 
 internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storage) : Matrix
@@ -138,6 +140,63 @@ public static class MatrixHelper
             right.Multiply(row, resultRow);
         }
     }
+
+    #region ChatGPT
+    public static Vector MultiplyTransposed(this Matrix matrix, Vector vector)
+    {
+        var result = Vector.Create(vector.Count);
+        MultiplyTransposed(matrix, vector, result);
+        return result;
+    }
+    public static void MultiplyTransposed(this Matrix matrix, Vector vector, Vector result)
+    {
+        Debug.Assert(matrix.RowCount == vector.Count);
+        Debug.Assert(matrix.ColumnCount == result.Count);
+
+        //result.ResetZero(); // Reset result vector to zero
+
+        for(int col = 0; col < matrix.ColumnCount; col++)
+        {
+            for(int row = 0; row < matrix.RowCount; row++)
+            {
+                result[col] += matrix[row, col] * vector[row]; // Multiply matrix transpose element by vector element
+            }
+        }
+    }
+
+    public static void SoftMaxGradientInPlace(Vector gradient, Vector softmax)
+    {
+        Debug.Assert(gradient.Count == softmax.Count);
+
+        for(int i = 0; i < softmax.Count; i++)
+        {
+            Weight si = softmax[i];
+            gradient[i] *= si * (1 - si); // Gradient of softmax for the diagonal terms
+
+            for(int j = 0; j < softmax.Count; j++)
+            {
+                if(i != j)
+                {
+                    gradient[i] -= si * softmax[j] * gradient[j]; // Gradient of softmax for the off-diagonal terms
+                }
+            }
+        }
+    }
+
+    public static void MultiplyTransposeWithGradient(Vector gradient, Vector inputRow, Matrix weightGradient)
+    {
+        Debug.Assert(gradient.Count == weightGradient.RowCount);
+        Debug.Assert(inputRow.Count == weightGradient.ColumnCount);
+
+        for(int i = 0; i < weightGradient.RowCount; i++)
+        {
+            for(int j = 0; j < weightGradient.ColumnCount; j++)
+            {
+                weightGradient[i, j] += gradient[i] * inputRow[j]; // Compute and accumulate the weight gradient
+            }
+        }
+    }
+    #endregion
 
     public static void MapInPlace(this Matrix matrix, Func<Weight, Weight> map) => matrix.Map(map, matrix);
     public static Matrix Map(this Matrix matrix, Func<Weight, Weight> map)

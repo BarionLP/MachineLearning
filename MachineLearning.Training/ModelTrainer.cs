@@ -22,14 +22,14 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
     {
         Config = config;
         Model = model;
-        Optimizer = config.Optimizer.CreateOptimizer();
+        Optimizer = config.Optimizer;
         Context = new(model, config, Optimizer);
     }
 
     public void TrainConsoleCancelable()
     {
         using var cts = new CancellationTokenSource();
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             while (!cts.IsCancellationRequested)
             {
@@ -39,10 +39,11 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
                     cts.Cancel();
                     break;
                 }
-                Thread.Sleep(500);
+                await Task.Delay(500);
             }
         });
 
+        Console.WriteLine($"Batch Size: {Config.BatchSize}");
         Console.WriteLine("Starting Training...");
         Train(cts.Token);
         cts.Cancel();

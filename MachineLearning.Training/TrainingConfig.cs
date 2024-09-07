@@ -15,7 +15,7 @@ public sealed record TrainingConfig<TInput, TOutput>
     public required int BatchCount { get; init; }
     public int BatchSize => TrainingSet.Length / BatchCount;
 
-    public required IOptimizerConfig Optimizer { get; init; }
+    public required IOptimizer Optimizer { get; init; }
 
     public IInputDataNoise<TInput> InputNoise { get; init; } = NoInputNoise<TInput>.Instance;
     public required IOutputResolver<TOutput> OutputResolver { get; init; }

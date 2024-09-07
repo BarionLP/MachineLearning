@@ -23,7 +23,7 @@ public static class BinaryClassifier
             EpochCount = 64 * 4,
             BatchCount = 32,
 
-            Optimizer = new AdamOptimizerConfig
+            Optimizer = new AdamOptimizer
             {
                 LearningRate = 0.2,
                 CostFunction = CrossEntropyLoss.Instance,

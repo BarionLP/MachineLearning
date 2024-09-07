@@ -5,7 +5,7 @@ namespace MachineLearning.Samples.Language;
 public static class SimpleLM
 {
     public const int CONTEXT_SIZE = 256 + 64;
-    public static ModelDefinition GetModel(Random? random = null)
+    public static ModelDefinition CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
         return new ModelBuilder(CONTEXT_SIZE * 8)
@@ -26,13 +26,13 @@ public static class SimpleLM
         var trainingSetSize = (int) (dataSet.Length * 0.9);
         return new TrainingConfig<string, char>()
         {
-            TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
+            TrainingSet = dataSet.ToArray(),
             TestSet = dataSet.Skip(trainingSetSize).ToArray(),
 
             EpochCount = 8,
             BatchCount = 256,
 
-            Optimizer = new AdamOptimizerConfig
+            Optimizer = new AdamOptimizer
             {
                 LearningRate = 0.01,
                 CostFunction = CrossEntropyLoss.Instance,
@@ -47,15 +47,14 @@ public static class SimpleLM
             ShuffleTrainingSetPerEpoch = true,
         };
     }
-
-    public static ModelDefinition TrainDefault(Random? random = null) => TrainDefault(GetModel(random ?? Random.Shared), random);
-    public static ModelDefinition TrainDefault(ModelDefinition model, Random? random = null)
+    
+    public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig<string, char>? config = null, Random? random = null)
     {
-        var config = GetTrainingConfig(random ?? Random.Shared);
+        config ??= GetTrainingConfig(random);
+        model ??= CreateModel(random);
+
         var trainer = ModelTrainer.Create(model, config);
         trainer.TrainConsoleCancelable();
-
-        Generate("Männer, ", model);
 
         return model;
     }

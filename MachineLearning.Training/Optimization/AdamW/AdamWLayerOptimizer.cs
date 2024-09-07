@@ -1,13 +1,13 @@
-using MachineLearning.Model.Layer;
+﻿using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
 
-namespace MachineLearning.Training.Optimization.Layer;
+namespace MachineLearning.Training.Optimization.AdamW;
 
-public sealed class AdamLayerOptimizer : ILayerOptimizer
+public sealed class AdamWLayerOptimizer : ILayerOptimizer
 {
     public SimpleLayer Layer { get; }
-    public ICostFunction CostFunction => Optimizer.Config.CostFunction;
-    public AdamOptimizer Optimizer { get; }
+    public ICostFunction CostFunction => Optimizer.CostFunction;
+    public AdamWOptimizer Optimizer { get; }
 
     public readonly Vector GradientCostBiases;
     public readonly Matrix GradientCostWeights;
@@ -23,7 +23,7 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
     public readonly Matrix SecondMomentWeights;
 
 
-    public AdamLayerOptimizer(AdamOptimizer optimizer, SimpleLayer layer)
+    public AdamWLayerOptimizer(AdamWOptimizer optimizer, SimpleLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;
@@ -46,16 +46,16 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
 #if DEBUG
         if(nodeValues.AsSpan().Contains(double.NaN))
         {
-            Console.WriteLine();
+            Console.WriteLine("NaN detected");
         }
         if(snapshot.WeightGradients.AsSpan().Contains(double.NaN))
         {
-            Console.WriteLine();
+            Console.WriteLine("NaN detected");
         }
 #endif
 
         lock(_lock)
-        { 
+        {
             GradientCostWeights.AddInPlace(snapshot.WeightGradients);
             GradientCostBiases.AddInPlace(nodeValues);
         }
@@ -64,7 +64,7 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
     public void Apply(int dataCounter)
     {
         // do i need gradient clipping?
-        var averagedLearningRate = Optimizer.Config.LearningRate / Math.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
 
         // parallelizing makes no difference
         // Update biases
@@ -75,19 +75,23 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
         // Update weights
         (FirstMomentWeights, GradientCostWeights).MapInFirst(FirstMomentEstimate);
         (SecondMomentWeights, GradientCostWeights).MapInFirst(SecondMomentEstimate);
-        Layer.Weights.SubtractInPlace((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
+        var tmp = (FirstMomentWeights, SecondMomentWeights).Map(WeightReduction);
+        (Layer.Weights, tmp).MapInFirst(Reduce);
 
+
+        double Reduce(double original, double reduction)
+            => original - reduction - Optimizer.WeightDecayCoefficient * original;
         double WeightReduction(double firstMoment, double secondMoment)
         {
-            var mHat = firstMoment / (1 - Math.Pow(Optimizer.Config.FirstDecayRate, Optimizer.Iteration));
-            var vHat = secondMoment / (1 - Math.Pow(Optimizer.Config.SecondDecayRate, Optimizer.Iteration));
-            return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Config.Epsilon);
+            var mHat = firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
+            var vHat = secondMoment / (1 - Math.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
+            return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
         }
-        double FirstMomentEstimate(double lastMoment, double gradient) 
-            => (Optimizer.Config.FirstDecayRate * lastMoment) + (1 - Optimizer.Config.FirstDecayRate) * gradient;
+        double FirstMomentEstimate(double lastMoment, double gradient)
+            => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
 
-        double SecondMomentEstimate(double lastMoment, double gradient) 
-            => (Optimizer.Config.SecondDecayRate * lastMoment) + (1 - Optimizer.Config.SecondDecayRate) * gradient * gradient;
+        double SecondMomentEstimate(double lastMoment, double gradient)
+            => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
     }
 
     public void GradientCostReset()

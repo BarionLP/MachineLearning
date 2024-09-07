@@ -17,6 +17,8 @@ public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers)
 {
     public ImmutableArray<SimpleLayer> Layers { get; } = layers;
 
+    public uint ParameterCount => (uint)Layers.Sum(l => l.ParameterCount);
+
     public Vector Forward(Vector weights)
     {
         foreach(var layer in Layers)

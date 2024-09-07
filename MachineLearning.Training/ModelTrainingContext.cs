@@ -3,7 +3,6 @@ using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
-using MachineLearning.Training.Optimization.Layer;
 using System.Collections.Immutable;
 using System.Diagnostics;
 

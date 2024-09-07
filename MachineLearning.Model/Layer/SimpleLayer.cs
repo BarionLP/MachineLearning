@@ -11,6 +11,8 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod
 
     public IActivationMethod ActivationFunction { get; } = Activation;
 
+    public uint ParameterCount => (uint)Biases.Count + (uint)Weights.FlatCount;
+
     public Vector Forward(Vector input)
     {
         // TODO: can i just operate on input?

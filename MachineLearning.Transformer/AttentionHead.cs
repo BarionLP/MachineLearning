@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using MachineLearning.Domain.Activation;
+using MachineLearning.Domain.Numerics;
 using MachineLearning.Domain.Numerics.Initialization;
 
 namespace MachineLearning.Transformer;
@@ -14,16 +14,14 @@ public sealed class AttentionHead(ModelInfo Info)
 
     private readonly Weight QueryDimensionsSqrt = Math.Sqrt(Info.KeyQueryDimensions);
 
-    public Matrix GetEmbeddingDelta(Matrix input)
+    public Matrix GetEmbeddingDelta(HeadPass pass)
     {   
+        pass.Deconstruct(out var input, out var keyEmbedding, out var queryEmbedding, out var valueVectors, out var attentionPattern);
+        
         Debug.Assert(input.RowCount == Info.ContextSize);
         Debug.Assert(input.ColumnCount == Info.EmbeddingDimensions);
-        
-        var keyEmbedding = Matrix.Create(input.RowCount, Info.KeyQueryDimensions); // key of each token (row)
-        var queryEmbedding = Matrix.Create(input.RowCount, Info.KeyQueryDimensions); // query of each token (row)
-        var valueVectors = Matrix.Create(input.RowCount, Info.EmbeddingDimensions); // value of each token (row)
 
-        // calculate key and query matricies
+        // calculate key and query matrices
         input.MultiplyRowwise(KeyWeights, keyEmbedding);
         input.MultiplyRowwise(QueryWeights, queryEmbedding);
         
@@ -40,7 +38,6 @@ public sealed class AttentionHead(ModelInfo Info)
         // the dot product of each query with each key defines how much the token of the query should be affected by the token of the key
         // high dot products mean the key token "attends to" the query token
         // rows are the queries and columns the keys
-        var attentionPattern = Matrix.CreateSquare(input.RowCount);
         for(int queryIndex = 0; queryIndex < input.RowCount; queryIndex++)
         {
             var vector = attentionPattern.RowRef(queryIndex);
@@ -68,6 +65,177 @@ public sealed class AttentionHead(ModelInfo Info)
 
         return deltaMatrix;
     }
+
+
+    public sealed record BackpropagationContext(Matrix keyEmbedding, Matrix queryEmbedding, Matrix attentionPattern, Matrix valueVectors);
+    public void Backpropagate(Matrix input, Matrix dNextDeltaMatrix, BackpropagationContext context)
+    {
+        var dKeyWeights = Matrix.OfSize(KeyWeights);
+        var dQueryWeights = Matrix.OfSize(QueryWeights);
+        var dValueDownWeights = Matrix.OfSize(ValueDownWeights);
+        var dValueUpWeights = Matrix.OfSize(ValueUpWeights);
+        var dInput = Matrix.OfSize(input);
+
+
+        var dValueVectors = Matrix.OfSize(input);
+        var dAttentionPattern = Matrix.OfSize(context.attentionPattern);
+
+        var tmp = Vector.Create(input.ColumnCount);
+        // Backpropagate through the output aggregation step
+        for(int tokenIndex = 0; tokenIndex < input.RowCount; tokenIndex++)
+        {
+            var dDeltaVector = dNextDeltaMatrix.RowRef(tokenIndex);
+            for(int deltaIndex = 0; deltaIndex < input.RowCount; deltaIndex++)
+            {
+                dAttentionPattern[tokenIndex, deltaIndex] += dDeltaVector.Dot(context.valueVectors.RowRef(deltaIndex));
+                dDeltaVector.Multiply(context.attentionPattern[tokenIndex, deltaIndex], tmp);
+                dValueVectors.RowRef(deltaIndex).AddInPlace(tmp);
+            }
+        }
+
+        //attention pattern calculation:
+        var dKeyEmbedding = Matrix.Create(context.keyEmbedding.RowCount, context.keyEmbedding.ColumnCount);
+        var dQueryEmbedding = Matrix.Create(context.queryEmbedding.RowCount, context.queryEmbedding.ColumnCount);
+        for(int queryIndex = 0; queryIndex < input.RowCount; queryIndex++)
+        {
+            var dAttentionRow = dAttentionPattern.RowRef(queryIndex);
+            //Apply Softmax gradient backpropagation to dAttentionRow in place
+            for(int keyIndex = 0; keyIndex < input.RowCount; keyIndex++)
+            {
+                if(keyIndex <= queryIndex)
+                {
+                    context.queryEmbedding.RowRef(queryIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt, tmp);
+                    dKeyEmbedding.RowRef(keyIndex).AddInPlace(tmp);
+                    
+                    context.keyEmbedding.RowRef(keyIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt, tmp);
+                    dQueryEmbedding.RowRef(queryIndex).AddInPlace(tmp);
+                }
+            }
+        }
+
+        var dInputKey = Matrix.OfSize(input);
+        var dInputQuery = Matrix.OfSize(input);
+
+        //var tmp_m = Matrix.Create(dQueryEmbedding.ColumnCount, )
+        for(int i = 0; i < input.RowCount; i++)
+        {
+            QueryWeights.Multiply(dQueryEmbedding.RowRef(i), tmp);
+            dInputQuery.RowRef(i).AddInPlace(tmp);
+            dQueryWeights.AddInPlace(VectorHelper.MultiplyToMatrix(dQueryEmbedding.RowRef(i), input.RowRef(i)));
+
+
+            //ValueDownWeights.Multiply(input.RowRef(i), valueDown);
+            //ValueUpWeights.Multiply(valueDown, valueVectors.RowRef(i));
+        }
+        //- For each i in input.RowCount:
+        //       -Backpropagate through QueryWeights: dInputQuery.row(i) += QueryWeights.T * dQueryEmbedding.row(i)
+        //       - dQueryWeights += dQueryEmbedding.row(i) * input.row(i).T
+        //       - Backpropagate through KeyWeights: dInputKey.row(i) += KeyWeights.T * dKeyEmbedding.row(i)
+        //       - dKeyWeights += dKeyEmbedding.row(i) * input.row(i).T
+        //   - dInput += dInputKey + dInputQuery
+    }
+
+    public sealed record HeadPass(Matrix input, Matrix keyEmbedding, Matrix queryEmbedding, Matrix valueVectors, Matrix attentionPattern)
+    {
+        public static HeadPass Allocate(ModelInfo info)
+        {
+            return new HeadPass(
+                    input: Matrix.Create(info.ContextSize, info.EmbeddingDimensions),
+                    keyEmbedding: Matrix.Create(info.ContextSize, info.KeyQueryDimensions),
+                    queryEmbedding: Matrix.Create(info.ContextSize, info.KeyQueryDimensions),
+                    valueVectors: Matrix.Create(info.ContextSize, info.EmbeddingDimensions),
+                    attentionPattern: Matrix.CreateSquare(info.ContextSize)
+                );
+        }
+    }
+
+    public Matrix BackwardPass(Matrix dDeltaMatrix, HeadPass context)
+    {
+        var (input, keyEmbedding, queryEmbedding, valueVectors, attentionPattern) = context;
+        
+        var dKeyWeights = Matrix.OfSize(KeyWeights);
+        var dQueryWeights = Matrix.OfSize(QueryWeights);
+        var dValueDownWeights = Matrix.OfSize(ValueDownWeights);
+        var dValueUpWeights = Matrix.OfSize(ValueUpWeights);
+        var dInput = Matrix.OfSize(input);
+
+        var dValueVectors = Matrix.OfSize(valueVectors);
+        var dAttentionPattern = Matrix.OfSize(attentionPattern);
+
+        // Step 3: Backpropagate through the output aggregation step
+        for(int tokenIndex = 0; tokenIndex < input.RowCount; tokenIndex++)
+        {
+            var dDeltaVector = dDeltaMatrix.RowRef(tokenIndex);
+            for(int deltaIndex = 0; deltaIndex < input.RowCount; deltaIndex++)
+            {
+                dAttentionPattern[tokenIndex, deltaIndex] += dDeltaVector.Dot(valueVectors.RowRef(deltaIndex));
+                dValueVectors.RowRef(deltaIndex).AddInPlace(dDeltaVector.Multiply(attentionPattern[tokenIndex, deltaIndex]));
+            }
+        }
+
+        // Step 4: Backpropagate through the attention pattern calculation
+        var dKeyEmbedding = Matrix.OfSize(keyEmbedding);
+        var dQueryEmbedding = Matrix.OfSize(queryEmbedding);
+
+        for(int queryIndex = 0; queryIndex < input.RowCount; queryIndex++)
+        {
+            var dAttentionRow = dAttentionPattern.RowRef(queryIndex);
+            var attentionRow = attentionPattern.RowRef(queryIndex);
+
+            // Apply Softmax gradient backpropagation
+            MatrixHelper.SoftMaxGradientInPlace(dAttentionRow, attentionRow);
+
+            for(int keyIndex = 0; keyIndex < input.RowCount; keyIndex++)
+            {
+                if(keyIndex <= queryIndex)
+                {
+                    dKeyEmbedding.RowRef(keyIndex).AddInPlace(queryEmbedding.RowRef(queryIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt));
+                    dQueryEmbedding.RowRef(queryIndex).AddInPlace(keyEmbedding.RowRef(keyIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt));
+                }
+            }
+        }
+
+        // Step 5: Backpropagate through key, query, and value weight multiplications
+        var dInputKey = Matrix.OfSize(input);
+        var dInputQuery = Matrix.OfSize(input);
+
+        for(int i = 0; i < input.RowCount; i++)
+        {
+            var dQueryEmbedRow = dQueryEmbedding.RowRef(i);
+            var dKeyEmbedRow = dKeyEmbedding.RowRef(i);
+            var inputRow = input.RowRef(i);
+
+            // Backpropagate through QueryWeights
+            MatrixHelper.MultiplyTransposeWithGradient(dQueryEmbedRow, inputRow, dQueryWeights);
+            dInputQuery.RowRef(i).AddInPlace(QueryWeights.MultiplyTransposed(dQueryEmbedRow));
+
+            // Backpropagate through KeyWeights
+            MatrixHelper.MultiplyTransposeWithGradient(dKeyEmbedRow, inputRow, dKeyWeights);
+            dInputKey.RowRef(i).AddInPlace(KeyWeights.MultiplyTransposed(dKeyEmbedRow));
+        }
+
+        dInput.AddInPlace(dInputKey);
+        dInput.AddInPlace(dInputQuery);
+
+        // Step 6: Backpropagate through value weight multiplications
+        var dValueDown = Vector.Create(Info.KeyQueryDimensions);
+        for(int i = 0; i < input.RowCount; i++)
+        {
+            var dValueVectorRow = dValueVectors.RowRef(i);
+            var inputRow = input.RowRef(i);
+
+            // Backpropagate through ValueUpWeights
+            ValueUpWeights.MultiplyTransposed(dValueVectorRow, dValueDown);
+            MatrixHelper.MultiplyTransposeWithGradient(dValueVectorRow, dValueDown, dValueUpWeights);
+
+            // Backpropagate through ValueDownWeights
+            ValueDownWeights.MultiplyTransposed(dValueDown, dInput.RowRef(i));
+            MatrixHelper.MultiplyTransposeWithGradient(dValueDown, inputRow, dValueDownWeights);
+        }
+
+        return dInput;
+    }
+
 
     public void Initialize(IInitializer initializer)
     {
