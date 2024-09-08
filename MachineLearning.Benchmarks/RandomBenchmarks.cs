@@ -4,9 +4,9 @@ namespace MachineLearning.Benchmarks;
 //[ShortRunJob]
 public class RandomBenchmarks
 {
-    public Vector left = default!;
+    public Matrix left = default!;
     public Vector right = default!;
-    public Matrix result = default!;
+    public Vector result = default!;
 
     [Params(1024)]
     public int Count = 5;
@@ -14,9 +14,9 @@ public class RandomBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        left = Vector.Create(Count);
+        left = Matrix.CreateSquare(Count);
         right = Vector.Create(Count);
-        result = Matrix.CreateSquare(Count);
+        result = Vector.Create(Count);
 
         left.MapInPlace(_ => Random.Shared.NextDouble());
         right.MapInPlace(_ => Random.Shared.NextDouble());
@@ -25,12 +25,12 @@ public class RandomBenchmarks
     [Benchmark(Baseline = true)]
     public void Multiply_Old()
     {
-        VectorHelper.MultiplyToMatrixSimd(left, right, result);
+        //MatrixHelper.MultiplySimd(left, right, result);
     }
 
     [Benchmark]
     public void Multiply_New()
     {
-        VectorHelper.MultiplyToMatrix(left, right, result);
+        MatrixHelper.Multiply(left, right, result);
     }
 }

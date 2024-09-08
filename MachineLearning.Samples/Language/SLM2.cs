@@ -63,7 +63,7 @@ public sealed class SLM2 : ISample<string, char>
     {
         Console.WriteLine("Analyzing Training Data...");
         var lines = LanguageDataSource.GetLines(AssetManager.Sentences).ToArray();
-        lines.ForEach(l => Embedder.Embed(l));
+        //lines.ForEach(l => Embedder.Embed(l));
         Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)}");
         var tokensUsedBySource = new string(lines.SelectMany(s => s).Distinct().Order().ToArray());
         Console.WriteLine($"Source uses '{tokensUsedBySource}'");

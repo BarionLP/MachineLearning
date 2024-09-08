@@ -115,18 +115,6 @@ public static class MatrixHelper
 
     public static void Multiply(this Matrix matrix, Vector vector, Vector result)
     {
-        MultiplySimd(matrix, vector, result);
-
-        //for(int row = 0; row < matrix.RowCount; row++) {
-        //    result[row] = 0;
-        //    for(int column = 0; column < matrix.ColumnCount; column++) {
-        //        result[row] += matrix[row, column] * vector[column];
-        //    }
-        //}
-    }
-
-    public static void MultiplySimd(Matrix matrix, Vector vector, Vector result)
-    {
         Debug.Assert(vector.Count == matrix.ColumnCount);
         Debug.Assert(result.Count == matrix.RowCount);
 
@@ -141,22 +129,22 @@ public static class MatrixHelper
         for(nuint row = 0; row < rowCount; row++)
         {
             nuint rowOffset = row * columnCount;
-            Weight sum = 0;
-
             nuint column = 0;
+            var aggregator = SimdVector.Zero;
             for(; column + mdSize <= columnCount; column += mdSize)
             {
                 var matrixVec = SimdVectorHelper.LoadUnsafe(ref matrixPtr, rowOffset + column);
                 var vectorVec = SimdVectorHelper.LoadUnsafe(ref vectorPtr, column);
-                sum += SimdVectorHelper.Dot(matrixVec, vectorVec);
+                aggregator += matrixVec * vectorVec;
             }
+
+            ref var sum = ref result[row];
+            sum = SimdVectorHelper.Sum(aggregator);
 
             for(; column < columnCount; column++)
             {
-                sum += matrix[row * columnCount + column] * vector[column];
+                sum += matrix[rowOffset + column] * vector[column];
             }
-
-            result[row] = sum;
         }
     }
 

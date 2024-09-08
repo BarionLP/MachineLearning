@@ -118,12 +118,12 @@ public static class VectorHelper
         //TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());
     }
 
-    public static void MapInPlace(this Vector vector, Func<Weight, Weight> map) => vector.Map(map, vector);
+    public static void MapInPlace(this Vector vector, Func<Weight, Weight> map) => SpanOperations.Map(vector.AsSpan(), vector.AsSpan(), map);
     public static Vector Map(this Vector vector, Func<Weight, Weight> map)
     {
-        var result = Vector.Create(vector.Count);
-        vector.Map(map, result);
-        return result;
+        var destination = Vector.Create(vector.Count);
+        SpanOperations.Map(vector.AsSpan(), destination.AsSpan(), map);
+        return destination;
     }
     public static void Map(this Vector vector, Func<Weight, Weight> map, Vector result)
     {
@@ -160,13 +160,10 @@ public static class VectorHelper
         vectors.Map(map, result);
         return result;
     }
-    public static void Map(this (Vector a, Vector b) vectors, Func<Weight, Weight, Weight> map, Vector result)
+    public static void Map(this (Vector a, Vector b) vectors, Func<Weight, Weight, Weight> map, Vector destination)
     {
-        AssertCountEquals(vectors.a, vectors.b, result);
-        for (int i = 0; i < vectors.a.Count; i++)
-        {
-            result[i] = map.Invoke(vectors.a[i], vectors.b[i]);
-        }
+        AssertCountEquals(vectors.a, vectors.b, destination);
+        SpanOperations.Map(vectors.a.AsSpan(), vectors.b.AsSpan(), destination.AsSpan(), map);
     }
 
     public static void PointwiseMultiplyInPlace(this Vector left, Vector right) => left.PointwiseMultiply(right, left);
@@ -176,10 +173,10 @@ public static class VectorHelper
         left.PointwiseMultiply(right, result);
         return result;
     }
-    public static void PointwiseMultiply(this Vector left, Vector right, Vector result)
+    public static void PointwiseMultiply(this Vector left, Vector right, Vector destination)
     {
-        AssertCountEquals(left, right, result);
-        TensorPrimitives.Multiply(left.AsSpan(), right.AsSpan(), result.AsSpan());
+        AssertCountEquals(left, right, destination);
+        TensorPrimitives.Multiply(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
     public static Vector Multiply(this Vector vector, Matrix matrix)
@@ -189,16 +186,16 @@ public static class VectorHelper
         return result;
     }
 
-    public static void Multiply(this Vector vector, Matrix matrix, Vector result)
+    public static void Multiply(this Vector vector, Matrix matrix, Vector destination)
     {
         //Story time: swapping loops increased performance by 85 % because of increased cache hits (before simd impl)
         Debug.Assert(vector.Count == matrix.RowCount);
-        Debug.Assert(result.Count == matrix.ColumnCount);
+        Debug.Assert(destination.Count == matrix.ColumnCount);
 
-        result.ResetZero();
+        destination.ResetZero();
 
         ref var matrixPtr = ref MemoryMarshal.GetReference(matrix.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
+        ref var resultPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
         var mdSize = (nuint) SimdVector.Count;
         var rowCount = (nuint) matrix.RowCount;
         var columnCount = (nuint) matrix.ColumnCount;
@@ -220,7 +217,7 @@ public static class VectorHelper
 
             for(; column < columnCount; column++)
             {
-                result[column] += vector[row] * matrix[rowOffset + column];
+                destination[column] += vector[row] * matrix[rowOffset + column];
             }
         }
     }
