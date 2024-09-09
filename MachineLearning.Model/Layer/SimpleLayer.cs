@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod Activation)
+public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod Activation) : ILayer
 {
     public int InputNodeCount { get; } = Weights.ColumnCount;
     public int OutputNodeCount { get; } = Biases.Count;
@@ -15,7 +15,6 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationMethod
 
     public Vector Forward(Vector input)
     {
-        // TODO: can i just operate on input?
         var result = Weights.Multiply(input);
         result.AddInPlace(Biases);
         ActivationFunction.Activate(result, result);

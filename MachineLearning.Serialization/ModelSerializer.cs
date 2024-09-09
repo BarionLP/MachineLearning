@@ -13,7 +13,7 @@ namespace MachineLearning.Serialization;
 /// <typeparam name="TLayer">layer type</typeparam>
 public sealed class ModelSerializer(FileInfo fileInfo)
 {
-    public const uint VERSION = 2;
+    public const uint VERSION = 3;
 
     public ResultFlag Save<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model) => Save(model.InternalModel);
     public ResultFlag Save(SimpleModel model)
@@ -26,7 +26,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         {
             writer.Write(layer.InputNodeCount);
             writer.Write(layer.OutputNodeCount);
-            ActivationMethodSerializer.Write(writer, layer.ActivationFunction);
+            ActivationMethodSerializer.WriteV3(writer, layer.ActivationFunction);
 
 
             // encode weights & biases
@@ -52,11 +52,39 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
         return version switch
         {
+            3 => LoadV3(reader),
             2 => LoadV2(reader),
             _ => throw new InvalidDataException(),
         };
     }
 
+    private static SimpleModel LoadV3(BinaryReader reader)
+    {
+        var layerCount = reader.ReadInt32();
+        var layers = new SimpleLayer[layerCount];
+
+        foreach(var layerIndex in ..layerCount)
+        {
+            var inputNodeCount = reader.ReadInt32();
+            var outputNodeCount = reader.ReadInt32();
+            var activationMethod = ActivationMethodSerializer.ReadV3(reader);
+            var layerBuilder = new LayerBuilder(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
+
+            // decode weights & biases
+            foreach(var outputIndex in ..outputNodeCount)
+            {
+                layerBuilder.Biases[outputIndex] = reader.ReadDouble();
+                foreach(var inputIndex in ..inputNodeCount)
+                {
+                    layerBuilder.Weights[outputIndex, inputIndex] = reader.ReadDouble();
+                }
+            }
+            layers[layerIndex] = layerBuilder.Build();
+        }
+
+        return new SimpleModel([.. layers]);
+    }
+    
     private static SimpleModel LoadV2(BinaryReader reader)
     {
         var layerCount = reader.ReadInt32();

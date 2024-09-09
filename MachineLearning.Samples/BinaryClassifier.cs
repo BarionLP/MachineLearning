@@ -60,7 +60,7 @@ public static class BinaryClassifier
             {
                 foreach(var charIndex in ..size)
                 {
-                    var result = model.Process([(double) charIndex / size, (double) lineIndex / (size / 2)]);
+                    var (result, _) = model.Process([(double) charIndex / size, (double) lineIndex / (size / 2)]);
                     //Console.Write($"{result[0]*100:F0} ");
                     Console.Write(result ? '0' : '.');
                 }
@@ -113,6 +113,9 @@ public static class BinaryClassifier
     public sealed class Embedder : IEmbedder<double[], bool>
     {
         public Vector Embed(double[] input) => Vector.Of(input);
-        public bool UnEmbed(Vector input) => input[0] > input[1];
+        public (bool output, Weight confidence) Unembed(Vector input)
+        {
+            return (input[0] > input[1], Math.Abs(input[0] - input[1]));
+        }
     }
 }

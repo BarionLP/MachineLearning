@@ -1,6 +1,5 @@
 ﻿using MachineLearning.Samples.Language;
 using MachineLearning.Serialization;
-using System;
 
 namespace MachineLearning.Samples.Logic;
 
@@ -9,7 +8,7 @@ public sealed class LogicModel : ISample<string, char>
     public const int CONTEXT_SIZE = 24;
     public const string TOKENS = "0123456789+-*/^\0";
 
-    public static IEmbedder<string, char> Embedder { get; } = new StringEmbedder(CONTEXT_SIZE, TOKENS, false);
+    public static IEmbedder<string, char> Embedder { get; } = new BinaryStringEmbedder(CONTEXT_SIZE, TOKENS, false);
     public static IOutputResolver<char> OutputResolver { get; } = new CharOutputResolver(TOKENS);
     public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("logic.nnw"));
     public static EmbeddedModel<string, char> CreateModel(Random? random = null)
@@ -65,7 +64,7 @@ public sealed class LogicModel : ISample<string, char>
     {
         while (true)
         {
-            var prediction = model.Process(input);
+            var (prediction, _) = model.Process(input);
             input += prediction;
             if (prediction == '\0')
             {

@@ -3,24 +3,24 @@ using System.Text;
 
 namespace MachineLearning.Samples.Language;
 
-public sealed class StringEmbedder(int contextSize, string tokens, bool weightedRandom) : IEmbedder<string, char>
+public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool weightedRandom) : IEmbedder<string, char>
 {
     public Vector Embed(string input)
     {
         Debug.Assert(input.Length <= contextSize);
-        
+
         var bytes = Encoding.Latin1.GetBytes(input);
         var result = Vector.Create(8 * bytes.Length);
 
-        if(input.Length != bytes.Length)
+        if (input.Length != bytes.Length)
         {
             throw new UnreachableException();
         }
 
-        for(var index = 0; index < bytes.Length; index++)
+        for (var index = 0; index < bytes.Length; index++)
         {
             var b = bytes[index];
-            for(var i = 0; i < 8; i++)
+            for (var i = 0; i < 8; i++)
             {
                 result[index * 8 + i] = (b & 1 << i) != 0 ? 1.0 : 0.0;
             }
@@ -30,7 +30,7 @@ public sealed class StringEmbedder(int contextSize, string tokens, bool weighted
     }
     public static Vector PadLeft(Vector vector, int totalWidth)
     {
-        if(vector.Count >= totalWidth)
+        if (vector.Count >= totalWidth)
             return vector;
 
         var paddedVector = Vector.Create(totalWidth);
@@ -38,32 +38,28 @@ public sealed class StringEmbedder(int contextSize, string tokens, bool weighted
         return paddedVector;
     }
 
-    public char UnEmbed(Vector input)
+    public (char output, Weight confidence) Unembed(Vector input)
     {
-        if(weightedRandom) {
-            return tokens[GetWeightedRandomIndex(input)];
-        }else{
-            return tokens[IndexOfMax(input)];
-        }
+        var index = weightedRandom ? GetWeightedRandomIndex(input) : IndexOfMax(input);
+        return (tokens[index], input[index]);
 
         static int GetWeightedRandomIndex(Vector weights)
         {
-           var value = Random.Shared.NextDouble();
-           for(int i = 0; i < weights.Count; i++)
-           {
-               value -= weights[i];
-               if(value < 0)
-                   return i;
-           }
-           return weights.Count - 1;
+            var value = Random.Shared.NextDouble();
+            for (int i = 0; i < weights.Count; i++)
+            {
+                value -= weights[i];
+                if (value < 0) return i;
+            }
+            return weights.Count - 1;
         }
 
         static int IndexOfMax(Vector weights)
         {
             int max = 0;
-            for(int i = 0; i < weights.Count; i++)
+            for (int i = 0; i < weights.Count; i++)
             {
-                if(weights[i] > weights[max])
+                if (weights[i] > weights[max])
                 {
                     max = i;
                 }

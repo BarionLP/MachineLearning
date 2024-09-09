@@ -17,7 +17,6 @@ public interface Matrix
     public ref Weight this[int row, int column] { get; }
     public ref Weight this[nuint flatIndex] { get; }
 
-
     public Span<Weight> AsSpan();
 
     public static Matrix CreateSquare(int size) => Create(size, size);
@@ -241,6 +240,17 @@ public static class MatrixHelper
     {
         AssertCountEquals(matrices.a, matrices.b, result);
         SpanOperations.Map(matrices.a.AsSpan(), matrices.b.AsSpan(), result.AsSpan(), map);
+    }
+    public static Matrix Map(this (Matrix a, Matrix b, Matrix c) matrices, Func<Weight, Weight, Weight, Weight> map)
+    {
+        var result = Matrix.OfSize(matrices.a);
+        matrices.Map(result, map);
+        return result;
+    }
+    public static void Map(this (Matrix a, Matrix b, Matrix c) matrices, Matrix result, Func<Weight, Weight, Weight, Weight> map)
+    {
+        AssertCountEquals(matrices.a, matrices.b, result);
+        SpanOperations.Map(matrices.a.AsSpan(), matrices.b.AsSpan(), matrices.c.AsSpan(), result.AsSpan(), map);
     }
 
     public static void AddInPlace(this Matrix left, Matrix right)

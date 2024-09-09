@@ -9,5 +9,9 @@ public sealed class MNISTEmbedder(ImmutableArray<int> _nodeMapping) : IEmbedder<
     private readonly ImmutableArray<int> _nodeMapping = _nodeMapping;
 
     public Vector Embed(double[] input) => Vector.Of(input);
-    public int UnEmbed(Vector input) => _nodeMapping[input.MaximumIndex()];
+    public (int output, Weight confidence) Unembed(Vector input)
+    {
+        var index = input.MaximumIndex();
+        return (_nodeMapping[index], input[index]);
+    }
 }

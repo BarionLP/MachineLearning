@@ -1,5 +1,4 @@
-﻿
-namespace MachineLearning.Benchmarks;
+﻿namespace MachineLearning.Benchmarks;
 
 //[ShortRunJob]
 public class RandomBenchmarks

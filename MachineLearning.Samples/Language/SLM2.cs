@@ -1,8 +1,4 @@
 ﻿using MachineLearning.Serialization;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.Intrinsics.X86;
-using System;
 
 namespace MachineLearning.Samples.Language;
 
@@ -10,7 +6,7 @@ public sealed class SLM2 : ISample<string, char>
 {
     public const int CONTEXT_SIZE = 128;
     public const string TOKENS = " %'(),-.0123456789:=abcdefghijklmnopqrstuvwxyz";
-    public static IEmbedder<string, char> Embedder { get; } = new StringEmbedder(CONTEXT_SIZE, TOKENS, true);
+    public static IEmbedder<string, char> Embedder { get; } = new BinaryStringEmbedder(CONTEXT_SIZE, TOKENS, true);
     public static IOutputResolver<char> OutputResolver { get; } = new CharOutputResolver(TOKENS);
     public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("sentence_2.nnw"));
 
@@ -23,7 +19,7 @@ public sealed class SLM2 : ISample<string, char>
             .AddLayer(1024 * 2, initializer)
             .AddLayer(512 + 256, initializer)
             .AddLayer(512, initializer)
-            .AddLayer(TOKENS.Length, new XavierInitializer(random), SoftmaxActivation.Instance)
+            .AddLayer(TOKENS.Length, new XavierInitializer(random), new SoftmaxActivation(0.5))
             .Build(Embedder);
     }
 
@@ -64,7 +60,7 @@ public sealed class SLM2 : ISample<string, char>
         Console.WriteLine("Analyzing Training Data...");
         var lines = LanguageDataSource.GetLines(AssetManager.Sentences).ToArray();
         //lines.ForEach(l => Embedder.Embed(l));
-        Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)}");
+        Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} tokens");
         var tokensUsedBySource = new string(lines.SelectMany(s => s).Distinct().Order().ToArray());
         Console.WriteLine($"Source uses '{tokensUsedBySource}'");
         tokensUsedBySource.ForEach(t => OutputResolver.Expected(t));
@@ -82,5 +78,9 @@ public sealed class SLM2 : ISample<string, char>
         Console.WriteLine("Model saved!");
         SimpleLM.StartChat(model);
         return model;
+    }
+
+    public static void StartChat() {
+        SimpleLM.StartChat(Serializer.Load(Embedder).ReduceOrThrow());
     }
 }

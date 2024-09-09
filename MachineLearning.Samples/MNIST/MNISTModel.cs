@@ -88,7 +88,7 @@ public class MNISTModel
         var previousColor = Console.ForegroundColor;
         foreach (var image in dataSource.DataSet)
         {
-            var prediction = model.Process(image.Image);
+            var (prediction, confidence) = model.Process(image.Image);
 
             if (prediction == image.Digit)
             {
@@ -96,7 +96,7 @@ public class MNISTModel
             }
 
             Console.ForegroundColor = prediction == image.Digit ? ConsoleColor.Green : ConsoleColor.Red;
-            Console.WriteLine($"Predicted: {prediction}\tActual: {image.Digit}");
+            Console.WriteLine($"Predicted: {prediction} ({confidence:P})\tActual: {image.Digit}");
             counter++;
         }
         Console.ForegroundColor = previousColor;

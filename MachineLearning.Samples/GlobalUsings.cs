@@ -10,4 +10,6 @@ global using MachineLearning.Training;
 global using MachineLearning.Training.Cost;
 global using MachineLearning.Training.Optimization.Adam;
 global using MachineLearning.Training.Optimization.AdamW;
+global using MachineLearning.Training.Optimization.Nadam;
 global using MachineLearning.Training.Optimization.SGDMomentum;
+global using Weight = double;

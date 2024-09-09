@@ -11,6 +11,4 @@ public interface ILayer
     public IActivationMethod ActivationFunction { get; }
 
     public Vector Forward(Vector input);
-
-    public virtual static ILayer Create(Matrix weights, Vector biases, IActivationMethod activationMethod) => throw new NotImplementedException();
 }

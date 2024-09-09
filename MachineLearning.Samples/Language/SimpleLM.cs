@@ -14,7 +14,7 @@ public sealed class SimpleLM : ISample<string, char>
             .AddLayer(512, initializer)
             .AddLayer(128, initializer)
             .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(new XavierInitializer(random)).SetActivationMethod(SoftmaxActivation.Instance))
-            .Build(new StringEmbedder(CONTEXT_SIZE, LanguageDataSource.TOKENS, true));
+            .Build(new BinaryStringEmbedder(CONTEXT_SIZE, LanguageDataSource.TOKENS, true));
     }
 
     public static TrainingConfig<string, char> DefaultTrainingConfig(Random? random = null)
@@ -23,7 +23,7 @@ public sealed class SimpleLM : ISample<string, char>
         var dataSet = GetTrainingSet().ToArray();
         random.Shuffle(dataSet);
 
-        var trainingSetSize = (int) (dataSet.Length * 0.9);
+        var trainingSetSize = (int)(dataSet.Length * 0.9);
         return new TrainingConfig<string, char>()
         {
             TrainingSet = dataSet.Take(trainingSetSize).ToArray(),
@@ -47,7 +47,7 @@ public sealed class SimpleLM : ISample<string, char>
             ShuffleTrainingSetPerEpoch = true,
         };
     }
-    
+
     public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig<string, char>? config = null, Random? random = null)
     {
         model ??= CreateModel(random);
@@ -65,13 +65,21 @@ public sealed class SimpleLM : ISample<string, char>
         input = input.ToLowerInvariant();
         Console.Write(input);
         char prediction;
+        Weight confidence;
         do
         {
-            prediction = model.Process(input);
+            (prediction, confidence) = model.Process(input);
             input += prediction;
+            SetConsoleTextColor(confidence);
             Console.Write(prediction);
-        } while(!EndSymbols.Contains(prediction) && input.Length < CONTEXT_SIZE);
+        } while (!EndSymbols.Contains(prediction) && input.Length < CONTEXT_SIZE);
+        Console.Write("\u001b[0m"); //reset color
         Console.WriteLine();
+
+        static void SetConsoleTextColor(double confidence)
+        {
+            Console.Write($"\u001b[38;2;{(1-confidence)*255:F0};{confidence*255:F0};60m");
+        }
     }
 
     public static void StartChat(ModelDefinition model)
@@ -80,12 +88,12 @@ public sealed class SimpleLM : ISample<string, char>
         do
         {
             input = Console.ReadLine() ?? string.Empty;
-            if(string.IsNullOrEmpty(input))
+            if (string.IsNullOrEmpty(input))
             {
                 return;
             }
             Generate(input, model);
-        } while(true);
+        } while (true);
     }
 
     public static IEnumerable<DataEntry<string, char>> GetTrainingSet(Random? random = null) => LanguageDataSource.GetLines(AssetManager.Speech).InContextSize(CONTEXT_SIZE).ExpandPerChar();

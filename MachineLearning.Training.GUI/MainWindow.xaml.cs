@@ -8,6 +8,7 @@ using MachineLearning.Serialization;
 using MachineLearning.Serialization.Activation;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization.Adam;
+using MachineLearning.Training.Optimization.Nadam;
 using MachineLearning.Training.Optimization.SGDMomentum;
 using SkiaSharp;
 
@@ -43,9 +44,9 @@ public partial class MainWindow : Window
         DumpEvaluationAfterBatches = 4,
         });
         
-        var trainer2 = ProgressTracker.CreateLinkedTrainer("SGD Optimizer", SKColors.Red, model2, config with { Optimizer = new GDMomentumOptimizer
+        var trainer2 = ProgressTracker.CreateLinkedTrainer("Nadam Optimizer", SKColors.Red, model2, config with { Optimizer = new NadamOptimizer
         {
-            InitialLearningRate = 0.7,
+            LearningRate = 0.1,
             CostFunction = CrossEntropyLoss.Instance,
         },
         DumpEvaluationAfterBatches = 4,

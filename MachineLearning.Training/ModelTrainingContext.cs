@@ -30,11 +30,11 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
             Parallel.ForEach(trainingBatch, (dataPoint) =>
             {
                 var weights = Update(dataPoint);
-                var result = Embedder.UnEmbed(weights)!;
+                var (result, _) = Embedder.Unembed(weights);
 
                 lock (_lock)
                 {
-                    if (result.Equals(dataPoint.Expected))
+                    if (result!.Equals(dataPoint.Expected))
                     {
                         correctCounter++;
                     }
@@ -48,8 +48,8 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
             foreach (var dataPoint in trainingBatch)
             {
                 var weights = Update(dataPoint);
-                var result = Embedder.UnEmbed(weights)!;
-                if (result.Equals(dataPoint.Expected))
+                var (result, _) = Embedder.Unembed(weights);
+                if (result!.Equals(dataPoint.Expected))
                 {
                     correctCounter++;
                 }

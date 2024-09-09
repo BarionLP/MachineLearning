@@ -9,16 +9,17 @@ public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<
     public SimpleModel InternalModel { get; } = model;
     public IEmbedder<TInput, TOutput> Embedder { get; } = embedder;
 
-    public TOutput Process(TInput input) => Embedder.UnEmbed(InternalModel.Forward(Embedder.Embed(input)));
+    public (TOutput output, Weight confidence) Process(TInput input) => Embedder.Unembed(InternalModel.Forward(Embedder.Embed(input)));
 
     public override string ToString() => $"Embedded {InternalModel}";
 }
 
-public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers)
+public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers) : IModel<SimpleLayer>
 {
     public ImmutableArray<SimpleLayer> Layers { get; } = layers;
-
+    public SimpleLayer OutputLayer => Layers[^1];
     public uint ParameterCount => (uint)Layers.Sum(l => l.ParameterCount);
+
 
     public Vector Forward(Vector weights)
     {

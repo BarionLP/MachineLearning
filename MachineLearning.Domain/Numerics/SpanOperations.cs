@@ -22,4 +22,13 @@ public static class SpanOperations
             destination[i] = map(left[i], right[i]);
         }
     }
+    public static void Map<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c, Span<T> destination, Func<T, T, T, T> map)
+    {
+        Debug.Assert(a.Length == b.Length && a.Length == c.Length && a.Length == destination.Length);
+
+        for(int i = 0; i < a.Length; i++)
+        {
+            destination[i] = map(a[i], b[i], c[i]);
+        }
+    }
 }

@@ -166,6 +166,18 @@ public static class VectorHelper
         SpanOperations.Map(vectors.a.AsSpan(), vectors.b.AsSpan(), destination.AsSpan(), map);
     }
 
+    public static Vector Map(this (Vector a, Vector b, Vector c) vectors, Func<Weight, Weight, Weight, Weight> map)
+    {
+        var result = Vector.Create(vectors.a.Count);
+        vectors.Map(map, result);
+        return result;
+    }
+    public static void Map(this (Vector a, Vector b, Vector c) vectors, Func<Weight, Weight, Weight, Weight> map, Vector destination)
+    {
+        AssertCountEquals(vectors.a, vectors.b, destination);
+        SpanOperations.Map(vectors.a.AsSpan(), vectors.b.AsSpan(), vectors.c.AsSpan(), destination.AsSpan(), map);
+    }
+
     public static void PointwiseMultiplyInPlace(this Vector left, Vector right) => left.PointwiseMultiply(right, left);
     public static Vector PointwiseMultiply(this Vector left, Vector right)
     {
@@ -407,5 +419,10 @@ public static class VectorHelper
     private static void AssertCountEquals(Vector a, Vector b, Vector c)
     {
         Debug.Assert(a.Count == b.Count && a.Count == b.Count, VECTORS_MUST_MATCH);
+    }
+    [Conditional("DEBUG")]
+    private static void AssertCountEquals(Vector a, Vector b, Vector c, Vector d)
+    {
+        Debug.Assert(a.Count == b.Count && a.Count == c.Count && a.Count == d.Count, VECTORS_MUST_MATCH);
     }
 }
