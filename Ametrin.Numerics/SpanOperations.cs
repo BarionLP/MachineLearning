@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace MachineLearning.Domain.Numerics;
+namespace Ametrin.Numerics;
 
 public static class SpanOperations
 {

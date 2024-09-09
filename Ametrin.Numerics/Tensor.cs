@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Numerics.Tensors;
 
-namespace MachineLearning.Domain.Numerics;
+namespace Ametrin.Numerics;
 
 public interface Tensor
 {

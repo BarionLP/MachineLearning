@@ -1,4 +1,4 @@
-﻿using MachineLearning.Domain.Activation;
+﻿using MachineLearning.Model.Activation;
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;

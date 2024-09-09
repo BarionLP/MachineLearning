@@ -1,4 +1,4 @@
-﻿namespace MachineLearning.Domain.Activation;
+﻿namespace MachineLearning.Model.Activation;
 /// <summary>
 /// use learn rate below 0.1 <br/>
 /// usually bad for output layer because values can go infinite high <br/>

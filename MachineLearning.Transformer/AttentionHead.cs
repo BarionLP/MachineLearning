@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using MachineLearning.Domain.Numerics;
-using MachineLearning.Domain.Numerics.Initialization;
+﻿using Ametrin.Numerics;
+using MachineLearning.Model.Initialization;
+using System.Diagnostics;
 
 namespace MachineLearning.Transformer;
 

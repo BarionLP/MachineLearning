@@ -1,4 +1,4 @@
-﻿namespace MachineLearning.Domain.Activation;
+﻿namespace MachineLearning.Model.Activation;
 
 /// <summary>
 /// overall best <br/>

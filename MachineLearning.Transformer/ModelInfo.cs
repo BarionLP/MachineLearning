@@ -1,4 +1,4 @@
-﻿using MachineLearning.Domain.Numerics.Initialization;
+﻿using MachineLearning.Model.Initialization;
 
 namespace MachineLearning.Transformer;
 

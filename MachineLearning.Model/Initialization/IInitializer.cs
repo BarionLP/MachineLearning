@@ -1,4 +1,4 @@
-namespace MachineLearning.Domain.Numerics.Initialization;
+namespace MachineLearning.Model.Initialization;
 
 public interface IInitializer
 {

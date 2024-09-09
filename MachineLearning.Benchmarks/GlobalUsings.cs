@@ -1,4 +1,4 @@
-﻿global using MachineLearning.Domain.Numerics;
+﻿global using Ametrin.Numerics;
 global using BenchmarkDotNet.Attributes;
 global using System.Runtime.InteropServices;
 global using SimdVector = System.Numerics.Vector<double>;

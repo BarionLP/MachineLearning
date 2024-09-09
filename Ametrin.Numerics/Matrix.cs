@@ -1,16 +1,15 @@
-﻿using System.Diagnostics;
-using System.Numerics;
+using System.Diagnostics;
 using System.Numerics.Tensors;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MachineLearning.Domain.Numerics;
+namespace Ametrin.Numerics;
 
 // must be a row major continuous chunk of memory for current simd to work 
 public interface Matrix
 {
     public static readonly Matrix Empty = new MatrixFlat(0, 0, Vector.Empty);
-    
+
     public int RowCount { get; }
     public int ColumnCount { get; }
     public int FlatCount { get; }
@@ -24,7 +23,7 @@ public interface Matrix
     public static Matrix Of(int rowCount, int columnCount, double[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
     public static Matrix Of(int rowCount, int columnCount, Vector storage)
     {
-        if(storage.Count != columnCount * rowCount)
+        if (storage.Count != columnCount * rowCount)
         {
             throw new ArgumentException("storage size does not match specified dimensions");
         }
@@ -51,9 +50,9 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
     {
         var sb = new StringBuilder();
         sb.AppendLine($"Matrix ({RowCount}x{ColumnCount}):");
-        for(int i = 0; i < RowCount; i++)
+        for (int i = 0; i < RowCount; i++)
         {
-            for(int j = 0; j < ColumnCount; j++)
+            for (int j = 0; j < ColumnCount; j++)
             {
                 sb.Append(this[i, j].ToString("F2")).Append(' ');
             }
@@ -64,10 +63,10 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
 
     internal int GetFlatIndex(int row, int column)
     {
-        #if DEBUG
+#if DEBUG
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(row, RowCount);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(column, ColumnCount);
-        #endif
+#endif
 
         return row * ColumnCount + column;
     }
@@ -83,7 +82,7 @@ internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : M
     public int FlatCount => RowCount * FlatCount;
 
     public ref Weight this[int row, int column] => ref AsSpan()[row * ColumnCount + column];
-    public ref Weight this[nuint index] => ref AsSpan()[(int) index];
+    public ref Weight this[nuint index] => ref AsSpan()[(int)index];
 
     public Span<Weight> AsSpan() => _tensor.AsSpan().Slice(_startIndex, FlatCount);
 
@@ -121,16 +120,16 @@ public static class MatrixHelper
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
 
-        var mdSize = (nuint) SimdVector.Count;
-        var rowCount = (nuint) matrix.RowCount;
-        var columnCount = (nuint) matrix.ColumnCount;
+        var mdSize = (nuint)SimdVector.Count;
+        var rowCount = (nuint)matrix.RowCount;
+        var columnCount = (nuint)matrix.ColumnCount;
 
-        for(nuint row = 0; row < rowCount; row++)
+        for (nuint row = 0; row < rowCount; row++)
         {
             nuint rowOffset = row * columnCount;
             nuint column = 0;
             var aggregator = SimdVector.Zero;
-            for(; column + mdSize <= columnCount; column += mdSize)
+            for (; column + mdSize <= columnCount; column += mdSize)
             {
                 var matrixVec = SimdVectorHelper.LoadUnsafe(ref matrixPtr, rowOffset + column);
                 var vectorVec = SimdVectorHelper.LoadUnsafe(ref vectorPtr, column);
@@ -140,7 +139,7 @@ public static class MatrixHelper
             ref var sum = ref result[row];
             sum = SimdVectorHelper.Sum(aggregator);
 
-            for(; column < columnCount; column++)
+            for (; column < columnCount; column++)
             {
                 sum += matrix[rowOffset + column] * vector[column];
             }
@@ -151,7 +150,7 @@ public static class MatrixHelper
     {
         Debug.Assert(left.RowCount == result.RowCount);
 
-        for(int rowIndex = 0; rowIndex < left.RowCount; rowIndex++)
+        for (int rowIndex = 0; rowIndex < left.RowCount; rowIndex++)
         {
             var row = left.RowRef(rowIndex);
             var resultRow = result.RowRef(rowIndex);
@@ -173,9 +172,9 @@ public static class MatrixHelper
 
         //result.ResetZero(); // Reset result vector to zero
 
-        for(int col = 0; col < matrix.ColumnCount; col++)
+        for (int col = 0; col < matrix.ColumnCount; col++)
         {
-            for(int row = 0; row < matrix.RowCount; row++)
+            for (int row = 0; row < matrix.RowCount; row++)
             {
                 result[col] += matrix[row, col] * vector[row]; // Multiply matrix transpose element by vector element
             }
@@ -186,14 +185,14 @@ public static class MatrixHelper
     {
         Debug.Assert(gradient.Count == softmax.Count);
 
-        for(int i = 0; i < softmax.Count; i++)
+        for (int i = 0; i < softmax.Count; i++)
         {
             Weight si = softmax[i];
             gradient[i] *= si * (1 - si); // Gradient of softmax for the diagonal terms
 
-            for(int j = 0; j < softmax.Count; j++)
+            for (int j = 0; j < softmax.Count; j++)
             {
-                if(i != j)
+                if (i != j)
                 {
                     gradient[i] -= si * softmax[j] * gradient[j]; // Gradient of softmax for the off-diagonal terms
                 }
@@ -206,9 +205,9 @@ public static class MatrixHelper
         Debug.Assert(gradient.Count == weightGradient.RowCount);
         Debug.Assert(inputRow.Count == weightGradient.ColumnCount);
 
-        for(int i = 0; i < weightGradient.RowCount; i++)
+        for (int i = 0; i < weightGradient.RowCount; i++)
         {
-            for(int j = 0; j < weightGradient.ColumnCount; j++)
+            for (int j = 0; j < weightGradient.ColumnCount; j++)
             {
                 weightGradient[i, j] += gradient[i] * inputRow[j]; // Compute and accumulate the weight gradient
             }
@@ -302,7 +301,7 @@ public static class MatrixHelper
     }
 
     const string MATRIX_COUNT_MISMATCH = "matrices must match in size!";
-    
+
     [Conditional("DEBUG")]
     private static void AssertCountEquals(Matrix a, Matrix b)
     {
@@ -312,7 +311,7 @@ public static class MatrixHelper
     [Conditional("DEBUG")]
     private static void AssertCountEquals(Matrix a, Matrix b, Matrix c)
     {
-        Debug.Assert(a.RowCount == b.RowCount && b.RowCount == c.RowCount && 
+        Debug.Assert(a.RowCount == b.RowCount && b.RowCount == c.RowCount &&
                      a.ColumnCount == b.ColumnCount && b.ColumnCount == c.ColumnCount, MATRIX_COUNT_MISMATCH);
     }
 }

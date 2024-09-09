@@ -1,4 +1,4 @@
-﻿using MachineLearning.Domain.Activation;
+﻿using MachineLearning.Model.Activation;
 
 namespace MachineLearning.Model.Layer;
 

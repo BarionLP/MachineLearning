@@ -76,11 +76,11 @@ public sealed class SLM2 : ISample<string, char>
         SimpleLM.TrainDefault(model, trainingConfig ?? DefaultTrainingConfig(), random);
         Serializer.Save(model);
         Console.WriteLine("Model saved!");
-        SimpleLM.StartChat(model);
+        LMHelper.StartChat(model, CONTEXT_SIZE);
         return model;
     }
 
     public static void StartChat() {
-        SimpleLM.StartChat(Serializer.Load(Embedder).ReduceOrThrow());
+        LMHelper.StartChat(Serializer.Load(Embedder).ReduceOrThrow(), CONTEXT_SIZE);
     }
 }

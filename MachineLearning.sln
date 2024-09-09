@@ -4,8 +4,6 @@ VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarionGPT", "BarionGPT\BarionGPT.csproj", "{583A9FAD-329C-467C-AC4A-C2631A7AF61E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Domain", "MachineLearning.Domain\MachineLearning.Domain.csproj", "{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Model", "MachineLearning.Model\MachineLearning.Model.csproj", "{7730AEEE-5540-4E56-8725-66E2E8D8D686}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Training", "MachineLearning.Training\MachineLearning.Training.csproj", "{68FCA961-7AD2-453D-9790-322D470A78AF}"
@@ -28,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Transformer
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Mamba", "MachineLearning.Mamba\MachineLearning.Mamba.csproj", "{58038FD1-3686-452B-AEC1-4EB821396F8D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Numerics", "Ametrin.Numerics\Ametrin.Numerics.csproj", "{6B9444C3-726A-483E-9D71-BE0229ACF28D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,10 +38,6 @@ Global
 		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6B782A79-A43F-44A2-8F6F-CCCAFCFADBF7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -86,6 +82,10 @@ Global
 		{58038FD1-3686-452B-AEC1-4EB821396F8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{58038FD1-3686-452B-AEC1-4EB821396F8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{58038FD1-3686-452B-AEC1-4EB821396F8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B9444C3-726A-483E-9D71-BE0229ACF28D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B9444C3-726A-483E-9D71-BE0229ACF28D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B9444C3-726A-483E-9D71-BE0229ACF28D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B9444C3-726A-483E-9D71-BE0229ACF28D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

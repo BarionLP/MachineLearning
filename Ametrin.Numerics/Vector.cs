@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MachineLearning.Domain.Numerics;
+namespace Ametrin.Numerics;
 
 public interface Vector
 {

@@ -1,4 +1,4 @@
-﻿namespace MachineLearning.Domain.Activation;
+﻿namespace MachineLearning.Model.Activation;
 
 /// <summary>
 /// outputs values between -1 and 1 (adjust output resolver!) <br/>
