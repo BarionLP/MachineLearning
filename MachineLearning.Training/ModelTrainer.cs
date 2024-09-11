@@ -139,10 +139,10 @@ public static class LayerExtensions
     public static Vector Forward(this SimpleLayer layer, Vector input, LayerSnapshot snapshot)
     {
         snapshot.LastRawInput = input;
-        layer.Weights.Multiply(input, snapshot.LastWeightedInput);
-        snapshot.LastWeightedInput.AddInPlace(layer.Biases);
+        layer.Weights.MultiplyTo(input, snapshot.LastWeightedInput);
+        snapshot.LastWeightedInput.AddToSelf(layer.Biases);
 
-        layer.ActivationFunction.Activate(snapshot.LastWeightedInput, snapshot.LastActivatedWeights);
+        layer.ActivationFunction.ActivateTo(snapshot.LastWeightedInput, snapshot.LastActivatedWeights);
 
         return snapshot.LastActivatedWeights;
     }

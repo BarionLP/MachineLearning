@@ -7,8 +7,8 @@ public sealed class SoftMaxActivation(Weight temperature) : IActivationFunction
     public static readonly SoftMaxActivation Instance = new(1);
 
     public Weight Temperature { get; } = temperature;
-    public void Activate(Vector input, Vector result) => input.Divide(1).SoftMax(result);
-    public void Derivative(Vector input, Vector result)
+    public void ActivateTo(Vector input, Vector result) => input.Divide(1).SoftMax(result);
+    public void DerivativeTo(Vector input, Vector result)
     {
         input.PointwiseExp(result);
         var sum = result.Sum();

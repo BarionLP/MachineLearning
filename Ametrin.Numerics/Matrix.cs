@@ -106,19 +106,19 @@ public static class MatrixHelper
 {
     public static Vector Multiply(this Matrix matrix, Vector vector)
     {
-        var result = Vector.Create(matrix.RowCount);
-        Multiply(matrix, vector, result);
-        return result;
+        var destination = Vector.Create(matrix.RowCount);
+        MultiplyTo(matrix, vector, destination);
+        return destination;
     }
 
-    public static void Multiply(this Matrix matrix, Vector vector, Vector result)
+    public static void MultiplyTo(this Matrix matrix, Vector vector, Vector destination)
     {
         Debug.Assert(vector.Count == matrix.ColumnCount);
-        Debug.Assert(result.Count == matrix.RowCount);
+        Debug.Assert(destination.Count == matrix.RowCount);
 
         ref var matrixPtr = ref MemoryMarshal.GetReference(matrix.AsSpan());
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
-        ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
+        ref var destinationPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
 
         var mdSize = (nuint)SimdVector.Count;
         var rowCount = (nuint)matrix.RowCount;
@@ -136,7 +136,7 @@ public static class MatrixHelper
                 aggregator += matrixVec * vectorVec;
             }
 
-            ref var sum = ref result[row];
+            ref var sum = ref destination[row];
             sum = SimdVectorHelper.Sum(aggregator);
 
             for (; column < columnCount; column++)
@@ -146,37 +146,37 @@ public static class MatrixHelper
         }
     }
 
-    public static void MultiplyRowwise(this Matrix left, Matrix right, Matrix result)
+    public static void MultiplyRowwiseTo(this Matrix left, Matrix right, Matrix destination)
     {
-        Debug.Assert(left.RowCount == result.RowCount);
+        Debug.Assert(left.RowCount == destination.RowCount);
 
         for (int rowIndex = 0; rowIndex < left.RowCount; rowIndex++)
         {
             var row = left.RowRef(rowIndex);
-            var resultRow = result.RowRef(rowIndex);
-            right.Multiply(row, resultRow);
+            var destinationRow = destination.RowRef(rowIndex);
+            right.MultiplyTo(row, destinationRow);
         }
     }
 
     #region ChatGPT
     public static Vector MultiplyTransposed(this Matrix matrix, Vector vector)
     {
-        var result = Vector.Create(vector.Count);
-        MultiplyTransposed(matrix, vector, result);
-        return result;
+        var destination = Vector.Create(vector.Count);
+        MultiplyTransposedTo(matrix, vector, destination);
+        return destination;
     }
-    public static void MultiplyTransposed(this Matrix matrix, Vector vector, Vector result)
+    public static void MultiplyTransposedTo(this Matrix matrix, Vector vector, Vector destination)
     {
         Debug.Assert(matrix.RowCount == vector.Count);
-        Debug.Assert(matrix.ColumnCount == result.Count);
+        Debug.Assert(matrix.ColumnCount == destination.Count);
 
-        //result.ResetZero(); // Reset result vector to zero
+        destination.ResetZero(); // Reset destination vector to zero
 
         for (int col = 0; col < matrix.ColumnCount; col++)
         {
             for (int row = 0; row < matrix.RowCount; row++)
             {
-                result[col] += matrix[row, col] * vector[row]; // Multiply matrix transpose element by vector element
+                destination[col] += matrix[row, col] * vector[row]; // Multiply matrix transpose element by vector element
             }
         }
     }
@@ -215,91 +215,88 @@ public static class MatrixHelper
     }
     #endregion
 
-    public static void MapToSelf(this Matrix matrix, Func<Weight, Weight> map) => matrix.Map(map, matrix);
+    public static void MapToSelf(this Matrix matrix, Func<Weight, Weight> map) => matrix.MapTo(map, matrix);
     public static Matrix Map(this Matrix matrix, Func<Weight, Weight> map)
     {
-        var result = Matrix.Create(matrix.RowCount, matrix.ColumnCount);
-        matrix.Map(map, result);
-        return result;
+        var destination = Matrix.Create(matrix.RowCount, matrix.ColumnCount);
+        matrix.MapTo(map, destination);
+        return destination;
     }
-    public static void Map(this Matrix matrix, Func<Weight, Weight> map, Matrix result)
+    public static void MapTo(this Matrix matrix, Func<Weight, Weight> map, Matrix destination)
     {
-        AssertCountEquals(matrix, result);
-        SpanOperations.Map(matrix.AsSpan(), result.AsSpan(), map);
+        AssertCountEquals(matrix, destination);
+        SpanOperations.MapTo(matrix.AsSpan(), destination.AsSpan(), map);
     }
 
-    public static void MapInFirst(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map) => matrices.Map(matrices.a, map);
+    public static void MapToFirst(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map) => matrices.MapTo(matrices.a, map);
     public static Matrix Map(this (Matrix a, Matrix b) matrices, Func<Weight, Weight, Weight> map)
     {
-        var result = Matrix.Create(matrices.a.RowCount, matrices.a.ColumnCount);
-        matrices.Map(result, map);
-        return result;
+        var destination = Matrix.Create(matrices.a.RowCount, matrices.a.ColumnCount);
+        matrices.MapTo(destination, map);
+        return destination;
     }
-    public static void Map(this (Matrix a, Matrix b) matrices, Matrix result, Func<Weight, Weight, Weight> map)
+    public static void MapTo(this (Matrix a, Matrix b) matrices, Matrix destination, Func<Weight, Weight, Weight> map)
     {
-        AssertCountEquals(matrices.a, matrices.b, result);
-        SpanOperations.Map(matrices.a.AsSpan(), matrices.b.AsSpan(), result.AsSpan(), map);
+        AssertCountEquals(matrices.a, matrices.b, destination);
+        SpanOperations.MapTo(matrices.a.AsSpan(), matrices.b.AsSpan(), destination.AsSpan(), map);
     }
     public static Matrix Map(this (Matrix a, Matrix b, Matrix c) matrices, Func<Weight, Weight, Weight, Weight> map)
     {
-        var result = Matrix.OfSize(matrices.a);
-        matrices.Map(result, map);
-        return result;
+        var destination = Matrix.OfSize(matrices.a);
+        matrices.MapTo(destination, map);
+        return destination;
     }
-    public static void Map(this (Matrix a, Matrix b, Matrix c) matrices, Matrix result, Func<Weight, Weight, Weight, Weight> map)
+    public static void MapTo(this (Matrix a, Matrix b, Matrix c) matrices, Matrix destination, Func<Weight, Weight, Weight, Weight> map)
     {
-        AssertCountEquals(matrices.a, matrices.b, result);
-        SpanOperations.Map(matrices.a.AsSpan(), matrices.b.AsSpan(), matrices.c.AsSpan(), result.AsSpan(), map);
+        AssertCountEquals(matrices.a, matrices.b, matrices.c, destination);
+        SpanOperations.MapTo(matrices.a.AsSpan(), matrices.b.AsSpan(), matrices.c.AsSpan(), destination.AsSpan(), map);
     }
 
-    public static void AddInPlace(this Matrix left, Matrix right)
+    public static void AddToSelf(this Matrix left, Matrix right)
     {
-        Add(left, right, left);
+        AddTo(left, right, left);
     }
     public static Matrix Add(this Matrix left, Matrix right)
     {
-        var result = Matrix.Create(left.RowCount, left.ColumnCount);
-        Add(left, right, result);
-        return result;
+        var destination = Matrix.Create(left.RowCount, left.ColumnCount);
+        AddTo(left, right, destination);
+        return destination;
     }
 
-    public static void Add(this Matrix left, Matrix right, Matrix result)
+    public static void AddTo(this Matrix left, Matrix right, Matrix destination)
     {
-        AssertCountEquals(left, right, result);
-        TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), result.AsSpan());
+        AssertCountEquals(left, right, destination);
+        TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
-    public static void SubtractInPlace(this Matrix left, Matrix right)
+    public static void SubtractToSelf(this Matrix left, Matrix right)
     {
-        Subtract(left, right, left);
+        SubtractTo(left, right, left);
     }
     public static Matrix Subtract(this Matrix left, Matrix right)
     {
-        var result = Matrix.Create(left.RowCount, left.ColumnCount);
-        Subtract(left, right, result);
-        return result;
+        var destination = Matrix.Create(left.RowCount, left.ColumnCount);
+        SubtractTo(left, right, destination);
+        return destination;
     }
 
-    public static void Subtract(this Matrix left, Matrix right, Matrix result)
+    public static void SubtractTo(this Matrix left, Matrix right, Matrix destination)
     {
-        AssertCountEquals(left, right, result);
-        TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), result.AsSpan());
+        AssertCountEquals(left, right, destination);
+        TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
-    public static Span<double> RowSpan(this Matrix matrix, int rowIndex) => matrix.AsSpan().Slice(rowIndex * matrix.ColumnCount, matrix.ColumnCount);
+    public static Span<Weight> RowSpan(this Matrix matrix, int rowIndex) => matrix.AsSpan().Slice(rowIndex * matrix.ColumnCount, matrix.ColumnCount);
     public static Vector RowRef(this Matrix matrix, int rowIndex) => new MatrixRowReference(rowIndex, matrix);
 
-    public static Matrix Copy(this Matrix matrix)
+    public static Matrix CreateCopy(this Matrix matrix)
     {
         var copy = Matrix.Create(matrix.RowCount, matrix.ColumnCount);
         matrix.AsSpan().CopyTo(copy.AsSpan());
         return copy;
     }
 
-    public static void ResetZero(this Matrix matrix)
-    {
-        matrix.AsSpan().Clear();
-    }
+    public static void ResetZero(this Matrix matrix) => matrix.AsSpan().Clear();
 
     const string MATRIX_COUNT_MISMATCH = "matrices must match in size!";
 
@@ -312,7 +309,16 @@ public static class MatrixHelper
     [Conditional("DEBUG")]
     private static void AssertCountEquals(Matrix a, Matrix b, Matrix c)
     {
-        Debug.Assert(a.RowCount == b.RowCount && b.RowCount == c.RowCount &&
-                     a.ColumnCount == b.ColumnCount && b.ColumnCount == c.ColumnCount, MATRIX_COUNT_MISMATCH);
+        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount &&
+                     a.RowCount == c.RowCount && a.ColumnCount == c.ColumnCount,
+                     MATRIX_COUNT_MISMATCH);
+    }
+    [Conditional("DEBUG")]
+    private static void AssertCountEquals(Matrix a, Matrix b, Matrix c, Matrix d)
+    {
+        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount &&
+                     a.RowCount == c.RowCount && a.ColumnCount == c.ColumnCount &&
+                     a.RowCount == d.RowCount && a.ColumnCount == d.ColumnCount,
+                     MATRIX_COUNT_MISMATCH);
     }
 }

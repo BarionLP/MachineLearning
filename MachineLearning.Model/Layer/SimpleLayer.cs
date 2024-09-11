@@ -16,8 +16,8 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationFuncti
     public Vector Forward(Vector input)
     {
         var result = Weights.Multiply(input);
-        result.AddInPlace(Biases);
-        ActivationFunction.Activate(result, result);
+        result.AddToSelf(Biases);
+        ActivationFunction.ActivateTo(result, result);
 
         return result;
     }

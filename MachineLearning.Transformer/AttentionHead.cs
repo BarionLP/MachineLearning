@@ -22,16 +22,16 @@ public sealed class AttentionHead(ModelInfo Info)
         Debug.Assert(input.ColumnCount == Info.EmbeddingDimensions);
 
         // calculate key and query matrices
-        input.MultiplyRowwise(KeyWeights, keyEmbedding);
-        input.MultiplyRowwise(QueryWeights, queryEmbedding);
+        input.MultiplyRowwiseTo(KeyWeights, keyEmbedding);
+        input.MultiplyRowwiseTo(QueryWeights, queryEmbedding);
         
         var valueDown = Vector.Create(Info.KeyQueryDimensions);
         for(int i = 0; i < input.RowCount; i++)
         {
             //calculate the change to a token vector v this token vector would produce if this token attends to v
             //to be more efficient the change gets projected into the query space and back to the embedding space
-            ValueDownWeights.Multiply(input.RowRef(i), valueDown);
-            ValueUpWeights.Multiply(valueDown, valueVectors.RowRef(i));
+            ValueDownWeights.MultiplyTo(input.RowRef(i), valueDown);
+            ValueUpWeights.MultiplyTo(valueDown, valueVectors.RowRef(i));
             // the following can be done with the down projection and projected back up to save on computation (inside the attention block).
         }
 
@@ -59,7 +59,7 @@ public sealed class AttentionHead(ModelInfo Info)
             for (int deltaIndex = 0; deltaIndex < input.RowCount; deltaIndex++)
             {
                 var valueVector = valueVectors.RowRef(deltaIndex).Multiply(attentionPattern[tokenIndex, deltaIndex]); // cannot operate on reference because it will be used later again (?)
-                deltaVector.AddInPlace(valueVector);
+                deltaVector.AddToSelf(valueVector);
             }
         }
 
@@ -88,8 +88,8 @@ public sealed class AttentionHead(ModelInfo Info)
             for(int deltaIndex = 0; deltaIndex < input.RowCount; deltaIndex++)
             {
                 dAttentionPattern[tokenIndex, deltaIndex] += dDeltaVector.Dot(context.valueVectors.RowRef(deltaIndex));
-                dDeltaVector.Multiply(context.attentionPattern[tokenIndex, deltaIndex], tmp);
-                dValueVectors.RowRef(deltaIndex).AddInPlace(tmp);
+                dDeltaVector.MultiplyTo(context.attentionPattern[tokenIndex, deltaIndex], tmp);
+                dValueVectors.RowRef(deltaIndex).AddToSelf(tmp);
             }
         }
 
@@ -104,11 +104,11 @@ public sealed class AttentionHead(ModelInfo Info)
             {
                 if(keyIndex <= queryIndex)
                 {
-                    context.queryEmbedding.RowRef(queryIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt, tmp);
-                    dKeyEmbedding.RowRef(keyIndex).AddInPlace(tmp);
+                    context.queryEmbedding.RowRef(queryIndex).MultiplyTo(dAttentionRow[keyIndex] / QueryDimensionsSqrt, tmp);
+                    dKeyEmbedding.RowRef(keyIndex).AddToSelf(tmp);
                     
-                    context.keyEmbedding.RowRef(keyIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt, tmp);
-                    dQueryEmbedding.RowRef(queryIndex).AddInPlace(tmp);
+                    context.keyEmbedding.RowRef(keyIndex).MultiplyTo(dAttentionRow[keyIndex] / QueryDimensionsSqrt, tmp);
+                    dQueryEmbedding.RowRef(queryIndex).AddToSelf(tmp);
                 }
             }
         }
@@ -119,9 +119,9 @@ public sealed class AttentionHead(ModelInfo Info)
         //var tmp_m = Matrix.Create(dQueryEmbedding.ColumnCount, )
         for(int i = 0; i < input.RowCount; i++)
         {
-            QueryWeights.Multiply(dQueryEmbedding.RowRef(i), tmp);
-            dInputQuery.RowRef(i).AddInPlace(tmp);
-            dQueryWeights.AddInPlace(VectorHelper.MultiplyToMatrix(dQueryEmbedding.RowRef(i), input.RowRef(i)));
+            QueryWeights.MultiplyTo(dQueryEmbedding.RowRef(i), tmp);
+            dInputQuery.RowRef(i).AddToSelf(tmp);
+            dQueryWeights.AddToSelf(VectorHelper.MultiplyToMatrix(dQueryEmbedding.RowRef(i), input.RowRef(i)));
 
 
             //ValueDownWeights.Multiply(input.RowRef(i), valueDown);
@@ -169,7 +169,7 @@ public sealed class AttentionHead(ModelInfo Info)
             for(int deltaIndex = 0; deltaIndex < input.RowCount; deltaIndex++)
             {
                 dAttentionPattern[tokenIndex, deltaIndex] += dDeltaVector.Dot(valueVectors.RowRef(deltaIndex));
-                dValueVectors.RowRef(deltaIndex).AddInPlace(dDeltaVector.Multiply(attentionPattern[tokenIndex, deltaIndex]));
+                dValueVectors.RowRef(deltaIndex).AddToSelf(dDeltaVector.Multiply(attentionPattern[tokenIndex, deltaIndex]));
             }
         }
 
@@ -189,8 +189,8 @@ public sealed class AttentionHead(ModelInfo Info)
             {
                 if(keyIndex <= queryIndex)
                 {
-                    dKeyEmbedding.RowRef(keyIndex).AddInPlace(queryEmbedding.RowRef(queryIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt));
-                    dQueryEmbedding.RowRef(queryIndex).AddInPlace(keyEmbedding.RowRef(keyIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt));
+                    dKeyEmbedding.RowRef(keyIndex).AddToSelf(queryEmbedding.RowRef(queryIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt));
+                    dQueryEmbedding.RowRef(queryIndex).AddToSelf(keyEmbedding.RowRef(keyIndex).Multiply(dAttentionRow[keyIndex] / QueryDimensionsSqrt));
                 }
             }
         }
@@ -207,15 +207,15 @@ public sealed class AttentionHead(ModelInfo Info)
 
             // Backpropagate through QueryWeights
             MatrixHelper.MultiplyTransposeWithGradient(dQueryEmbedRow, inputRow, dQueryWeights);
-            dInputQuery.RowRef(i).AddInPlace(QueryWeights.MultiplyTransposed(dQueryEmbedRow));
+            dInputQuery.RowRef(i).AddToSelf(QueryWeights.MultiplyTransposed(dQueryEmbedRow));
 
             // Backpropagate through KeyWeights
             MatrixHelper.MultiplyTransposeWithGradient(dKeyEmbedRow, inputRow, dKeyWeights);
-            dInputKey.RowRef(i).AddInPlace(KeyWeights.MultiplyTransposed(dKeyEmbedRow));
+            dInputKey.RowRef(i).AddToSelf(KeyWeights.MultiplyTransposed(dKeyEmbedRow));
         }
 
-        dInput.AddInPlace(dInputKey);
-        dInput.AddInPlace(dInputQuery);
+        dInput.AddToSelf(dInputKey);
+        dInput.AddToSelf(dInputQuery);
 
         // Step 6: Backpropagate through value weight multiplications
         var dValueDown = Vector.Create(Info.KeyQueryDimensions);
@@ -225,11 +225,11 @@ public sealed class AttentionHead(ModelInfo Info)
             var inputRow = input.RowRef(i);
 
             // Backpropagate through ValueUpWeights
-            ValueUpWeights.MultiplyTransposed(dValueVectorRow, dValueDown);
+            ValueUpWeights.MultiplyTransposedTo(dValueVectorRow, dValueDown);
             MatrixHelper.MultiplyTransposeWithGradient(dValueVectorRow, dValueDown, dValueUpWeights);
 
             // Backpropagate through ValueDownWeights
-            ValueDownWeights.MultiplyTransposed(dValueDown, dInput.RowRef(i));
+            ValueDownWeights.MultiplyTransposedTo(dValueDown, dInput.RowRef(i));
             MatrixHelper.MultiplyTransposeWithGradient(dValueDown, inputRow, dValueDownWeights);
         }
 

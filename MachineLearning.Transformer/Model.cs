@@ -83,7 +83,7 @@ public sealed class RandomInitializer : IInitializer
 {
     public void Initialize(Span<Weight> vector)
     {
-        SpanOperations.Map(vector, vector, s => Random.Shared.NextDouble());
+        SpanOperations.MapTo(vector, vector, s => Random.Shared.NextDouble());
     }
 }
 

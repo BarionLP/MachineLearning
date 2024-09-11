@@ -42,7 +42,7 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
     public void Update(Vector nodeValues, LayerSnapshot snapshot)
     {
         // Compute the gradient for weights
-        VectorHelper.MultiplyToMatrix(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
+        VectorHelper.MultiplyToMatrixTo(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
 #if DEBUG
         if(nodeValues.AsSpan().Contains(double.NaN))
         {
@@ -56,8 +56,8 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
 
         lock(_lock)
         {
-            GradientCostWeights.AddInPlace(snapshot.WeightGradients);
-            GradientCostBiases.AddInPlace(nodeValues);
+            GradientCostWeights.AddToSelf(snapshot.WeightGradients);
+            GradientCostBiases.AddToSelf(nodeValues);
         }
     }
 
@@ -68,14 +68,14 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
 
         // parallelizing makes no difference
         // Update biases
-        (FirstMomentBiases, GradientCostBiases).MapInFirst(FirstMomentEstimate);
-        (SecondMomentBiases, GradientCostBiases).MapInFirst(SecondMomentEstimate);
-        Layer.Biases.SubtractInPlace((FirstMomentBiases, SecondMomentBiases).Map(WeightReduction));
+        (FirstMomentBiases, GradientCostBiases).MapToFirst(FirstMomentEstimate);
+        (SecondMomentBiases, GradientCostBiases).MapToFirst(SecondMomentEstimate);
+        Layer.Biases.SubtractToSelf((FirstMomentBiases, SecondMomentBiases).Map(WeightReduction));
 
         // Update weights
-        (FirstMomentWeights, GradientCostWeights).MapInFirst(FirstMomentEstimate);
-        (SecondMomentWeights, GradientCostWeights).MapInFirst(SecondMomentEstimate);
-        Layer.Weights.SubtractInPlace((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
+        (FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
+        (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
+        Layer.Weights.SubtractToSelf((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
         double WeightReduction(double firstMoment, double secondMoment)
         {

@@ -25,7 +25,7 @@ public static class LayerBackPropagation
 
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
         var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights);
-        weightedInputDerivatives.PointwiseMultiplyInPlace(activationDerivatives);
+        weightedInputDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
 
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
     }
@@ -45,7 +45,7 @@ public static class LayerBackPropagation
             Console.WriteLine("Model weights contain NaN");
         }
 #endif
-        costDerivatives.PointwiseMultiplyInPlace(activationDerivatives);
+        costDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
 
         return costDerivatives;
     }

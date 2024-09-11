@@ -16,6 +16,6 @@ public sealed class HeInitializer(Random? random = null) : ILayerInitializer
         var standartDeviation = Math.Sqrt(2.0 / inputCount);
 
         weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, standartDeviation));
-        biases.MapInPlace(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
+        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
     }
 }

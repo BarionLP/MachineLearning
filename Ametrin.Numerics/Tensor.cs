@@ -21,7 +21,7 @@ public interface Tensor
     public static Tensor Of(int rowCount, int columnCount, int layerCount, double[] storage) => Of(rowCount, columnCount, layerCount, Vector.Of(storage));
     public static Tensor Of(int rowCount, int columnCount, int layerCount, Vector storage)
     {
-        if(storage.Count != rowCount * columnCount * layerCount)
+        if (storage.Count != rowCount * columnCount * layerCount)
         {
             throw new ArgumentException("storage size does not match specified dimensions");
         }
@@ -56,7 +56,7 @@ public readonly struct TensorFlat(int rowCount, int columnCount, int layerCount,
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(layer, LayerCount);
 #endif
 
-        return layer * RowCount * ColumnCount +  row * ColumnCount + column;
+        return layer * RowCount * ColumnCount + row * ColumnCount + column;
     }
 }
 
@@ -80,7 +80,7 @@ public static class TensorHelper
         AddUnsafe(left, right, destination);
     }
     private static void AddUnsafe(Tensor left, Tensor right, Tensor destination) => TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), destination.AsSpan());
-    
+
     public static void PointwiseMultiplyToSelf(this Tensor left, Tensor right)
     {
         AssertCountEquals(left, right);
@@ -93,7 +93,7 @@ public static class TensorHelper
         PointwiseMultiplyUnsafe(left, right, destination);
         return destination;
     }
-    public static void PointwiseMultiply(this Tensor left, Tensor right, Tensor destination)
+    public static void PointwiseMultiplyTo(this Tensor left, Tensor right, Tensor destination)
     {
         AssertCountEquals(left, right, destination);
         PointwiseMultiplyUnsafe(left, right, destination);
@@ -113,6 +113,7 @@ public static class TensorHelper
     private static void AssertCountEquals(Tensor a, Tensor b, Tensor c)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount && a.LayerCount == b.LayerCount &&
-                     a.ColumnCount == b.ColumnCount && b.ColumnCount == c.ColumnCount && a.LayerCount == c.LayerCount, TENSOR_COUNT_MISMATCH);
+                     a.RowCount == c.RowCount && a.ColumnCount == c.ColumnCount && a.LayerCount == c.LayerCount,
+                     TENSOR_COUNT_MISMATCH);
     }
 }

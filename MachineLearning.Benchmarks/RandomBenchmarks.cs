@@ -18,7 +18,7 @@ public class RandomBenchmarks
         result = Vector.Create(Count);
 
         left.MapToSelf(_ => Random.Shared.NextDouble());
-        right.MapInPlace(_ => Random.Shared.NextDouble());
+        right.MapToSelf(_ => Random.Shared.NextDouble());
     }
 
     [Benchmark(Baseline = true)]
@@ -30,6 +30,6 @@ public class RandomBenchmarks
     [Benchmark]
     public void Multiply_New()
     {
-        MatrixHelper.Multiply(left, right, result);
+        MatrixHelper.MultiplyTo(left, right, result);
     }
 }

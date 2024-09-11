@@ -42,8 +42,8 @@ public sealed class Embedder(string Tokens, int EmbeddingDimensions, Weight temp
         Debug.Assert(logits.Count == Tokens.Length);
 
         var max = logits.Max();
-        logits.SubtractPointwiseInPlace(max);
-        logits.DivideInPlace(temperature);
+        logits.SubtractPointwiseToSelf(max);
+        logits.DivideToSelf(temperature);
         var probabilities = logits.SoftMax();
         return Tokens[GetWeightedRandomIndex(probabilities)];
 

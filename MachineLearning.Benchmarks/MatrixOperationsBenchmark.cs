@@ -30,7 +30,7 @@ public class MatrixOperationsBenchmark
     [Benchmark(Baseline = true)]
     public void VectorMultiply_Loop()
     {
-        matrix1.Multiply(columnVector, rowVector);
+        matrix1.MultiplyTo(columnVector, rowVector);
     }
 
     //[Benchmark]

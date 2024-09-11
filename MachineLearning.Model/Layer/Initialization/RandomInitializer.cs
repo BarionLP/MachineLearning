@@ -15,6 +15,6 @@ public sealed class RandomInitializer(Random? random = null) : ILayerInitializer
         var sqrtInputNodeCount = Math.Sqrt(weights.ColumnCount);
 
         weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 1) / sqrtInputNodeCount);
-        biases.MapInPlace(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
+        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
     }
 }
