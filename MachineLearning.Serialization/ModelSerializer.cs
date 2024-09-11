@@ -22,7 +22,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var writer = new BinaryWriter(stream);
         writer.Write(VERSION);
         writer.Write(model.Layers.Length);
-        foreach(var layer in model.Layers)
+        foreach (var layer in model.Layers)
         {
             writer.Write(layer.InputNodeCount);
             writer.Write(layer.OutputNodeCount);
@@ -30,10 +30,10 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
 
             // encode weights & biases
-            foreach(var outputIndex in ..layer.OutputNodeCount)
+            foreach (var outputIndex in ..layer.OutputNodeCount)
             {
                 writer.Write(layer.Biases[outputIndex]);
-                foreach(var inputIndex in ..layer.InputNodeCount)
+                foreach (var inputIndex in ..layer.InputNodeCount)
                 {
                     writer.Write(layer.Weights[outputIndex, inputIndex]);
                 }
@@ -63,50 +63,50 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var layerCount = reader.ReadInt32();
         var layers = new SimpleLayer[layerCount];
 
-        foreach(var layerIndex in ..layerCount)
+        foreach (var layerIndex in ..layerCount)
         {
             var inputNodeCount = reader.ReadInt32();
             var outputNodeCount = reader.ReadInt32();
             var activationMethod = ActivationMethodSerializer.ReadV3(reader);
-            var layerBuilder = new LayerBuilder(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
+            var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
+            layers[layerIndex] = layerBuilder.Create();
 
             // decode weights & biases
-            foreach(var outputIndex in ..outputNodeCount)
+            foreach (var outputIndex in ..outputNodeCount)
             {
-                layerBuilder.Biases[outputIndex] = reader.ReadDouble();
-                foreach(var inputIndex in ..inputNodeCount)
+                layers[layerIndex].Biases[outputIndex] = reader.ReadDouble();
+                foreach (var inputIndex in ..inputNodeCount)
                 {
-                    layerBuilder.Weights[outputIndex, inputIndex] = reader.ReadDouble();
+                    layers[layerIndex].Weights[outputIndex, inputIndex] = reader.ReadDouble();
                 }
             }
-            layers[layerIndex] = layerBuilder.Build();
         }
 
         return new SimpleModel([.. layers]);
     }
-    
+
     private static SimpleModel LoadV2(BinaryReader reader)
     {
         var layerCount = reader.ReadInt32();
         var layers = new SimpleLayer[layerCount];
 
-        foreach(var layerIndex in ..layerCount)
+        foreach (var layerIndex in ..layerCount)
         {
             var inputNodeCount = reader.ReadInt32();
             var outputNodeCount = reader.ReadInt32();
             var activationMethod = ActivationMethodSerializer.Read(reader);
-            var layerBuilder = new LayerBuilder(inputNodeCount, outputNodeCount).SetActivationMethod(activationMethod);
+            var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
+            layers[layerIndex] = layerBuilder.Create();
 
             // decode weights & biases
-            foreach(var outputIndex in ..outputNodeCount)
+            foreach (var outputIndex in ..outputNodeCount)
             {
-                layerBuilder.Biases[outputIndex] = reader.ReadDouble();
-                foreach(var inputIndex in ..inputNodeCount)
+                layers[layerIndex].Biases[outputIndex] = reader.ReadDouble();
+                foreach (var inputIndex in ..inputNodeCount)
                 {
-                    layerBuilder.Weights[outputIndex, inputIndex] = reader.ReadDouble();
+                    layers[layerIndex].Weights[outputIndex, inputIndex] = reader.ReadDouble();
                 }
             }
-            layers[layerIndex] = layerBuilder.Build();
         }
 
         return new SimpleModel([.. layers]);

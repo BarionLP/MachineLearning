@@ -95,10 +95,16 @@ public static class VectorHelper
         return TensorPrimitives.Dot<double>(left.AsSpan(), right.AsSpan());
     }
 
-    public static void PointwiseExpInPlace(this Vector vector) => PointwiseExp(vector, vector);
+    public static void PointwiseExpToSelf(this Vector vector) => PointwiseExp(vector, vector);
     public static void PointwiseExp(this Vector vector, Vector destination)
     {
         TensorPrimitives.Exp(vector.AsSpan(), destination.AsSpan());
+    }
+    
+    public static void PointwiseLogToSelf(this Vector vector) => PointwiseExp(vector, vector);
+    public static void PointwiseLog(this Vector vector, Vector destination)
+    {
+        TensorPrimitives.Log(vector.AsSpan(), destination.AsSpan());
     }
 
     public static void SoftMaxInPlace(this Vector vector) => SoftMax(vector, vector);
@@ -125,13 +131,13 @@ public static class VectorHelper
         SpanOperations.Map(vector.AsSpan(), destination.AsSpan(), map);
         return destination;
     }
-    public static void Map(this Vector vector, Func<Weight, Weight> map, Vector result)
+    public static void Map(this Vector vector, Func<Weight, Weight> map, Vector destination)
     {
-        AssertCountEquals(vector, result);
-        SpanOperations.Map(vector.AsSpan(), result.AsSpan(), map);
+        AssertCountEquals(vector, destination);
+        SpanOperations.Map(vector.AsSpan(), destination.AsSpan(), map);
     }
 
-    public static void MapInPlace(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap) => vector.Map(simdMap, fallbackMap, vector);
+    public static void MapToSelf(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap) => vector.Map(simdMap, fallbackMap, vector);
     public static void Map(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap, Vector result)
     {
         AssertCountEquals(vector, result);
@@ -274,43 +280,6 @@ public static class VectorHelper
             }
         }
     }
-
-    public static void MultiplyToMatrixSimd(Vector rowVector, Vector columnVector, Matrix result)
-    {
-        Debug.Assert(rowVector.Count == result.RowCount);
-        Debug.Assert(columnVector.Count == result.ColumnCount);
-
-        int rowCount = rowVector.Count;
-        int colCount = columnVector.Count;
-
-        //if (rowCount == 0 || colCount == 0 || rowCount * colCount != result.FlatCount)
-        //    throw new ArgumentException("Invalid dimensions for the vectors or result matrix.");
-
-        int mdSize = SimdVector.Count;
-
-        for (int row = 0; row < rowCount; row++)
-        {
-            var rowValue = new SimdVector(rowVector[row]);
-
-            int col;
-            for (col = 0; col <= colCount - mdSize; col += mdSize)
-            {
-                var colValues = new SimdVector(columnVector.AsSpan().Slice(col, SimdVector.Count));
-                var resultValues = rowValue * colValues;
-
-                for (int i = 0; i < mdSize; i++)
-                {
-                    result[row, col + i] = resultValues[i];
-                }
-            }
-
-            for (; col < colCount; col++)
-            {
-                result[row, col] = rowVector[row] * columnVector[col];
-            }
-        }
-    }
-
 
     public static void MultiplyInPlace(this Vector vector, Weight factor) => Multiply(vector, factor, vector);
     public static Vector Multiply(this Vector vector, Weight factor)

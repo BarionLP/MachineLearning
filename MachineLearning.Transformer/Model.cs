@@ -69,7 +69,7 @@ public static class TransformerTest
         head.Initialize(head.Info.Initializer);
 
         var pass = AttentionHead.HeadPass.Allocate(info);
-        pass.input.MapInPlace(_ => 1);
+        pass.input.MapToSelf(_ => 1);
 
         var result = head.GetEmbeddingDelta(pass);
 

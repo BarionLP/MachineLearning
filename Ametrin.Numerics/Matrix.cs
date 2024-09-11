@@ -215,7 +215,7 @@ public static class MatrixHelper
     }
     #endregion
 
-    public static void MapInPlace(this Matrix matrix, Func<Weight, Weight> map) => matrix.Map(map, matrix);
+    public static void MapToSelf(this Matrix matrix, Func<Weight, Weight> map) => matrix.Map(map, matrix);
     public static Matrix Map(this Matrix matrix, Func<Weight, Weight> map)
     {
         var result = Matrix.Create(matrix.RowCount, matrix.ColumnCount);
@@ -286,6 +286,7 @@ public static class MatrixHelper
         TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), result.AsSpan());
     }
 
+    public static Span<double> RowSpan(this Matrix matrix, int rowIndex) => matrix.AsSpan().Slice(rowIndex * matrix.ColumnCount, matrix.ColumnCount);
     public static Vector RowRef(this Matrix matrix, int rowIndex) => new MatrixRowReference(rowIndex, matrix);
 
     public static Matrix Copy(this Matrix matrix)

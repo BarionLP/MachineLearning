@@ -6,7 +6,7 @@ namespace MachineLearning.Samples.MNIST;
 
 public class MNISTModel
 {
-    public static IEmbedder<double[], int> GetEmbedder() => MNISTEmbedder.Instance;
+    public static IEmbedder<double[], int> Embedder => MNISTEmbedder.Instance;
 
     public static ModelDefinition CreateModel(Random? random = null)
     {
@@ -16,8 +16,8 @@ public class MNISTModel
                 .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
                 .AddLayer(256, initializer)
                 .AddLayer(128, initializer)
-                .AddLayer(10, new XavierInitializer(random), SoftmaxActivation.Instance)
-                .Build(GetEmbedder());
+                .AddLayer(10, new XavierInitializer(random), SoftMaxActivation.Instance)
+                .Build(Embedder);
 
         return network;
     }
@@ -76,7 +76,7 @@ public class MNISTModel
     {
         var trainer = ModelTrainer.Create(model, config);
 
-        //trainer.Train();
+        trainer.TrainConsole();
 
         var images = new ImageDataSource(AssetManager.CustomDigits);
         Benchmark(model, images);

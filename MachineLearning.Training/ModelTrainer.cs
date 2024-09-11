@@ -28,13 +28,13 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
     public void TrainConsole(bool cancelable = true)
     {
         using var cts = new CancellationTokenSource();
-        if(cancelable)
+        if (cancelable)
         {
             Task.Run(async () =>
             {
-                while(!cts.IsCancellationRequested)
+                while (!cts.IsCancellationRequested)
                 {
-                    if(Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
+                    if (Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
                     {
                         Console.WriteLine("Canceling...");
                         cts.Cancel();
@@ -93,13 +93,6 @@ public sealed class ModelTrainer<TInput, TOutput> where TInput : notnull where T
                 LearnRate = Config.Optimizer.LearningRate,
             };
         }
-
-        //return new ModelTrainingResult
-        //{
-        //    EpochCount = Config.EpochCount,
-        //    Before = before,
-        //    After = EvaluateShort(),
-        //};
     }
 
     public ModelEvaluationResult EvaluateShort() => new()

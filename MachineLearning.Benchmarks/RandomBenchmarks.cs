@@ -17,7 +17,7 @@ public class RandomBenchmarks
         right = Vector.Create(Count);
         result = Vector.Create(Count);
 
-        left.MapInPlace(_ => Random.Shared.NextDouble());
+        left.MapToSelf(_ => Random.Shared.NextDouble());
         right.MapInPlace(_ => Random.Shared.NextDouble());
     }
 

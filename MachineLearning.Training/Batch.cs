@@ -28,5 +28,4 @@ public static class Batch
 
     public static Batch<TInput, TOutput> CreateRandom<TInput, TOutput>(ICollection<DataEntry<TInput, TOutput>> source, int batchSize, Random? random = null)
         => new(batchSize, source.GetRandomElements(batchSize, random));
-
 }

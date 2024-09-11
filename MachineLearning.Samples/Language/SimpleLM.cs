@@ -13,7 +13,7 @@ public sealed class SimpleLM : ISample<string, char>
             .AddLayer(2048, initializer)
             .AddLayer(512, initializer)
             .AddLayer(128, initializer)
-            .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(new XavierInitializer(random)).SetActivationMethod(SoftmaxActivation.Instance))
+            .AddLayer(LanguageDataSource.TOKENS.Length, builder => builder.Initialize(new XavierInitializer(random)).SetActivationFunction(SoftMaxActivation.Instance))
             .Build(new BinaryStringEmbedder(CONTEXT_SIZE, LanguageDataSource.TOKENS, true));
     }
 

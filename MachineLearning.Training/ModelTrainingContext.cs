@@ -70,52 +70,33 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
         };
     }
 
-    private void Apply(int dataCounter)
-    {
-        foreach(var layer in LayerOptimizers)
-        {
-            layer.Apply(dataCounter);
-        }
-    }
-
-    private void GradientCostReset()
-    {
-        foreach(var layer in LayerOptimizers)
-        {
-            layer.GradientCostReset();
-        }
-    }
-
-    public void FullReset()
-    {
-        foreach(var layer in LayerOptimizers)
-        {
-            layer.FullReset();
-        }
-    }
-
     private Vector Update(DataEntry<TInput, TOutput> data)
     {
         var snapshots = Model.Layers.Select(LayerSnapshot.Get).ToImmutableArray();
         var result = Model.Forward(Embedder.Embed(data.Input), snapshots);
 
-        var nodeValues = OutputLayerOptimizer.ComputeOutputLayerErrors(Config.OutputResolver.Expected(data.Expected), snapshots[^1]);
+        var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(OutputLayerOptimizer.Layer, OutputLayerOptimizer.CostFunction, Config.OutputResolver.Expected(data.Expected), snapshots[^1]);
         OutputLayerOptimizer.Update(nodeValues, snapshots[^1]);
 
 
-        for(int hiddenLayerIndex = LayerOptimizers.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
+        for (int hiddenLayerIndex = LayerOptimizers.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
         {
             var hiddenLayer = LayerOptimizers[hiddenLayerIndex];
-            nodeValues = hiddenLayer.ComputeHiddenLayerErrors(LayerOptimizers[hiddenLayerIndex + 1].Layer, nodeValues, snapshots[hiddenLayerIndex]);
+            nodeValues = LayerBackPropagation.ComputeHiddenLayerErrors(hiddenLayer.Layer, LayerOptimizers[hiddenLayerIndex + 1].Layer, nodeValues, snapshots[hiddenLayerIndex]);
             hiddenLayer.Update(nodeValues, snapshots[hiddenLayerIndex]);
         }
 
 
         //TODO: verify zip performance
-        foreach(var (layer, snapshot) in Model.Layers.Zip(snapshots)){
+        foreach (var (layer, snapshot) in Model.Layers.Zip(snapshots))
+        {
             LayerSnapshot.Return(layer, snapshot);
         }
 
         return result;
     }
+
+    private void Apply(int dataCounter) => LayerOptimizers.ForEach(layer => layer.Apply(dataCounter));
+    private void GradientCostReset() => LayerOptimizers.ForEach(layer => layer.GradientCostReset());
+    public void FullReset() => LayerOptimizers.ForEach(layer => layer.FullReset());
 }

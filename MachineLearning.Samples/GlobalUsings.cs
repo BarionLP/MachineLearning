@@ -6,6 +6,7 @@ global using MachineLearning.Model.Activation;
 global using MachineLearning.Model;
 global using MachineLearning.Model.Embedding;
 global using MachineLearning.Model.Layer.Initialization;
+global using MachineLearning.Serialization;
 global using MachineLearning.Training;
 global using MachineLearning.Training.Cost;
 global using MachineLearning.Training.Optimization.Adam;

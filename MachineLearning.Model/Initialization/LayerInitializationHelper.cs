@@ -1,6 +1,6 @@
-namespace MachineLearning.Model.Layer.Initialization;
+namespace MachineLearning.Model.Initialization;
 
-public static class LayerInitializationHelper
+public static class InitializationHelper
 {
     public static double RandomInNormalDistribution(Random random, double mean, double standardDeviation)
     {

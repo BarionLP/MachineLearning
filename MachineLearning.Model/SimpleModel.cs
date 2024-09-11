@@ -14,7 +14,7 @@ public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<
     public override string ToString() => $"Embedded {InternalModel}";
 }
 
-public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers) : IModel<SimpleLayer>
+public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers) : ISimpleModel<SimpleLayer>
 {
     public ImmutableArray<SimpleLayer> Layers { get; } = layers;
     public SimpleLayer OutputLayer => Layers[^1];
@@ -23,7 +23,7 @@ public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers) : IModel<Sim
 
     public Vector Forward(Vector weights)
     {
-        foreach(var layer in Layers)
+        foreach (var layer in Layers)
         {
             weights = layer.Forward(weights);
         }

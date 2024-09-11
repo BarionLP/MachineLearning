@@ -19,7 +19,7 @@ public sealed class LogicModel : ISample<string, char>
             .AddLayer(512, initializer)
             .AddLayer(512, initializer)
             .AddLayer(256, initializer)
-            .AddLayer(TOKENS.Length, initializer, SoftmaxActivation.Instance)
+            .AddLayer(TOKENS.Length, initializer, SoftMaxActivation.Instance)
             .Build(Embedder);
     }
 

@@ -1,3 +1,5 @@
+using MachineLearning.Model.Initialization;
+
 namespace MachineLearning.Model.Layer.Initialization;
 
 /// <summary>
@@ -14,7 +16,7 @@ public sealed class XavierInitializer(Random? random = null) : ILayerInitializer
         var outputCount = biases.Count;
         var standardDeviation = Math.Sqrt(2.0 / (inputCount + outputCount));
 
-        weights.MapInPlace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, standardDeviation));
-        biases.MapInPlace(v => LayerInitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
+        weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, standardDeviation));
+        biases.MapInPlace(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
     }
 }
