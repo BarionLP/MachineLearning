@@ -3,7 +3,7 @@ using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.SGDMomentum;
 
-public sealed class GDMomentumOptimizer : IGenericOptimizer
+public sealed class SGDMomentumOptimizer : IGenericOptimizer
 {
     public required double InitialLearningRate { get; init; } = 0.7;
     public double LearningRateEpochMultiplier { get; init; } = 0.94;
@@ -23,7 +23,7 @@ public sealed class GDMomentumOptimizer : IGenericOptimizer
     }
     public ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
     {
-        SimpleLayer simpleLayer => new GDMomentumLayerOptimizer(this, simpleLayer),
+        SimpleLayer simpleLayer => new SimpleSGDMomentumOptimizer(this, simpleLayer),
         _ => throw new NotImplementedException($"No Nadam implementation for {layer}"),
     };
 }

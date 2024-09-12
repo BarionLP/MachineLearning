@@ -1,4 +1,3 @@
-using System;
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
@@ -33,14 +32,10 @@ public static class LayerBackPropagation
 
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
     }
-    
+
     public static Vector ComputeHiddenLayerErrors(StringEmbeddingLayer layer, SimpleLayer nextLayer, Vector nextErrors, LayerSnapshots.Embedding snapshot)
     {
-        var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights);
-        // weightedInputDerivatives.MultiplyToSelf(1);
-        // var activationDerivatives = Vector.Create(layer.OutputNodeCount);
-
-        return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
+        return nextErrors.Multiply(nextLayer.Weights);
     }
 
     public static Vector ComputeOutputLayerErrors(SimpleLayer layer, ICostFunction costFunction, Vector expected, LayerSnapshots.Simple snapshot)

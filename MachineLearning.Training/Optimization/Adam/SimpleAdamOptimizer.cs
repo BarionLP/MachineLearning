@@ -1,14 +1,14 @@
-﻿using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
-namespace MachineLearning.Training.Optimization.AdamW;
+namespace MachineLearning.Training.Optimization.Adam;
 
-public sealed class AdamWLayerOptimizer : ILayerOptimizer<SimpleLayer>
+public class SimpleAdamOptimizer : ILayerOptimizer<SimpleLayer, LayerSnapshots.Simple>
 {
     public SimpleLayer Layer { get; }
     public ICostFunction CostFunction => Optimizer.CostFunction;
-    public AdamWOptimizer Optimizer { get; }
+    public AdamOptimizer Optimizer { get; }
 
     public readonly Vector GradientCostBiases;
     public readonly Matrix GradientCostWeights;
@@ -24,7 +24,7 @@ public sealed class AdamWLayerOptimizer : ILayerOptimizer<SimpleLayer>
     public readonly Matrix SecondMomentWeights;
 
 
-    public AdamWLayerOptimizer(AdamWOptimizer optimizer, SimpleLayer layer)
+    public SimpleAdamOptimizer(AdamOptimizer optimizer, SimpleLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;
@@ -39,32 +39,24 @@ public sealed class AdamWLayerOptimizer : ILayerOptimizer<SimpleLayer>
         SecondMomentWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
     }
 
-    private readonly object _lock = new();
-    public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
+    private readonly Lock _lock = new();
+    public void Update(Vector nodeValues, LayerSnapshots.Simple snapshot)
     {
-        if (rawSnapshot is not LayerSnapshots.Simple snapshot) throw new UnreachableException();
-
         // Compute the gradient for weights
         VectorHelper.MultiplyToMatrixTo(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
-#if DEBUG
-        if(nodeValues.AsSpan().Contains(double.NaN))
-        {
-            Console.WriteLine("NaN detected");
-        }
-        if(snapshot.WeightGradients.AsSpan().Contains(double.NaN))
-        {
-            Console.WriteLine("NaN detected");
-        }
-#endif
 
-        lock(_lock)
+        NumericsDebug.AssertValidNumbers(nodeValues);
+        NumericsDebug.AssertValidNumbers(snapshot.WeightGradients);
+
+        lock (_lock)
         {
             GradientCostWeights.AddToSelf(snapshot.WeightGradients);
             GradientCostBiases.AddToSelf(nodeValues);
         }
     }
 
-    public void Apply(int dataCounter)
+    // update child methods
+    public virtual void Apply(int dataCounter)
     {
         // do i need gradient clipping?
         var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
@@ -78,12 +70,8 @@ public sealed class AdamWLayerOptimizer : ILayerOptimizer<SimpleLayer>
         // Update weights
         (FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
         (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
-        var tmp = (FirstMomentWeights, SecondMomentWeights).Map(WeightReduction);
-        (Layer.Weights, tmp).MapToFirst(Reduce);
+        Layer.Weights.SubtractToSelf((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
-
-        double Reduce(double original, double reduction)
-            => original - reduction - Optimizer.WeightDecayCoefficient * original;
         double WeightReduction(double firstMoment, double secondMoment)
         {
             var mHat = firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));

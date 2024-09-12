@@ -4,7 +4,7 @@ using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.SGDMomentum;
 
-public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<SimpleLayer>
+public sealed class SimpleSGDMomentumOptimizer : ILayerOptimizer<SimpleLayer, LayerSnapshots.Simple>
 {
     public SimpleLayer Layer { get; }
     public readonly Matrix CostGradientWeights;
@@ -12,9 +12,9 @@ public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<SimpleLayer>
     public readonly Matrix WeightVelocities;
     public readonly Vector BiasVelocities;
     public ICostFunction CostFunction => Optimizer.CostFunction;
-    public GDMomentumOptimizer Optimizer { get; }
+    public SGDMomentumOptimizer Optimizer { get; }
 
-    public GDMomentumLayerOptimizer(GDMomentumOptimizer optimizer, SimpleLayer layer)
+    public SimpleSGDMomentumOptimizer(SGDMomentumOptimizer optimizer, SimpleLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;
@@ -24,10 +24,8 @@ public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<SimpleLayer>
         BiasVelocities = Vector.Create(Layer.OutputNodeCount);
     }
 
-    public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
+    public void Update(Vector nodeValues, LayerSnapshots.Simple snapshot)
     {
-        if (rawSnapshot is not LayerSnapshots.Simple snapshot) throw new UnreachableException();
-
         foreach (int outputNodeIndex in ..Layer.OutputNodeCount)
         {
             foreach(int inputNodeIndex in ..Layer.InputNodeCount)
@@ -73,10 +71,9 @@ public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<SimpleLayer>
 
     public void FullReset()
     {
-        CostGradientBiases.ResetZero();
-        BiasVelocities.ResetZero();
+        GradientCostReset();
 
-        CostGradientWeights.ResetZero();
+        BiasVelocities.ResetZero();
         WeightVelocities.ResetZero();
     }
 }

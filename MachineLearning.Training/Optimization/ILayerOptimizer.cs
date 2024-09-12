@@ -15,9 +15,10 @@ public interface ILayerOptimizer
 };
 
 
-public interface ILayerOptimizer<TLayer> : ILayerOptimizer where TLayer : ILayer
+public interface ILayerOptimizer<TLayer, TSnapshot> : ILayerOptimizer where TLayer : ILayer where TSnapshot : ILayerSnapshot
 {
     public new TLayer Layer { get; }
     ILayer ILayerOptimizer.Layer => Layer;
-
+    public void Update(Vector nodeValues, TSnapshot snapshot);
+    void ILayerOptimizer.Update(Vector nodeValues, ILayerSnapshot snapshot) => Update(nodeValues, LayerSnapshots.Is<TSnapshot>(snapshot));
 }
