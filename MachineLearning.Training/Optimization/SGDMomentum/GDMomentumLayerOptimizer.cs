@@ -1,9 +1,10 @@
 using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.SGDMomentum;
 
-public sealed class GDMomentumLayerOptimizer : ILayerOptimizer
+public sealed class GDMomentumLayerOptimizer : ILayerOptimizer<SimpleLayer>
 {
     public SimpleLayer Layer { get; }
     public readonly Matrix CostGradientWeights;
@@ -23,9 +24,11 @@ public sealed class GDMomentumLayerOptimizer : ILayerOptimizer
         BiasVelocities = Vector.Create(Layer.OutputNodeCount);
     }
 
-    public void Update(Vector nodeValues, LayerSnapshot snapshot)
+    public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
     {
-        foreach(int outputNodeIndex in ..Layer.OutputNodeCount)
+        if (rawSnapshot is not LayerSnapshots.Simple snapshot) throw new UnreachableException();
+
+        foreach (int outputNodeIndex in ..Layer.OutputNodeCount)
         {
             foreach(int inputNodeIndex in ..Layer.InputNodeCount)
             {

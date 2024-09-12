@@ -77,7 +77,7 @@ public sealed class LogicModel : ISample<string, char>
 
     public static EmbeddedModel<string, char> TrainDefault(EmbeddedModel<string, char>? model = null, TrainingConfig<string, char>? trainingConfig = null, Random? random = null)
     {
-        var trainer = ModelTrainer.Create(model ?? CreateModel(random), trainingConfig ?? DefaultTrainingConfig(random));
+        var trainer = ModelTrainer.Legacy(model ?? CreateModel(random), trainingConfig ?? DefaultTrainingConfig(random));
         trainer.TrainConsole();
         return trainer.Model;
     }

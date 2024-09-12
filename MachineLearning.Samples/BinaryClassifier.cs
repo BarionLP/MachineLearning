@@ -42,7 +42,7 @@ public static class BinaryClassifier
 
         var model = GetModel();
         var config = GetTrainingConfig();
-        var trainer = ModelTrainer.Create(model, config);
+        var trainer = ModelTrainer.Legacy(model, config);
 
         trainer.Train();
 

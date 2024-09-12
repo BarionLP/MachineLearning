@@ -1,9 +1,10 @@
 using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.Adam;
 
-public sealed class AdamLayerOptimizer : ILayerOptimizer
+public sealed class AdamLayerOptimizer : ILayerOptimizer<SimpleLayer>
 {
     public SimpleLayer Layer { get; }
     public ICostFunction CostFunction => Optimizer.CostFunction;
@@ -39,22 +40,17 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
     }
 
     private readonly object _lock = new();
-    public void Update(Vector nodeValues, LayerSnapshot snapshot)
+    public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
     {
+        if (rawSnapshot is not LayerSnapshots.Simple snapshot) throw new UnreachableException();
+
         // Compute the gradient for weights
         VectorHelper.MultiplyToMatrixTo(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
-#if DEBUG
-        if(nodeValues.AsSpan().Contains(double.NaN))
-        {
-            Console.WriteLine("NaN detected");
-        }
-        if(snapshot.WeightGradients.AsSpan().Contains(double.NaN))
-        {
-            Console.WriteLine("NaN detected");
-        }
-#endif
 
-        lock(_lock)
+        NumericsDebug.AssertValidNumbers(nodeValues);
+        NumericsDebug.AssertValidNumbers(snapshot.WeightGradients);
+
+        lock (_lock)
         {
             GradientCostWeights.AddToSelf(snapshot.WeightGradients);
             GradientCostBiases.AddToSelf(nodeValues);
@@ -106,4 +102,15 @@ public sealed class AdamLayerOptimizer : ILayerOptimizer
         FirstMomentWeights.ResetZero();
         SecondMomentWeights.ResetZero();
     }
+}
+
+public sealed class NoAdamLayerOptimizer(ILayer layer) : ILayerOptimizer
+{
+    public ILayer Layer { get; } = layer;
+    public ICostFunction CostFunction { get; } = null!;
+
+    public void Apply(int dataCounter) { }
+    public void FullReset() { }
+    public void GradientCostReset() { }
+    public void Update(Vector nodeValues, ILayerSnapshot snapshot) { }
 }

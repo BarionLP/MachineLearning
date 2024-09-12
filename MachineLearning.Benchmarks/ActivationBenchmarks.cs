@@ -1,4 +1,4 @@
-﻿using MachineLearning.Domain.Activation;
+﻿using MachineLearning.Model.Activation;
 using System.Buffers;
 
 namespace MachineLearning.Benchmarks;
@@ -6,8 +6,8 @@ namespace MachineLearning.Benchmarks;
 public class ActivationBenchmarks
 {
 
-    IActivationMethod ActivationFunction = SigmoidActivation.Instance;
-    IActivationMethod NewActivationFunction = SoftmaxActivation.Instance;
+    IActivationFunction ActivationFunction = SigmoidActivation.Instance;
+    IActivationFunction NewActivationFunction = SoftMaxActivation.Instance;
 
 
     double[] InputArray = [];
@@ -29,24 +29,24 @@ public class ActivationBenchmarks
     [Benchmark(Baseline = true)]
     public void Activate_Current()
     {
-        ActivationFunction.Activate(input, result);
+        ActivationFunction.ActivateTo(input, result);
     }
 
     [Benchmark]
     public void Activate_Simd()
     {
-        NewActivationFunction.Activate(input, result);
+        NewActivationFunction.ActivateTo(input, result);
     }
 
     [Benchmark]
     public void Derivative_Current()
     {
-        ActivationFunction.Derivative(input, result);
+        ActivationFunction.DerivativeTo(input, result);
     }
 
     [Benchmark]
     public void Derivative_Simd()
     {
-        NewActivationFunction.Derivative(input, result);
+        NewActivationFunction.DerivativeTo(input, result);
     }
 }

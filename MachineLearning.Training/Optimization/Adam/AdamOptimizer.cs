@@ -1,9 +1,10 @@
-﻿using MachineLearning.Model.Layer;
+﻿using MachineLearning.Model.Embedding;
+using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.Adam;
 
-public sealed class AdamOptimizer : IOptimizer
+public sealed class AdamOptimizer : IGenericOptimizer
 {
     public required Weight LearningRate { get; init; } = 0.1;
     public Weight FirstDecayRate { get; init; } = 0.9;
@@ -17,5 +18,10 @@ public sealed class AdamOptimizer : IOptimizer
     {
         Iteration++;
     }
-    public ILayerOptimizer CreateLayerOptimizer(SimpleLayer layer) => new AdamLayerOptimizer(this, layer);
+    public ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
+    {
+        SimpleLayer simpleLayer => new AdamLayerOptimizer(this, simpleLayer),
+        IEmbedder<string, char> => new NoAdamLayerOptimizer(layer),
+        _ => throw new NotImplementedException($"No Nadam implementation for {layer}"),
+    };
 }

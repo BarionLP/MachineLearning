@@ -64,56 +64,41 @@ public static class TensorHelper
 {
     public static void AddToSelf(this Tensor left, Tensor right)
     {
-        AssertCountEquals(left, right);
+        NumericsDebug.AssertSameDimensions(left, right);
         AddUnsafe(left, right, left);
     }
     public static Tensor Add(this Tensor left, Tensor right)
     {
-        AssertCountEquals(left, right);
+        NumericsDebug.AssertSameDimensions(left, right);
         var destination = Tensor.OfSize(left);
         AddUnsafe(left, right, destination);
         return destination;
     }
     public static void Add(this Tensor left, Tensor right, Tensor destination)
     {
-        AssertCountEquals(left, right, destination);
+        NumericsDebug.AssertSameDimensions(left, right, destination);
         AddUnsafe(left, right, destination);
     }
     private static void AddUnsafe(Tensor left, Tensor right, Tensor destination) => TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), destination.AsSpan());
 
     public static void PointwiseMultiplyToSelf(this Tensor left, Tensor right)
     {
-        AssertCountEquals(left, right);
+        NumericsDebug.AssertSameDimensions(left, right);
         PointwiseMultiplyUnsafe(left, right, left);
     }
     public static Tensor PointwiseMultiply(this Tensor left, Tensor right)
     {
-        AssertCountEquals(left, right);
+        NumericsDebug.AssertSameDimensions(left, right);
         var destination = Tensor.OfSize(left);
         PointwiseMultiplyUnsafe(left, right, destination);
         return destination;
     }
     public static void PointwiseMultiplyTo(this Tensor left, Tensor right, Tensor destination)
     {
-        AssertCountEquals(left, right, destination);
+        NumericsDebug.AssertSameDimensions(left, right, destination);
         PointwiseMultiplyUnsafe(left, right, destination);
     }
     private static void PointwiseMultiplyUnsafe(Tensor left, Tensor right, Tensor destination) => TensorPrimitives.Multiply(left.AsSpan(), right.AsSpan(), destination.AsSpan());
 
     public static Matrix LayerRef(this Tensor tensor, int layer) => new TensorLayerReference(layer, tensor);
-
-
-    const string TENSOR_COUNT_MISMATCH = "tensors must match in size!";
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Tensor a, Tensor b)
-    {
-        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount && a.LayerCount == b.LayerCount, TENSOR_COUNT_MISMATCH);
-    }
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Tensor a, Tensor b, Tensor c)
-    {
-        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount && a.LayerCount == b.LayerCount &&
-                     a.RowCount == c.RowCount && a.ColumnCount == c.ColumnCount && a.LayerCount == c.LayerCount,
-                     TENSOR_COUNT_MISMATCH);
-    }
 }

@@ -224,7 +224,7 @@ public static class MatrixHelper
     }
     public static void MapTo(this Matrix matrix, Func<Weight, Weight> map, Matrix destination)
     {
-        AssertCountEquals(matrix, destination);
+        NumericsDebug.AssertSameDimensions(matrix, destination);
         SpanOperations.MapTo(matrix.AsSpan(), destination.AsSpan(), map);
     }
 
@@ -237,7 +237,7 @@ public static class MatrixHelper
     }
     public static void MapTo(this (Matrix a, Matrix b) matrices, Matrix destination, Func<Weight, Weight, Weight> map)
     {
-        AssertCountEquals(matrices.a, matrices.b, destination);
+        NumericsDebug.AssertSameDimensions(matrices.a, matrices.b, destination);
         SpanOperations.MapTo(matrices.a.AsSpan(), matrices.b.AsSpan(), destination.AsSpan(), map);
     }
     public static Matrix Map(this (Matrix a, Matrix b, Matrix c) matrices, Func<Weight, Weight, Weight, Weight> map)
@@ -248,7 +248,7 @@ public static class MatrixHelper
     }
     public static void MapTo(this (Matrix a, Matrix b, Matrix c) matrices, Matrix destination, Func<Weight, Weight, Weight, Weight> map)
     {
-        AssertCountEquals(matrices.a, matrices.b, matrices.c, destination);
+        NumericsDebug.AssertSameDimensions(matrices.a, matrices.b, matrices.c, destination);
         SpanOperations.MapTo(matrices.a.AsSpan(), matrices.b.AsSpan(), matrices.c.AsSpan(), destination.AsSpan(), map);
     }
 
@@ -265,7 +265,7 @@ public static class MatrixHelper
 
     public static void AddTo(this Matrix left, Matrix right, Matrix destination)
     {
-        AssertCountEquals(left, right, destination);
+        NumericsDebug.AssertSameDimensions(left, right, destination);
         TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
@@ -282,7 +282,7 @@ public static class MatrixHelper
 
     public static void SubtractTo(this Matrix left, Matrix right, Matrix destination)
     {
-        AssertCountEquals(left, right, destination);
+        NumericsDebug.AssertSameDimensions(left, right, destination);
         TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
@@ -297,28 +297,4 @@ public static class MatrixHelper
     }
 
     public static void ResetZero(this Matrix matrix) => matrix.AsSpan().Clear();
-
-    const string MATRIX_COUNT_MISMATCH = "matrices must match in size!";
-
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Matrix a, Matrix b)
-    {
-        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount, MATRIX_COUNT_MISMATCH);
-    }
-
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Matrix a, Matrix b, Matrix c)
-    {
-        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount &&
-                     a.RowCount == c.RowCount && a.ColumnCount == c.ColumnCount,
-                     MATRIX_COUNT_MISMATCH);
-    }
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Matrix a, Matrix b, Matrix c, Matrix d)
-    {
-        Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount &&
-                     a.RowCount == c.RowCount && a.ColumnCount == c.ColumnCount &&
-                     a.RowCount == d.RowCount && a.ColumnCount == d.ColumnCount,
-                     MATRIX_COUNT_MISMATCH);
-    }
 }

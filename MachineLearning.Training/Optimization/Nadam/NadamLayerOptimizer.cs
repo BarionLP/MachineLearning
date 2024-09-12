@@ -1,9 +1,11 @@
+using System.Numerics.Tensors;
 using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.Nadam;
 
-public sealed class NadamLayerOptimizer : ILayerOptimizer
+public sealed class NadamLayerOptimizer : ILayerOptimizer<SimpleLayer>
 {
     public SimpleLayer Layer { get; }
     public ICostFunction CostFunction => Optimizer.CostFunction;
@@ -38,21 +40,16 @@ public sealed class NadamLayerOptimizer : ILayerOptimizer
         SecondMomentWeights = Matrix.Create(Layer.OutputNodeCount, Layer.InputNodeCount);
     }
 
-    private readonly object _lock = new();
-    public void Update(Vector nodeValues, LayerSnapshot snapshot)
+    private readonly Lock _lock = new();
+    public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
     {
+        if (rawSnapshot is not LayerSnapshots.Simple snapshot) throw new UnreachableException();
+
         // Compute the gradient for weights
         VectorHelper.MultiplyToMatrixTo(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
-#if DEBUG
-        if (nodeValues.AsSpan().Contains(double.NaN))
-        {
-            Console.WriteLine("NaN detected");
-        }
-        if (snapshot.WeightGradients.AsSpan().Contains(double.NaN))
-        {
-            Console.WriteLine("NaN detected");
-        }
-#endif
+
+        NumericsDebug.AssertValidNumbers(nodeValues);
+        NumericsDebug.AssertValidNumbers(snapshot.WeightGradients);
 
         lock (_lock)
         {
@@ -77,16 +74,16 @@ public sealed class NadamLayerOptimizer : ILayerOptimizer
         (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
         Layer.Weights.SubtractToSelf((FirstMomentWeights, SecondMomentWeights, GradientCostWeights).Map(WeightReduction));
 
-        double WeightReduction(double firstMoment, double secondMoment, double gradient)
+        Weight WeightReduction(Weight firstMoment, Weight secondMoment, Weight gradient)
         {
-            var mHat = Optimizer.FirstDecayRate * firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration+1)) + (1-Optimizer.FirstDecayRate)*gradient / (1-Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
+            var mHat = Optimizer.FirstDecayRate * firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration + 1)) + (1 - Optimizer.FirstDecayRate) * gradient / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
             var vHat = secondMoment / (1 - Math.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
             return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
         }
-        double FirstMomentEstimate(double lastMoment, double gradient)
+        Weight FirstMomentEstimate(Weight lastMoment, Weight gradient)
             => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
 
-        double SecondMomentEstimate(double lastMoment, double gradient)
+        Weight SecondMomentEstimate(Weight lastMoment, Weight gradient)
             => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
     }
 
@@ -106,4 +103,91 @@ public sealed class NadamLayerOptimizer : ILayerOptimizer
         FirstMomentWeights.ResetZero();
         SecondMomentWeights.ResetZero();
     }
+}
+
+public sealed class StringNadamLayerOptimizer : ILayerOptimizer<StringEmbeddingLayer>
+{
+    public StringEmbeddingLayer Layer { get; }
+    public ICostFunction CostFunction => Optimizer.CostFunction;
+    public NadamOptimizer Optimizer { get; }
+
+    public readonly Matrix GradientCostWeights;
+    public readonly Matrix FirstMomentWeights;
+    public readonly Matrix SecondMomentWeights;
+
+
+    public StringNadamLayerOptimizer(NadamOptimizer optimizer, StringEmbeddingLayer layer)
+    {
+        Optimizer = optimizer;
+        Layer = layer;
+
+        GradientCostWeights = Matrix.OfSize(Layer.EmbeddingMatrix);
+        FirstMomentWeights = Matrix.OfSize(Layer.EmbeddingMatrix);
+        SecondMomentWeights = Matrix.OfSize(Layer.EmbeddingMatrix);
+    }
+
+    private readonly Lock _lock = new();
+    public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
+    {
+        if (rawSnapshot is not LayerSnapshots.Embedding snapshot) throw new UnreachableException();
+
+        return; //seems to make things worse
+
+        var i = 0;
+        lock (_lock)
+        {
+            foreach (var c in snapshot.LastInput)
+            {
+                var embedding = GradientCostWeights.RowSpan(Layer.Tokens.IndexOf(c));
+                TensorPrimitives.Add(embedding, nodeValues[i, Layer.EmbeddingSize], embedding);
+
+                i += Layer.EmbeddingSize;
+            }
+        }
+    }
+
+    public void Apply(int dataCounter)
+    { 
+        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
+
+        (FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
+        (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
+        Layer.EmbeddingMatrix.SubtractToSelf((FirstMomentWeights, SecondMomentWeights, GradientCostWeights).Map(WeightReduction));
+
+        Weight WeightReduction(Weight firstMoment, Weight secondMoment, Weight gradient)
+        {
+            var mHat = Optimizer.FirstDecayRate * firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration + 1)) + (1 - Optimizer.FirstDecayRate) * gradient / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
+            var vHat = secondMoment / (1 - Math.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
+            return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
+        }
+        Weight FirstMomentEstimate(Weight lastMoment, Weight gradient)
+            => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
+
+        Weight SecondMomentEstimate(Weight lastMoment, Weight gradient)
+            => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
+    }
+
+    public void GradientCostReset()
+    {
+        GradientCostWeights.ResetZero();
+    }
+
+    public void FullReset()
+    {
+        GradientCostWeights.ResetZero();
+        FirstMomentWeights.ResetZero();
+        SecondMomentWeights.ResetZero();
+    }
+}
+
+
+public sealed class OutputNadamLayerOptimizer : ILayerOptimizer
+{
+    public ILayer Layer => throw new NotImplementedException();
+    public ICostFunction CostFunction => throw new NotImplementedException();
+
+    public void Apply(int dataCounter) { }
+    public void FullReset() { }
+    public void GradientCostReset() { }
+    public void Update(Vector nodeValues, ILayerSnapshot snapshot) => throw new NotImplementedException();
 }

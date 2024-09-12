@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data.Common;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -91,33 +89,37 @@ public static class VectorHelper
 
     public static Weight Dot(this Vector left, Vector right)
     {
-        AssertCountEquals(left, right);
+        NumericsDebug.AssertSameDimensions(left, right);
         return TensorPrimitives.Dot<Weight>(left.AsSpan(), right.AsSpan());
     }
 
-    public static void PointwiseExpToSelf(this Vector vector) => PointwiseExp(vector, vector);
-    public static void PointwiseExp(this Vector vector, Vector destination)
+    public static void PointwiseExpToSelf(this Vector vector) => PointwiseExpTo(vector, vector);
+    public static void PointwiseExpTo(this Vector vector, Vector destination)
     {
+        NumericsDebug.AssertSameDimensions(vector, destination);
         TensorPrimitives.Exp(vector.AsSpan(), destination.AsSpan());
     }
 
-    public static void PointwiseLogToSelf(this Vector vector) => PointwiseExp(vector, vector);
-    public static void PointwiseLog(this Vector vector, Vector destination)
+    public static void PointwiseLogToSelf(this Vector vector) => PointwiseLogTo(vector, vector);
+    public static void PointwiseLogTo(this Vector vector, Vector destination)
     {
+        NumericsDebug.AssertSameDimensions(vector, destination);
         TensorPrimitives.Log(vector.AsSpan(), destination.AsSpan());
     }
 
-    public static void SoftMaxInPlace(this Vector vector) => SoftMax(vector, vector);
+    public static void SoftMaxToSelf(this Vector vector) => SoftMaxTo(vector, vector);
     public static Vector SoftMax(this Vector vector)
     {
-        var result = Vector.Create(vector.Count);
-        SoftMax(vector, result);
-        return result;
+        var destination = Vector.Create(vector.Count);
+        SoftMaxTo(vector, destination);
+        return destination;
     }
 
-    public static void SoftMax(this Vector vector, Vector destination)
+    public static void SoftMaxTo(this Vector vector, Vector destination)
     {
-        vector.PointwiseExp(destination);
+        NumericsDebug.AssertSameDimensions(vector, destination);
+
+        vector.PointwiseExpTo(destination);
         var sum = destination.Sum();
         destination.DivideToSelf(sum);
 
@@ -134,14 +136,14 @@ public static class VectorHelper
     }
     public static void MapTo(this Vector vector, Func<Weight, Weight> map, Vector destination)
     {
-        AssertCountEquals(vector, destination);
+        NumericsDebug.AssertSameDimensions(vector, destination);
         SpanOperations.MapTo(vector.AsSpan(), destination.AsSpan(), map);
     }
 
     public static void MapToSelf(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap) => vector.MapTo(simdMap, fallbackMap, vector);
     public static void MapTo(this Vector vector, Func<SimdVector, SimdVector> simdMap, Func<Weight, Weight> fallbackMap, Vector destination)
     {
-        AssertCountEquals(vector, destination);
+        NumericsDebug.AssertSameDimensions(vector, destination);
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var destinationPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
         var mdSize = (nuint)SimdVector.Count;
@@ -169,7 +171,7 @@ public static class VectorHelper
     }
     public static void MapTo(this (Vector a, Vector b) vectors, Func<Weight, Weight, Weight> map, Vector destination)
     {
-        AssertCountEquals(vectors.a, vectors.b, destination);
+        NumericsDebug.AssertSameDimensions(vectors.a, vectors.b, destination);
         SpanOperations.MapTo(vectors.a.AsSpan(), vectors.b.AsSpan(), destination.AsSpan(), map);
     }
 
@@ -181,7 +183,7 @@ public static class VectorHelper
     }
     public static void MapTo(this (Vector a, Vector b, Vector c) vectors, Func<Weight, Weight, Weight, Weight> map, Vector destination)
     {
-        AssertCountEquals(vectors.a, vectors.b, vectors.c, destination);
+        NumericsDebug.AssertSameDimensions(vectors.a, vectors.b, vectors.c, destination);
         SpanOperations.MapTo(vectors.a.AsSpan(), vectors.b.AsSpan(), vectors.c.AsSpan(), destination.AsSpan(), map);
     }
 
@@ -194,7 +196,7 @@ public static class VectorHelper
     }
     public static void PointwiseMultiplyTo(this Vector left, Vector right, Vector destination)
     {
-        AssertCountEquals(left, right, destination);
+        NumericsDebug.AssertSameDimensions(left, right, destination);
         TensorPrimitives.Multiply(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
@@ -291,7 +293,7 @@ public static class VectorHelper
     }
     public static void MultiplyTo(this Vector vector, Weight factor, Vector destination)
     {
-        AssertCountEquals(vector, destination);
+        NumericsDebug.AssertSameDimensions(vector, destination);
         TensorPrimitives.Multiply(vector.AsSpan(), factor, destination.AsSpan());
     }
 
@@ -317,7 +319,7 @@ public static class VectorHelper
 
     public static void AddTo(this Vector left, Vector right, Vector destination)
     {
-        AssertCountEquals(left, right, destination);
+        NumericsDebug.AssertSameDimensions(left, right, destination);
         TensorPrimitives.Add(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
@@ -330,7 +332,7 @@ public static class VectorHelper
     }
     public static void SubtractPointwiseTo(this Vector left, Weight right, Vector destination)
     {
-        AssertCountEquals(left, destination);
+        NumericsDebug.AssertSameDimensions(left, destination);
         TensorPrimitives.Subtract(left.AsSpan(), right, destination.AsSpan());
     }
 
@@ -343,7 +345,7 @@ public static class VectorHelper
     }
     public static void SubtractTo(this Vector left, Vector right, Vector destination)
     {
-        AssertCountEquals(left, right, destination);
+        NumericsDebug.AssertSameDimensions(left, right, destination);
         TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
 
@@ -371,26 +373,9 @@ public static class VectorHelper
 
     public static void CopyTo(this Vector vector, Vector destination)
     {
-        AssertCountEquals(vector, destination);
+        NumericsDebug.AssertSameDimensions(vector, destination);
         vector.AsSpan().CopyTo(destination.AsSpan());
     }
 
     public static void ResetZero(this Vector vector) => vector.AsSpan().Clear();
-
-    const string VECTORS_MUST_MATCH = "Vectors must match in size";
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Vector a, Vector b)
-    {
-        Debug.Assert(a.Count == b.Count, VECTORS_MUST_MATCH);
-    }
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Vector a, Vector b, Vector c)
-    {
-        Debug.Assert(a.Count == b.Count && a.Count == b.Count, VECTORS_MUST_MATCH);
-    }
-    [Conditional("DEBUG")]
-    private static void AssertCountEquals(Vector a, Vector b, Vector c, Vector d)
-    {
-        Debug.Assert(a.Count == b.Count && a.Count == c.Count && a.Count == d.Count, VECTORS_MUST_MATCH);
-    }
 }

@@ -1,9 +1,10 @@
 ﻿using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.AdamW;
 
-public sealed class AdamWLayerOptimizer : ILayerOptimizer
+public sealed class AdamWLayerOptimizer : ILayerOptimizer<SimpleLayer>
 {
     public SimpleLayer Layer { get; }
     public ICostFunction CostFunction => Optimizer.CostFunction;
@@ -39,8 +40,10 @@ public sealed class AdamWLayerOptimizer : ILayerOptimizer
     }
 
     private readonly object _lock = new();
-    public void Update(Vector nodeValues, LayerSnapshot snapshot)
+    public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
     {
+        if (rawSnapshot is not LayerSnapshots.Simple snapshot) throw new UnreachableException();
+
         // Compute the gradient for weights
         VectorHelper.MultiplyToMatrixTo(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
 #if DEBUG

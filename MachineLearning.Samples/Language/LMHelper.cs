@@ -5,7 +5,7 @@ namespace MachineLearning.Samples.Language;
 public static class LMHelper
 {
     private const string EndSymbols = ".!?";
-    public static void Generate(string input, EmbeddedModel<string, char> model, int contextSize)
+    public static void Generate(string input, IGenericModel<string, char> model, int contextSize)
     {
         input = input.ToLowerInvariant();
         Console.Write(input);
@@ -13,7 +13,7 @@ public static class LMHelper
         Weight confidence;
         do
         {
-            (prediction, confidence) = model.Process(input);
+            (prediction, confidence) = model.Forward(input);
             input += prediction;
             SetConsoleTextColor(confidence);
             Console.Write(prediction);
@@ -27,7 +27,7 @@ public static class LMHelper
         }
     }
 
-    public static void StartChat(EmbeddedModel<string, char> model, int contextSize)
+    public static void StartChat(IGenericModel<string, char> model, int contextSize)
     {
         string input;
         do

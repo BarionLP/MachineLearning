@@ -3,7 +3,7 @@ using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.AdamW;
 
-public sealed class AdamWOptimizer : IOptimizer
+public sealed class AdamWOptimizer : IGenericOptimizer
 {
     public required Weight LearningRate { get; init; } = 0.1;
     public Weight FirstDecayRate { get; init; } = 0.9;
@@ -18,5 +18,9 @@ public sealed class AdamWOptimizer : IOptimizer
     {
         Iteration++;
     }
-    public ILayerOptimizer CreateLayerOptimizer(SimpleLayer layer) => new AdamWLayerOptimizer(this, layer);
+    public ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
+    {
+        SimpleLayer simpleLayer => new AdamWLayerOptimizer(this, simpleLayer),
+        _ => throw new NotImplementedException($"No Nadam implementation for {layer}"),
+    };
 }

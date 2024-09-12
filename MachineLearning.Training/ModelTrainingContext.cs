@@ -1,6 +1,7 @@
 ﻿using MachineLearning.Data.Entry;
 using MachineLearning.Model;
 using MachineLearning.Model.Embedding;
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 using System.Collections.Immutable;
@@ -8,12 +9,12 @@ using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
-public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config, IOptimizer optimizer)
+public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config, IGenericOptimizer optimizer)
 {
-    internal SimpleModel Model = model.InternalModel;
+    internal SimpleModel Model = model.InnerModel;
     internal IEmbedder<TInput, TOutput> Embedder = model.Embedder;
     public TrainingConfig<TInput, TOutput> Config { get; } = config;
-    internal ImmutableArray<ILayerOptimizer> LayerOptimizers = model.InternalModel.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
+    internal ImmutableArray<ILayerOptimizer> LayerOptimizers = model.InnerModel.Layers.Select(optimizer.CreateLayerOptimizer).ToImmutableArray();
     internal ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[^1];
 
     public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch, bool multithread)
@@ -72,7 +73,7 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
 
     private Vector Update(DataEntry<TInput, TOutput> data)
     {
-        var snapshots = Model.Layers.Select(LayerSnapshot.Get).ToImmutableArray();
+        var snapshots = Model.Layers.Select(LayerSnapshots.Get).ToImmutableArray();
         var result = Model.Forward(Embedder.Embed(data.Input), snapshots);
 
         var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(OutputLayerOptimizer.Layer, OutputLayerOptimizer.CostFunction, Config.OutputResolver.Expected(data.Expected), snapshots[^1]);
@@ -90,7 +91,7 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
         //TODO: verify zip performance
         foreach (var (layer, snapshot) in Model.Layers.Zip(snapshots))
         {
-            LayerSnapshot.Return(layer, snapshot);
+            LayerSnapshots.Return(layer, snapshot);
         }
 
         return result;
@@ -99,4 +100,4 @@ public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, 
     private void Apply(int dataCounter) => LayerOptimizers.ForEach(layer => layer.Apply(dataCounter));
     private void GradientCostReset() => LayerOptimizers.ForEach(layer => layer.GradientCostReset());
     public void FullReset() => LayerOptimizers.ForEach(layer => layer.FullReset());
-}
+} 

@@ -53,7 +53,7 @@ public sealed class SimpleLM : ISample<string, char>
         model ??= CreateModel(random);
         config ??= DefaultTrainingConfig(random);
 
-        var trainer = ModelTrainer.Create(model, config);
+        var trainer = GenericModelTrainer.Create(model, config);
         trainer.TrainConsole();
 
         return model;

@@ -14,14 +14,14 @@ public sealed class TrainingProgressTracker
     public IEnumerable<ISeries<double>> EvaluationSeries => Entries.SelectMany<Entry, LineSeries<double>>(e => [e.Series, e.TrendSeries]);
     private readonly List<Entry> Entries = [];
 
-    public ModelTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
+    public LegacyModelTrainer<TInput, TOutput> CreateLinkedTrainer<TInput, TOutput>(string name, SKColor color, EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
     {
         var entry = new Entry(name, color);
         config = config with
         {
             EvaluationCallback = results => entry.Results.Add(results.Result.CorrectPercentage * 100),
         };
-        var trainer = new ModelTrainer<TInput, TOutput>(model, config);
+        var trainer = new LegacyModelTrainer<TInput, TOutput>(model, config);
         Entries.Add(entry);
         return trainer;
     }

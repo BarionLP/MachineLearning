@@ -1,4 +1,6 @@
-﻿using MachineLearning.Model.Activation;
+﻿using System.Diagnostics;
+using MachineLearning.Model.Activation;
+using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Model.Layer;
 
@@ -20,5 +22,17 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationFuncti
         ActivationFunction.ActivateTo(result, result);
 
         return result;
+    }
+
+    public Vector Forward(Vector input, ILayerSnapshot snapshot)
+    {
+        if (snapshot is not LayerSnapshots.Simple simpleSnapshot) throw new UnreachableException();
+        input.CopyTo(simpleSnapshot.LastRawInput);
+        Weights.MultiplyTo(input, simpleSnapshot.LastWeightedInput);
+        simpleSnapshot.LastWeightedInput.AddToSelf(Biases);
+
+        ActivationFunction.ActivateTo(simpleSnapshot.LastWeightedInput, simpleSnapshot.LastActivatedWeights);
+
+        return simpleSnapshot.LastActivatedWeights;
     }
 }

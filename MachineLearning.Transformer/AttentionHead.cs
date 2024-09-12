@@ -47,7 +47,7 @@ public sealed class AttentionHead(ModelInfo Info)
                 vector[keyIndex] = keyIndex > queryIndex ? double.NegativeInfinity : keyEmbedding.RowRef(keyIndex).Dot(queryEmbedding.RowRef(queryIndex)) / QueryDimensionsSqrt; // divide by sqrt(QueryDimensions) for numerical stability
             }
             // softmax each row to get a percentage distribution on how much each key token should affect each query token
-            vector.SoftMaxInPlace();
+            vector.SoftMaxToSelf();
         }
 
         //Console.WriteLine(attentionPattern);

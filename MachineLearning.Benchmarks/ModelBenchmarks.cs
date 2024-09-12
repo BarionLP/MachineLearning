@@ -9,13 +9,13 @@ namespace MachineLearning.Benchmarks;
 public class ModelBenchmarks
 {
     private IEnumerable<DataEntry<double[], int>> dataSet = [];
-    private ModelTrainer<double[], int> trainer = null!;
+    private LegacyModelTrainer<double[], int> trainer = null!;
 
     [GlobalSetup]
     public void Setup(){
         var source = new MNISTDataSource(AssetManager.MNISTArchive);
         dataSet = source.TrainingSet.Take(256).ToArray();
-        trainer = new ModelTrainer<double[], int>(MNISTModel.CreateModel(), MNISTModel.GetTrainingConfig());
+        trainer = new LegacyModelTrainer<double[], int>(MNISTModel.CreateModel(), MNISTModel.GetTrainingConfig());
     }
 
     [Benchmark]

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Samples.MNIST;
 

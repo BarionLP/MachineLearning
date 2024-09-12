@@ -45,7 +45,7 @@ public static class Evaluator
         foreach(var entry in dataSet)
         {
             totalCounter++;
-            var outputWeights = model.InternalModel.Forward(model.Embedder.Embed(entry.Input));
+            var outputWeights = model.InnerModel.Forward(model.Embedder.Embed(entry.Input));
             var output = model.Embedder.Unembed(outputWeights);
 
             if(output.Equals(entry.Expected))

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text;
+using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Samples.Language;
 
@@ -31,7 +32,9 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
     public static Vector PadLeft(Vector vector, int totalWidth)
     {
         if (vector.Count >= totalWidth)
+        {
             return vector;
+        }
 
         var paddedVector = Vector.Create(totalWidth);
         vector.AsSpan().CopyTo(paddedVector[totalWidth - vector.Count, vector.Count]);
@@ -67,5 +70,25 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
 
             return max;
         }
+    }
+
+    public Vector Forward(string input)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Vector Forward(string input, ILayerSnapshot snapshot)
+    {
+        throw new NotImplementedException();
+    }
+
+    public (char output, double confidence) Forward(Vector input)
+    {
+        throw new NotImplementedException();
+    }
+
+    public (char output, int index, Vector weights) Forward(Vector input, ILayerSnapshot snapshot)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Samples.Language;
@@ -25,6 +23,51 @@ public sealed class SLM3
             .AddOutputLayer(new TokenOutputLayer(TOKENS, true, random));
     }
 
+    public static IGenericModel<string, char> TrainDefault(IGenericModel<string, char>? model = null, TrainingConfig<string, char>? config = null, Random? random = null)
+    {
+        model ??= CreateModel(random);
+
+        //TrainDefault(model, trainingConfig ?? DefaultTrainingConfig(), random);
+        var trainer = new GenericModelTrainer<string, char>(model, config ?? DefaultTrainingConfig());
+        trainer.TrainConsole();
+        //Serializer.Save(model);
+        //Console.WriteLine("Model saved!");
+        LMHelper.StartChat(model, CONTEXT_SIZE);
+        return model;
+    }
+
+    public static TrainingConfig<string, char> DefaultTrainingConfig(Random? random = null)
+    {
+        random ??= Random.Shared;
+
+        var dataSet = GetTrainingSet().ToArray();
+        random.Shuffle(dataSet);
+
+        var trainingSetSize = (int)(dataSet.Length * 0.9);
+
+        return new TrainingConfig<string, char>()
+        {
+            TrainingSet = dataSet,
+            TestSet = dataSet.Skip(trainingSetSize).ToArray(),
+
+            EpochCount = 32,
+            BatchCount = 256 + 128,
+
+            Optimizer = new NadamOptimizer
+            {
+                LearningRate = 0.01,
+                CostFunction = CrossEntropyLoss.Instance,
+            },
+
+            OutputResolver = OutputResolver,
+
+            EvaluationCallback = result => Console.WriteLine(result.Dump()),
+            DumpEvaluationAfterBatches = 16,
+
+            RandomSource = random,
+        };
+    }
+
     public static IEnumerable<DataEntry<string, char>> GetTrainingSet(Random? random = null)
     {
         Console.WriteLine("Analyzing Trainings Data...");
@@ -37,83 +80,5 @@ public sealed class SLM3
 
         Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
         return lines.InContextSize(CONTEXT_SIZE).ExpandPerChar();
-    }
-}
-
-public sealed class TokenOutputLayer(string tokens, bool weightedRandom, Random? random = null) : IUnembeddingLayer<char>
-{
-    public string Tokens { get; } = tokens;
-    public Random Random { get; } = random ?? Random.Shared;
-
-    public int InputNodeCount => Tokens.Length;
-    public uint ParameterCount => 0;
-
-    public (char, Weight) Forward(Vector input)
-    {
-        Debug.Assert(input.Count == Tokens.Length);
-
-        // temperature adjustments
-        if (weightedRandom)
-        {
-            // input.PointwiseLogToSelf();
-            // input.DivideToSelf(temperature);
-            // input.SoftMaxToSelf();
-        }
-
-        var index = weightedRandom ? GetWeightedRandomIndex(input, Random) : input.MaximumIndex();
-        return (Tokens[index], input[index]);
-
-        static int GetWeightedRandomIndex(Vector weights, Random random)
-        {
-            var value = random.NextDouble();
-            for (int i = 0; i < weights.Count; i++)
-            {
-                value -= weights[i];
-                if (value < 0) return i;
-            }
-            return weights.Count - 1;
-        }
-    }
-}
-
-
-public sealed class StringEmbeddingLayer(string tokens, int contextSize, int embeddingSize) : IEmbeddingLayer<string>
-{
-    // init randomly with [-0.1; 0.1] or [-0.01; 0.01]
-    public Matrix EmbeddingMatrix { get; } = Matrix.Create(tokens.Length, embeddingSize);
-    public int OutputNodeCount { get; } = contextSize * embeddingSize;
-    public string Tokens { get; } = tokens;
-    public int EmbeddingSize => EmbeddingMatrix.ColumnCount;
-    public int ContextSize { get; } = contextSize;
-    public uint ParameterCount => (uint)EmbeddingMatrix.FlatCount;
-
-    public Vector Forward(string input)
-    {
-        var output = Vector.Create(OutputNodeCount);
-        var outSpan = output.AsSpan();
-
-        foreach (var i in ..input.Length)
-        {
-            var tokenIdx = Tokens.IndexOf(input[i]);
-            if (tokenIdx < 0)
-            {
-                throw new ArgumentException($"Unkown token: '{input[i]}'");
-            }
-
-            EmbeddingMatrix.RowSpan(tokenIdx)
-                .CopyTo(outSpan.Slice(i * EmbeddingSize, EmbeddingSize));
-        }
-
-        return output;
-    }
-
-    public sealed class Initer(Random? random = null) : ILayerInitializer<StringEmbeddingLayer>
-    {
-        public Random Random { get; } = random ?? Random.Shared;
-
-        public void Initialize(StringEmbeddingLayer layer)
-        {
-            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
-        }
     }
 }
