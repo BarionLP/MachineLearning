@@ -28,7 +28,7 @@ public sealed class SLM3
         model ??= CreateModel(random);
 
         //TrainDefault(model, trainingConfig ?? DefaultTrainingConfig(), random);
-        var trainer = new GenericModelTrainer<string, char>(model, config ?? DefaultTrainingConfig());
+        var trainer = ModelTrainer.Generic(model, config ?? DefaultTrainingConfig());
         trainer.TrainConsole();
         //Serializer.Save(model);
         //Console.WriteLine("Model saved!");

@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace MachineLearning.Training;
 
-public sealed class ModelTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config, IGenericOptimizer optimizer)
+public sealed class LegacyTrainingContext<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config, IGenericOptimizer optimizer)
 {
     internal SimpleModel Model = model.InnerModel;
     internal IEmbedder<TInput, TOutput> Embedder = model.Embedder;

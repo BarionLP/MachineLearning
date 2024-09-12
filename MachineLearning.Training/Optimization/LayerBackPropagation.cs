@@ -37,7 +37,8 @@ public static class LayerBackPropagation
     public static Vector ComputeHiddenLayerErrors(StringEmbeddingLayer layer, SimpleLayer nextLayer, Vector nextErrors, LayerSnapshots.Embedding snapshot)
     {
         var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights);
-        weightedInputDerivatives.PointwiseMultiplyToSelf(snapshot.LastOutput);
+        // weightedInputDerivatives.MultiplyToSelf(1);
+        // var activationDerivatives = Vector.Create(layer.OutputNodeCount);
 
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
     }

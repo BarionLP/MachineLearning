@@ -9,7 +9,7 @@ public sealed class LegacyModelTrainer<TInput, TOutput> where TInput : notnull w
     public TrainingConfig<TInput, TOutput> Config { get; }
     public EmbeddedModel<TInput, TOutput> Model { get; }
     public IGenericOptimizer Optimizer { get; }
-    internal ModelTrainingContext<TInput, TOutput> Context { get; }
+    internal LegacyTrainingContext<TInput, TOutput> Context { get; }
 
     public LegacyModelTrainer(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config)
     {
