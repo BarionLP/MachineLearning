@@ -1,8 +1,6 @@
 using System.Collections.Immutable;
-using System.Diagnostics;
 using MachineLearning.Data.Entry;
 using MachineLearning.Model;
-using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;

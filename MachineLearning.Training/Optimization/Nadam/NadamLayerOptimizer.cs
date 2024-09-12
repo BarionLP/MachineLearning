@@ -129,9 +129,7 @@ public sealed class StringNadamLayerOptimizer : ILayerOptimizer<StringEmbeddingL
     private readonly Lock _lock = new();
     public void Update(Vector nodeValues, ILayerSnapshot rawSnapshot)
     {
-        if (rawSnapshot is not LayerSnapshots.Embedding snapshot) throw new UnreachableException();
-
-        return; //seems to make things worse
+        var snapshot = LayerSnapshots.Is<LayerSnapshots.Embedding>(rawSnapshot);
 
         var i = 0;
         lock (_lock)
