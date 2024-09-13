@@ -1,11 +1,9 @@
-using System;
-
 namespace MachineLearning.Samples.Language;
 
 public static class LMHelper
 {
     private const string EndSymbols = ".!?";
-    public static void Generate(string input, IGenericModel<string, char> model, int contextSize)
+    public static void Generate(string input, IEmbeddedModel<string, char> model, int contextSize)
     {
         input = input.ToLowerInvariant();
         Console.Write(input);
@@ -27,7 +25,7 @@ public static class LMHelper
         }
     }
 
-    public static void StartChat(IGenericModel<string, char> model, int contextSize)
+    public static void StartChat(IEmbeddedModel<string, char> model, int contextSize)
     {
         string input;
         do

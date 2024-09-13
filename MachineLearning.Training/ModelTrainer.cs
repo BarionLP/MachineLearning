@@ -14,6 +14,6 @@ public static class ModelTrainer
     public static LegacyModelTrainer<TInput, TOutput> Legacy<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
             => new(model, config);
 
-    public static GenericModelTrainer<TInput, TOutput> Generic<TInput, TOutput>(IGenericModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
+    public static GenericModelTrainer<TInput, TOutput> Generic<TInput, TOutput>(IEmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config) where TInput : notnull where TOutput : notnull
             => new(model, config);
 }

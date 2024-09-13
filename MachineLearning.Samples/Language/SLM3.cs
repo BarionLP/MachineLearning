@@ -8,7 +8,7 @@ public sealed class SLM3
     public const int CONTEXT_SIZE = 128;
 
     public static IOutputResolver<char> OutputResolver { get; } = new CharOutputResolver(TOKENS);
-    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("sentence_2.nnw"));
+    public static GenericModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("sentences_3.gmw"));
     public static FeedForwardModel<string, char> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
@@ -23,15 +23,17 @@ public sealed class SLM3
             .AddOutputLayer(new TokenOutputLayer(TOKENS, true, random));
     }
 
-    public static IGenericModel<string, char> TrainDefault(IGenericModel<string, char>? model = null, TrainingConfig<string, char>? config = null, Random? random = null)
+    public static IEmbeddedModel<string, char> TrainDefault(IEmbeddedModel<string, char>? model = null, TrainingConfig<string, char>? config = null, Random? random = null)
     {
         model ??= CreateModel(random);
 
         //TrainDefault(model, trainingConfig ?? DefaultTrainingConfig(), random);
         var trainer = ModelTrainer.Generic(model, config ?? DefaultTrainingConfig());
         trainer.TrainConsole();
-        //Serializer.Save(model);
-        //Console.WriteLine("Model saved!");
+        Serializer.Save(model).Resolve(
+            () => Console.WriteLine("Model saved!"),
+            flag => Console.WriteLine($"Error saving model: {flag}")
+        );
         LMHelper.StartChat(model, CONTEXT_SIZE);
         return model;
     }

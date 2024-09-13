@@ -79,4 +79,10 @@ public static class NumericsDebug
     {
         Debug.Assert(!vector.AsSpan().Contains(Weight.NaN), "Matrix contains invalid numbers");
     }
+    
+    [Conditional("DEBUG")]
+    public static void AssertValidNumbers(ReadOnlySpan<Weight> span)
+    {
+        Debug.Assert(!span.Contains(Weight.NaN), "Span contains invalid numbers");
+    }
 }

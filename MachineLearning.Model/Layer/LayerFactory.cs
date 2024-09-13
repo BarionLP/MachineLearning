@@ -8,7 +8,7 @@ public sealed class LayerFactory(int inputNodeCount, int outputNodeCount)
     public int OutputNodeCount { get; } = outputNodeCount;
     public int InputNodeCount { get; } = inputNodeCount;
     public IActivationFunction ActivationFunction { get; set; } = SigmoidActivation.Instance;
-    public ILayerInitializer<SimpleLayer> Initializer { get; set; } = ZeroInitializer<SimpleLayer>.Instance;
+    public ILayerInitializer<SimpleLayer> Initializer { get; set; } = NoInitializer<SimpleLayer>.Instance;
 
     public LayerFactory SetActivationFunction(IActivationFunction activationMethod)
     {

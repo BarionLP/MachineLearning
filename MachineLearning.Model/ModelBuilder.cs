@@ -95,7 +95,7 @@ public static class AdvancedModelBuilder
             return new()
             {
                 InputLayer = InputLayer,
-                InnerModel = new SimpleModel(Layers.Select(l => l.Create()).ToImmutableArray()),
+                HiddenLayers = Layers.Select(l => l.Create()).ToImmutableArray(),
                 OutputLayer = outputLayer,
             };
         }

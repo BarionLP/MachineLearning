@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 
 namespace MachineLearning.Model;
 
-public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<TInput, TOutput> embedder) : IGenericModel<TInput, TOutput>
+public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<TInput, TOutput> embedder) : IEmbeddedModel<TInput, TOutput>
 {
     public SimpleModel InnerModel { get; } = model;
     public IEmbedder<TInput, TOutput> Embedder { get; } = embedder;
@@ -14,7 +14,7 @@ public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<
     public IEnumerable<ILayer> Layers { get;  } = [embedder,..model.Layers, embedder];
     public uint ParameterCount => InnerModel.ParameterCount;
 
-    ISimpleModel<SimpleLayer> IGenericModel<TInput, TOutput>.InnerModel => InnerModel;
+    ImmutableArray<SimpleLayer> IEmbeddedModel<TInput, TOutput>.HiddenLayers => InnerModel.Layers;
 
     public (TOutput output, Weight confidence) Process(TInput input) => Embedder.Unembed(InnerModel.Forward(Embedder.Embed(input)));
     public (TOutput output, double confidence) Forward(TInput input) => Process(input);
@@ -27,7 +27,7 @@ public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<
     public override string ToString() => $"Embedded {InnerModel}";
 }
 
-public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers) : ISimpleModel<SimpleLayer>
+public sealed class SimpleModel(ImmutableArray<SimpleLayer> layers) : IModel
 {
     public ImmutableArray<SimpleLayer> Layers { get; } = layers;
     public SimpleLayer OutputLayer => Layers[^1];

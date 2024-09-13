@@ -10,13 +10,13 @@ namespace MachineLearning.Training;
 public sealed class GenericModelTrainer<TInput, TOutput>
 {
     public TrainingConfig<TInput, TOutput> Config { get; }
-    public IGenericModel<TInput, TOutput> Model { get; }
+    public IEmbeddedModel<TInput, TOutput> Model { get; }
     public IGenericOptimizer Optimizer { get; }
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[LastUsableLayerIndex];
     private static readonly Index LastUsableLayerIndex = ^2;
 
-    public GenericModelTrainer(IGenericModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config)
+    public GenericModelTrainer(IEmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config)
     {
         Config = config;
         Model = model;
@@ -65,7 +65,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
 
             foreach (var batch in epoch)
             {
-                cachedEvaluation += TrainAndEvaluate(batch, false);
+                cachedEvaluation += TrainAndEvaluate(batch, true);
                 if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });

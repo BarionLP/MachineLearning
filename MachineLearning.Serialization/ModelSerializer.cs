@@ -6,11 +6,8 @@ using MachineLearning.Serialization.Activation;
 namespace MachineLearning.Serialization;
 
 /// <summary>
-/// Serializer for <see cref="INetwork{TInput, TData, TOutput, TLayer}"/> using <see cref="double"/> as weight type
+/// Binary Serializer for <see cref="SimpleModel"/> and <see cref="EmbeddedModel{TInput, TOutput}"/>
 /// </summary>
-/// <typeparam name="TInput">network input type</typeparam>
-/// <typeparam name="TOutput">network output type</typeparam>
-/// <typeparam name="TLayer">layer type</typeparam>
 public sealed class ModelSerializer(FileInfo fileInfo)
 {
     public const uint VERSION = 3;
@@ -26,7 +23,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         {
             writer.Write(layer.InputNodeCount);
             writer.Write(layer.OutputNodeCount);
-            ActivationMethodSerializer.WriteV3(writer, layer.ActivationFunction);
+            ActivationMethodSerializer.WriteV2(writer, layer.ActivationFunction);
 
 
             // encode weights & biases
@@ -67,7 +64,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         {
             var inputNodeCount = reader.ReadInt32();
             var outputNodeCount = reader.ReadInt32();
-            var activationMethod = ActivationMethodSerializer.ReadV3(reader);
+            var activationMethod = ActivationMethodSerializer.ReadV2(reader);
             var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
             layers[layerIndex] = layerBuilder.Create();
 
@@ -94,7 +91,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         {
             var inputNodeCount = reader.ReadInt32();
             var outputNodeCount = reader.ReadInt32();
-            var activationMethod = ActivationMethodSerializer.Read(reader);
+            var activationMethod = ActivationMethodSerializer.ReadV1(reader);
             var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
             layers[layerIndex] = layerBuilder.Create();
 

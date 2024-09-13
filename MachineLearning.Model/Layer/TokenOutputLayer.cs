@@ -6,6 +6,7 @@ namespace MachineLearning.Model.Layer;
 public sealed class TokenOutputLayer(string tokens, bool weightedRandom, Random? random = null) : IUnembeddingLayer<char>
 {
     public string Tokens { get; } = tokens;
+    public bool WeightedRandom { get; } = weightedRandom;
     public Random Random { get; } = random ?? Random.Shared;
 
     public int InputNodeCount => Tokens.Length;
@@ -33,7 +34,7 @@ public sealed class TokenOutputLayer(string tokens, bool weightedRandom, Random?
         Debug.Assert(input.Count == Tokens.Length);
 
         // temperature adjustments
-        if (weightedRandom)
+        if (WeightedRandom)
         {
             // cannot work on self
             // input.PointwiseLogToSelf();
@@ -41,7 +42,7 @@ public sealed class TokenOutputLayer(string tokens, bool weightedRandom, Random?
             // input.SoftMaxToSelf();
         }
 
-        var index = weightedRandom ? GetWeightedRandomIndex(input, Random) : input.MaximumIndex();
+        var index = WeightedRandom ? GetWeightedRandomIndex(input, Random) : input.MaximumIndex();
         return (Tokens[index], index, input);
     }
 }
