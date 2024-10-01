@@ -29,13 +29,14 @@ public sealed class StringNadamOptimizer : ILayerOptimizer<StringEmbeddingLayer,
     private readonly Lock _lock = new();
     public void Update(Vector nodeValues, LayerSnapshots.Embedding snapshot)
     {
+        throw new NotImplementedException("fix this first (see base Adam)");
         var i = 0;
         lock (_lock)
         {
             foreach (var c in snapshot.LastInput)
             {
                 var embedding = GradientCostWeights.RowSpan(Layer.Tokens.IndexOf(c));
-                TensorPrimitives.Add(embedding, nodeValues[i, Layer.EmbeddingSize], embedding);
+                TensorPrimitives.Add(embedding, nodeValues.Slice(i, Layer.EmbeddingSize), embedding);
 
                 i += Layer.EmbeddingSize;
             }
@@ -70,7 +71,8 @@ public sealed class StringNadamOptimizer : ILayerOptimizer<StringEmbeddingLayer,
 
     public void FullReset()
     {
-        GradientCostWeights.ResetZero();
+        GradientCostReset();
+
         FirstMomentWeights.ResetZero();
         SecondMomentWeights.ResetZero();
     }

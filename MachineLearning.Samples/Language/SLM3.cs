@@ -55,9 +55,9 @@ public sealed class SLM3
             EpochCount = 32,
             BatchCount = 256 + 128,
 
-            Optimizer = new NadamOptimizer
+            Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.01,
+                LearningRate = 0.1,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 

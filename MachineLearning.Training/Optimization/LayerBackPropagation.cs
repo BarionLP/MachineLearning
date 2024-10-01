@@ -13,10 +13,10 @@ public static class LayerBackPropagation
         _ => throw new NotImplementedException($"Cannot compute output layer errors for {layer}"),
     };
 
-    public static Vector ComputeHiddenLayerErrors(ILayer layer, ILayer nextLayer, Vector nextErrors, object snapshot) => (layer, nextLayer) switch
+    public static Vector ComputeHiddenLayerErrors(ILayer layer, ILayer nextLayer, Vector nextErrors, ILayerSnapshot snapshot) => (layer, nextLayer) switch
     {
-        (SimpleLayer simpleLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, (LayerSnapshots.Simple)snapshot),
-        (StringEmbeddingLayer stringLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(stringLayer, simpleNextLayer, nextErrors, (LayerSnapshots.Embedding)snapshot),
+        (SimpleLayer simpleLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Simple>(snapshot)),
+        (StringEmbeddingLayer stringLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(stringLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Embedding>(snapshot)),
         (IEmbedder<string, char>, SimpleLayer) => nextErrors,
         _ => throw new NotImplementedException($"Cannot compute hidden layer errors for {layer} -> {nextLayer}."),
     };
@@ -27,9 +27,10 @@ public static class LayerBackPropagation
     {
 
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
+        NumericsDebug.RequireValidNumbers(activationDerivatives);
         var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights);
         weightedInputDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
-
+        NumericsDebug.RequireValidNumbers(weightedInputDerivatives);
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
     }
 
@@ -43,8 +44,8 @@ public static class LayerBackPropagation
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
         var costDerivatives = costFunction.Derivative(snapshot.LastActivatedWeights, expected);
 
-        NumericsDebug.AssertValidNumbers(activationDerivatives);
-        NumericsDebug.AssertValidNumbers(costDerivatives);
+        NumericsDebug.RequireValidNumbers(activationDerivatives);
+        NumericsDebug.RequireValidNumbers(costDerivatives);
 
         costDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
 

@@ -31,7 +31,7 @@ public sealed class StringEmbeddingLayer(string tokens, int contextSize, int emb
         var tokenIdx = Tokens.IndexOf(token);
         if (tokenIdx < 0)
         {
-            throw new ArgumentException($"Unkown token: '{token}'");
+            throw new ArgumentException($"Unknown token: '{token}'");
         }
 
         return EmbeddingMatrix.RowSpan(tokenIdx);

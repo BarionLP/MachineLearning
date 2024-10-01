@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 
 namespace Ametrin.Numerics;
 
@@ -84,5 +85,30 @@ public static class NumericsDebug
     public static void AssertValidNumbers(ReadOnlySpan<Weight> span)
     {
         Debug.Assert(!span.Contains(Weight.NaN), "Span contains invalid numbers");
+    }
+
+    [StackTraceHidden]
+    public static void RequireValidNumbers(Vector vector)
+    {
+        ThrowIf(vector.AsSpan().Contains(Weight.NaN), "Vector contains invalid numbers");
+    }
+    [StackTraceHidden]
+    public static void RequireValidNumbers(Matrix vector)
+    {
+        ThrowIf(vector.AsSpan().Contains(Weight.NaN), "Matrix contains invalid numbers");
+    }
+    [StackTraceHidden]
+    public static void RequireValidNumbers(ReadOnlySpan<Weight> span)
+    {
+        ThrowIf(span.Contains(Weight.NaN), "Span contains invalid numbers");
+    }
+
+    [StackTraceHidden]
+    private static void ThrowIf(bool condition, string message)
+    {
+        if(condition)
+        {
+            throw new ArgumentException(message);
+        }
     }
 }

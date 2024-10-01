@@ -15,6 +15,7 @@ public interface Matrix
     public int FlatCount { get; }
     public ref Weight this[int row, int column] { get; }
     public ref Weight this[nuint flatIndex] { get; }
+    public ref Weight this[int flatIndex] { get; }
 
     public Span<Weight> AsSpan();
 
@@ -36,13 +37,14 @@ public interface Matrix
 
 internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storage) : Matrix
 {
-    public Vector Storage { get; } = storage;
+    internal Vector Storage { get; } = storage;
     public int RowCount { get; } = rowCount;
     public int ColumnCount { get; } = columnCount;
     public int FlatCount => Storage.Count;
 
     public ref Weight this[int row, int column] => ref Storage[GetFlatIndex(row, column)];
     public ref Weight this[nuint flatIndex] => ref Storage[flatIndex];
+    public ref Weight this[int flatIndex] => ref Storage[flatIndex];
     public Span<Weight> AsSpan() => Storage.AsSpan();
 
 
@@ -83,6 +85,7 @@ internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : M
 
     public ref Weight this[int row, int column] => ref AsSpan()[row * ColumnCount + column];
     public ref Weight this[nuint index] => ref AsSpan()[(int)index];
+    public ref Weight this[int index] => ref AsSpan()[index];
 
     public Span<Weight> AsSpan() => _tensor.AsSpan().Slice(_startIndex, FlatCount);
 

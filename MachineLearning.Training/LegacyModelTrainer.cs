@@ -1,4 +1,3 @@
-using MachineLearning.Model;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
@@ -60,7 +59,7 @@ public sealed class LegacyModelTrainer<TInput, TOutput> where TInput : notnull w
 
             foreach (var batch in epoch)
             {
-                cachedEvaluation += Context.TrainAndEvaluate(batch, true);
+                cachedEvaluation += Context.TrainAndEvaluate(batch, multithread: true);
                 if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });

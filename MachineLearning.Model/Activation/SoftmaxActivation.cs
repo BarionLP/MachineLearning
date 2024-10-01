@@ -7,13 +7,14 @@ public sealed class SoftMaxActivation(Weight temperature) : IActivationFunction
     public static readonly SoftMaxActivation Instance = new(1);
 
     public Weight Temperature { get; } = temperature;
-    public void ActivateTo(Vector input, Vector result) => input.Divide(1).SoftMaxTo(result);
+    public void ActivateTo(Vector input, Vector result) => input.SoftMaxTo(result);
     public void DerivativeTo(Vector input, Vector result)
     {
-        input.PointwiseExpTo(result);
+        var max = input.Max();
+        input.SubtractPointwiseTo(max, result);
+        result.PointwiseExpToSelf();
         var sum = result.Sum();
         var inverseSumSquared = 1 / (sum * sum);
-        var inverseTemperature = 1; /// Temperature;
 
         ref var vectorPtr = ref MemoryMarshal.GetReference(result.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(result.AsSpan());
@@ -24,12 +25,14 @@ public sealed class SoftMaxActivation(Weight temperature) : IActivationFunction
         for (; index + mdSize <= length; index += mdSize)
         {
             var simdVector = SimdVectorHelper.LoadUnsafe(ref vectorPtr, index);
-            SimdVectorHelper.StoreUnsafe((simdVector * sum - simdVector * simdVector) * inverseSumSquared * inverseTemperature, ref resultPtr, index);
+            SimdVectorHelper.StoreUnsafe((simdVector * sum - simdVector * simdVector) * inverseSumSquared, ref resultPtr, index);
         }
 
         for (; index < length; index++)
         {
-            result[index] = (result[index] * sum - result[index] * result[index]) * inverseSumSquared * inverseTemperature;
+            result[index] = (result[index] * sum - result[index] * result[index]) * inverseSumSquared;
         }
+
+        NumericsDebug.AssertValidNumbers(result);
     }
 }

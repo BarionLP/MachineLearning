@@ -37,7 +37,7 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
         }
 
         var paddedVector = Vector.Create(totalWidth);
-        vector.AsSpan().CopyTo(paddedVector[totalWidth - vector.Count, vector.Count]);
+        vector.AsSpan().CopyTo(paddedVector.Slice(totalWidth - vector.Count, vector.Count));
         return paddedVector;
     }
 

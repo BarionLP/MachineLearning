@@ -10,4 +10,8 @@
     <PackageReference Include="System.Numerics.Tensors" Version="9.0.0-rc.1.24431.7" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj" />
+  </ItemGroup>
+
 </Project>

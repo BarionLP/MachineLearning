@@ -12,23 +12,28 @@ public interface Vector
     public int Count { get; }
     public ref Weight this[int index] { get; }
     public ref Weight this[nuint index] { get; }
-    public Span<Weight> this[int index, int count] { get; }
+    public Span<Weight> Slice(int index, int count);
     public Span<Weight> AsSpan();
 
-    public static Vector Create(int count) => new VectorSimple(count, new Weight[count]);
+    public static Vector Create(int size) => new VectorSimple(size, new Weight[size]);
     public static Vector Of(Weight[] array) => new VectorSimple(array.Length, array);
+    public static Vector Of(int size, Weight[] array)
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(size, array.Length);
+        return new VectorSimple(size, array);
+    }
 }
 
 // stores its own count to allow longer arrays from ArrayPool as storage
 internal readonly struct VectorSimple(int count, Weight[] storage) : Vector
 {
-    private readonly Weight[] _storage = storage;
+    internal readonly Weight[] _storage = storage;
     public int Count { get; } = count;
     public ref Weight this[int index] => ref _storage[index];
     public ref Weight this[nuint index] => ref _storage[index];
-    public Span<Weight> this[int index, int count] => new(_storage, index, count); // has built-in bound checks
+    public Span<Weight> Slice(int index, int count) => new(_storage, index, count); // has built-in bound checks
     public Span<Weight> AsSpan() => new(_storage, 0, Count);
-    public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("F2")))}]";
+    public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("+#0.00;-#0.00")))}]";
 }
 
 internal readonly struct MatrixRowReference(int _rowIndex, Matrix _matrix) : Vector
@@ -36,11 +41,11 @@ internal readonly struct MatrixRowReference(int _rowIndex, Matrix _matrix) : Vec
     private readonly int _startIndex = _rowIndex * _matrix.ColumnCount;
     private readonly Matrix _matrix = _matrix;
 
-    public ref double this[int index] => ref AsSpan()[index];
+    public ref double this[int index] => ref _matrix[_startIndex + index];
 
-    public ref double this[nuint index] => ref AsSpan()[(int)index];
+    public ref double this[nuint index] => ref _matrix[_startIndex + (int)index];
 
-    public Span<double> this[int index, int count] => AsSpan().Slice(index, count);
+    public Span<Weight> Slice(int index, int count) => AsSpan().Slice(index, count);
 
     public int Count => _matrix.ColumnCount;
 
@@ -93,11 +98,24 @@ public static class VectorHelper
         return TensorPrimitives.Dot<Weight>(left.AsSpan(), right.AsSpan());
     }
 
+    public static Vector PointwiseExp(this Vector vector)
+    {
+        var destination = Vector.Create(vector.Count);
+        PointwiseExpTo(vector, destination);
+        return destination;
+    }
+
     public static void PointwiseExpToSelf(this Vector vector) => PointwiseExpTo(vector, vector);
     public static void PointwiseExpTo(this Vector vector, Vector destination)
     {
+        //var original = vector.CreateCopy();
         NumericsDebug.AssertSameDimensions(vector, destination);
-        TensorPrimitives.Exp(vector.AsSpan(), destination.AsSpan());
+        //TensorPrimitives.Exp(vector.AsSpan(), destination.AsSpan());
+
+        for(int i = 0; i < vector.Count; i++)
+        {   
+            destination[i] = Math.Exp(vector[i]);
+        }
     }
 
     public static void PointwiseLogToSelf(this Vector vector) => PointwiseLogTo(vector, vector);
@@ -119,9 +137,18 @@ public static class VectorHelper
     {
         NumericsDebug.AssertSameDimensions(vector, destination);
 
-        vector.PointwiseExpTo(destination);
-        var sum = destination.Sum();
-        destination.DivideToSelf(sum);
+        var max = vector.Max();
+        vector.SubtractPointwiseTo(max, destination);
+        NumericsDebug.AssertValidNumbers(destination);
+        var tmp = destination.PointwiseExp();
+        var sum = tmp.Sum();
+        if(sum is double.NegativeInfinity)
+        {
+            throw new ArgumentException();
+        }
+        tmp.DivideTo(sum, destination);
+
+        NumericsDebug.AssertValidNumbers(tmp);
 
         // was slower in .net 9.preview.7
         //TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());

@@ -1,8 +1,5 @@
 ﻿using MachineLearning.Data.Entry;
-using MachineLearning.Model;
-using MachineLearning.Model.Layer;
 using MachineLearning.Training.Cost;
-using System.Net;
 
 namespace MachineLearning.Training.Evaluation;
 
@@ -46,7 +43,7 @@ public static class Evaluator
         {
             totalCounter++;
             var outputWeights = model.InnerModel.Forward(model.Embedder.Embed(entry.Input));
-            var output = model.Embedder.Unembed(outputWeights);
+            var (output, confidence) = model.Embedder.Unembed(outputWeights);
 
             if(output.Equals(entry.Expected))
             {
