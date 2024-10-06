@@ -18,6 +18,7 @@ public static class LayerBackPropagation
         (SimpleLayer simpleLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Simple>(snapshot)),
         (StringEmbeddingLayer stringLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(stringLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Embedding>(snapshot)),
         (IEmbedder<string, char>, SimpleLayer) => nextErrors,
+        (IEmbedder<double[], int>, SimpleLayer) => nextErrors,
         _ => throw new NotImplementedException($"Cannot compute hidden layer errors for {layer} -> {nextLayer}."),
     };
 

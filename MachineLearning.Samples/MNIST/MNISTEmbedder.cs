@@ -15,4 +15,15 @@ public sealed class MNISTEmbedder(ImmutableArray<int> _nodeMapping) : IEmbedder<
         var index = input.MaximumIndex();
         return (_nodeMapping[index], input[index]);
     }
+
+    public Vector Embed(double[] input, ILayerSnapshot snapshot)
+    {
+        return Embed(input);
+    }
+
+    public (int output, int index, Vector weights) Unembed(Vector input, ILayerSnapshot snapshot)
+    {
+        var index = input.MaximumIndex();
+        return (_nodeMapping[index], index, input);
+    }
 }

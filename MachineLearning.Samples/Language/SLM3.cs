@@ -27,7 +27,6 @@ public sealed class SLM3
     {
         model ??= CreateModel(random);
 
-        //TrainDefault(model, trainingConfig ?? DefaultTrainingConfig(), random);
         var trainer = ModelTrainer.Generic(model, config ?? DefaultTrainingConfig());
         trainer.TrainConsole();
         Serializer.Save(model).Resolve(

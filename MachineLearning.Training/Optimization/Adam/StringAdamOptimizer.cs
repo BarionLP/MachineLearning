@@ -31,7 +31,6 @@ public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, 
     private readonly Lock _lock = new();
     public void Update(Vector nodeValues, LayerSnapshots.Embedding snapshot)
     {
-        //NumericsDebug.RequireValidNumbers(nodeValues);
         var i = 0;
         lock (_lock)
         {
@@ -49,34 +48,29 @@ public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, 
 
     public void Apply(int dataCounter)
     { 
-        //var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
 
         for(int i = 0; i < Layer.Tokens.Length; i++)
         {
             var count = GradientCounts[i];
             if(GradientCounts[i] > 1)
             {
-                //ArgumentOutOfRangeException.ThrowIfLessThan(count, 2);
                 var row = GradientCostWeights.RowRef(i);
-                //NumericsDebug.RequireValidNumbers(row);
                 row.DivideToSelf(GradientCounts[i]);
                 NumericsDebug.RequireValidNumbers(row);
             }
         }
-        NumericsDebug.RequireValidNumbers(GradientCostWeights);
+        NumericsDebug.AssertValidNumbers(GradientCostWeights);
 
         (FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
-        //NumericsDebug.RequireValidNumbers(FirstMomentWeights);
         (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
-        //NumericsDebug.RequireValidNumbers(SecondMomentWeights);
         Layer.EmbeddingMatrix.SubtractToSelf((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
-        //NumericsDebug.RequireValidNumbers(Layer.EmbeddingMatrix);
 
         double WeightReduction(double firstMoment, double secondMoment)
         {
             var mHat = firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
             var vHat = secondMoment / (1 - Math.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
-            return Optimizer.LearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
+            return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
         }
         double FirstMomentEstimate(double lastMoment, double gradient)
             => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;

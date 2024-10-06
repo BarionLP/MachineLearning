@@ -39,7 +39,7 @@ public static class LayerSnapshots
     {
         SimpleLayer simpleLayer => new Simple(simpleLayer.InputNodeCount, simpleLayer.OutputNodeCount),
         StringEmbeddingLayer stringLayer => new Embedding(stringLayer.ContextSize, stringLayer.EmbeddingSize),
-        TokenOutputLayer or IEmbedder<string, char> => EmptySnapshot.Empty,
+        TokenOutputLayer or IEmbedder<string, char> or IEmbedder<double[], int> => EmptySnapshot.Empty,
         _ => throw new NotImplementedException($"No snapshot for {layer} found"),
     };
 

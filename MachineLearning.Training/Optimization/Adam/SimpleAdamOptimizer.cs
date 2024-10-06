@@ -59,7 +59,7 @@ public class SimpleAdamOptimizer : ILayerOptimizer<SimpleLayer, LayerSnapshots.S
     public virtual void Apply(int dataCounter)
     {
         // do i need gradient clipping?
-        var averagedLearningRate = Optimizer.LearningRate; // / Math.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
 
         // parallelizing makes no difference
         // Update biases

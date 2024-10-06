@@ -91,4 +91,14 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
     {
         throw new NotImplementedException();
     }
+
+    public Vector Embed(string input, ILayerSnapshot snapshot)
+    {
+        throw new NotImplementedException();
+    }
+
+    public (char output, int index, Vector weights) Unembed(Vector input, ILayerSnapshot snapshot)
+    {
+        throw new NotImplementedException();
+    }
 }

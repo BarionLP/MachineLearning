@@ -74,7 +74,7 @@ public class MNISTModel
 
     public static void TrainDefault(ModelDefinition model, TrainingConfig<double[], int> config)
     {
-        var trainer = ModelTrainer.Legacy(model, config);
+        var trainer = ModelTrainer.Generic(model, config);
 
         trainer.TrainConsole();
 
