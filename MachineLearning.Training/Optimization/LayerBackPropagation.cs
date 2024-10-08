@@ -26,17 +26,15 @@ public static class LayerBackPropagation
 
     public static Vector ComputeHiddenLayerErrors(SimpleLayer layer, SimpleLayer nextLayer, Vector nextErrors, LayerSnapshots.Simple snapshot)
     {
-
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
-        NumericsDebug.RequireValidNumbers(activationDerivatives);
         var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights);
         weightedInputDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
-        NumericsDebug.RequireValidNumbers(weightedInputDerivatives);
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
     }
 
     public static Vector ComputeHiddenLayerErrors(StringEmbeddingLayer layer, SimpleLayer nextLayer, Vector nextErrors, LayerSnapshots.Embedding snapshot)
     {
+        //activationFunction'(x) = 1
         return nextErrors.Multiply(nextLayer.Weights);
     }
 
@@ -44,9 +42,6 @@ public static class LayerBackPropagation
     {
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
         var costDerivatives = costFunction.Derivative(snapshot.LastActivatedWeights, expected);
-
-        NumericsDebug.RequireValidNumbers(activationDerivatives);
-        NumericsDebug.RequireValidNumbers(costDerivatives);
 
         costDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
 

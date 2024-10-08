@@ -48,23 +48,28 @@ public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, 
 
     public void Apply(int dataCounter)
     { 
-        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate * Math.Sqrt(dataCounter);
 
-        for(int i = 0; i < Layer.Tokens.Length; i++)
+        for(int tokenIndex = 0; tokenIndex < Layer.Tokens.Length; tokenIndex++)
         {
-            var count = GradientCounts[i];
-            if(GradientCounts[i] > 1)
+            var count = GradientCounts[tokenIndex];
+            if(count > 0)
             {
-                var row = GradientCostWeights.RowRef(i);
-                row.DivideToSelf(GradientCounts[i]);
-                NumericsDebug.RequireValidNumbers(row);
+                var gradientCosts = GradientCostWeights.RowRef(tokenIndex);
+                gradientCosts.DivideToSelf(count);
+
+                var firstMoment = FirstMomentWeights.RowRef(tokenIndex);
+                var secondMoment = SecondMomentWeights.RowRef(tokenIndex);
+                (firstMoment, gradientCosts).MapToFirst(FirstMomentEstimate);
+                (secondMoment, gradientCosts).MapToFirst(SecondMomentEstimate);
+                Layer.EmbeddingMatrix.RowRef(tokenIndex).SubtractToSelf((firstMoment, secondMoment).Map(WeightReduction));
             }
         }
         NumericsDebug.AssertValidNumbers(GradientCostWeights);
 
-        (FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
-        (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
-        Layer.EmbeddingMatrix.SubtractToSelf((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
+        //(FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
+        //(SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
+        //Layer.EmbeddingMatrix.SubtractToSelf((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
         double WeightReduction(double firstMoment, double secondMoment)
         {
@@ -72,6 +77,7 @@ public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, 
             var vHat = secondMoment / (1 - Math.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
             return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
         }
+
         double FirstMomentEstimate(double lastMoment, double gradient)
             => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
 

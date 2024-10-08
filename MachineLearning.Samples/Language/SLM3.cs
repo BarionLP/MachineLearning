@@ -29,10 +29,10 @@ public sealed class SLM3
 
         var trainer = ModelTrainer.Generic(model, config ?? DefaultTrainingConfig());
         trainer.TrainConsole();
-        Serializer.Save(model).Resolve(
-            () => Console.WriteLine("Model saved!"),
-            flag => Console.WriteLine($"Error saving model: {flag}")
-        );
+        //Serializer.Save(model).Resolve(
+          //  () => Console.WriteLine("Model saved!"),
+          //  flag => Console.WriteLine($"Error saving model: {flag}")
+        //);
         LMHelper.StartChat(model, CONTEXT_SIZE);
         return model;
     }
@@ -52,7 +52,7 @@ public sealed class SLM3
             TestSet = dataSet.Skip(trainingSetSize).ToArray(),
 
             EpochCount = 32,
-            BatchCount = 256 + 128,
+            BatchCount = 256,
 
             Optimizer = new AdamOptimizer
             {
@@ -73,7 +73,6 @@ public sealed class SLM3
     {
         Console.WriteLine("Analyzing Trainings Data...");
         var lines = LanguageDataSource.GetLines(AssetManager.Sentences).ToArray();
-        //lines.ForEach(l => Embedder.Embed(l));
         Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} chars");
         var tokensUsedBySource = new string(lines.SelectMany(s => s).Distinct().Order().ToArray());
         Console.WriteLine($"Source uses '{tokensUsedBySource}'");
