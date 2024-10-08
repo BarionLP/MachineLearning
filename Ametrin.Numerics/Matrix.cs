@@ -54,9 +54,10 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
         sb.AppendLine($"Matrix ({RowCount}x{ColumnCount}):");
         for (int i = 0; i < RowCount; i++)
         {
+            sb.Append($"{i}: ");
             for (int j = 0; j < ColumnCount; j++)
             {
-                sb.Append(this[i, j].ToString("F2")).Append(' ');
+                sb.Append(this[i, j].ToString("+#0.00;-#0.00")).Append(' ');
             }
             sb.AppendLine();
         }

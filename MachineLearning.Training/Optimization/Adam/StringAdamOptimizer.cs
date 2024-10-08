@@ -67,7 +67,6 @@ public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, 
         }
         NumericsDebug.AssertValidNumbers(GradientCostWeights);
 
-
         double WeightReduction(double firstMoment, double secondMoment)
         {
             var mHat = firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
