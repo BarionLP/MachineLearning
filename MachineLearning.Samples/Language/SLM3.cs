@@ -13,7 +13,7 @@ public sealed class SLM3
     {
         var initializer = new HeInitializer(random);
         return AdvancedModelBuilder
-            .Create<StringEmbeddingLayer, string>(new StringEmbeddingLayer(TOKENS, CONTEXT_SIZE, 12), new StringEmbeddingLayer.Initer(random))
+            .Create<StringEmbeddingLayer, string>(new StringEmbeddingLayer(TOKENS, CONTEXT_SIZE, 12), new StringEmbeddingLayer.Initializer(random))
                 .SetDefaultActivationFunction(LeakyReLUActivation.Instance)
                 .AddLayer(1024 * 2, initializer)
                 .AddLayer(1024 * 2, initializer)
@@ -29,10 +29,10 @@ public sealed class SLM3
 
         var trainer = ModelTrainer.Generic(model, config ?? DefaultTrainingConfig());
         trainer.TrainConsole();
-        //Serializer.Save(model).Resolve(
-          //  () => Console.WriteLine("Model saved!"),
-          //  flag => Console.WriteLine($"Error saving model: {flag}")
-        //);
+        Serializer.Save(model).Resolve(
+            () => Console.WriteLine("Model saved!"),
+            flag => Console.WriteLine($"Error saving model: {flag}")
+        );
         LMHelper.StartChat(model, CONTEXT_SIZE);
         return model;
     }
@@ -56,14 +56,14 @@ public sealed class SLM3
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.1,
+                LearningRate = 0.01,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
             OutputResolver = OutputResolver,
 
             EvaluationCallback = result => Console.WriteLine(result.Dump()),
-            DumpEvaluationAfterBatches = 16,
+            DumpEvaluationAfterBatches = 1,
 
             RandomSource = random,
         };

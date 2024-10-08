@@ -390,6 +390,7 @@ public static class VectorHelper
     }
 
     public static Weight Max(this Vector vector) => TensorPrimitives.Max<Weight>(vector.AsSpan());
+    public static Weight Min(this Vector vector) => TensorPrimitives.Min<Weight>(vector.AsSpan());
 
     public static Vector CreateCopy(this Vector vector)
     {

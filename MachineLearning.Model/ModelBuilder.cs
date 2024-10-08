@@ -22,7 +22,7 @@ public sealed class ModelBuilder(int inputNodeCount)
     {
         Layers.Add(
             new LayerFactory(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
-            .SetActivationFunction(activationMethod ?? DefaultActivationMethod).Initialize(initializer)
+            .SetActivationFunction(activationMethod ?? DefaultActivationMethod).SetInitializer(initializer)
         );
         return this;
     }
@@ -68,7 +68,7 @@ public static class AdvancedModelBuilder
         {
             return AddLayer(
                 new LayerFactory(LastOutputNodeCount, nodeCount)
-                .SetActivationFunction(activationMethod ?? DefaultActivationFunction).Initialize(initializer)
+                .SetActivationFunction(activationMethod ?? DefaultActivationFunction).SetInitializer(initializer)
             );
         }
         public HiddenLayerConfig<TInput> AddLayer(int nodeCount, Action<LayerFactory> consumer)

@@ -38,7 +38,7 @@ public static class LayerSnapshots
     public static ILayerSnapshot Create(ILayer layer) => layer switch
     {
         SimpleLayer simpleLayer => new Simple(simpleLayer.InputNodeCount, simpleLayer.OutputNodeCount),
-        StringEmbeddingLayer stringLayer => new Embedding(stringLayer.ContextSize, stringLayer.EmbeddingSize),
+        StringEmbeddingLayer => new Embedding(),
         TokenOutputLayer or IEmbedder<string, char> or IEmbedder<double[], int> => EmptySnapshot.Empty,
         _ => throw new NotImplementedException($"No snapshot for {layer} found"),
     };
@@ -51,11 +51,11 @@ public static class LayerSnapshots
         public readonly Matrix WeightGradients = Matrix.Create(outputNodes, inputNodes);
     }
 
-    public sealed class Embedding(int contextSize, int embeddingSize) : ILayerSnapshot
+    public sealed class Embedding : ILayerSnapshot
     {
         public string LastInput { get; set; } = string.Empty;
-        public Matrix Gradients { get; set; } = Matrix.Create(contextSize, contextSize);
-        public readonly Vector LastOutput = Vector.Create(contextSize * embeddingSize);
+        //public Matrix Gradients { get; set; } = Matrix.Create(contextSize, contextSize);
+        //public Vector LastOutput { get; } = Vector.Create(contextSize * embeddingSize);
     }
 
     public sealed class EmptySnapshot : ILayerSnapshot

@@ -16,7 +16,7 @@ public sealed class LayerFactory(int inputNodeCount, int outputNodeCount)
         return this;
     }
 
-    public LayerFactory Initialize(ILayerInitializer<SimpleLayer> initializer)
+    public LayerFactory SetInitializer(ILayerInitializer<SimpleLayer> initializer)
     {
         Initializer = initializer;
         return this;

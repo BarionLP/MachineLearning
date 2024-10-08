@@ -80,6 +80,26 @@ public sealed record TrainingConfig<TInput, TOutput>
         sb.AppendLine($"   - {BatchSize} entries");
 
         if(ShuffleTrainingSetPerEpoch) sb.AppendLine("Shuffling every epoch");
+
+        if(DumpEvaluation)
+        {
+            if(DumpBatchEvaluation)
+            {
+                if(DumpEvaluationAfterBatches == 1)
+                {
+                    sb.AppendLine($"Dumping every batch");
+                }
+                else
+                {
+                    sb.AppendLine($"Dumping every {DumpEvaluationAfterBatches} batches");
+                }
+            }
+            else
+            {
+                sb.AppendLine($"Dumping every epoch");
+            }
+        }
+
         sb.AppendLine();
         return sb.ToString();
     }

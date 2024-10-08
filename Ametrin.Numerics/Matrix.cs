@@ -21,7 +21,7 @@ public interface Matrix
 
     public static Matrix CreateSquare(int size) => Create(size, size);
     public static Matrix Create(int rowCount, int columnCount) => new MatrixFlat(rowCount, columnCount, Vector.Create(rowCount * columnCount));
-    public static Matrix Of(int rowCount, int columnCount, double[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
+    public static Matrix Of(int rowCount, int columnCount, Weight[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
     public static Matrix Of(int rowCount, int columnCount, Vector storage)
     {
         if (storage.Count != columnCount * rowCount)
@@ -107,6 +107,10 @@ internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : M
 
 public static class MatrixHelper
 {
+    public static Weight Sum(this Matrix matrix) => TensorPrimitives.Sum<Weight>(matrix.AsSpan());
+    public static Weight Max(this Matrix matrix) => TensorPrimitives.Max<Weight>(matrix.AsSpan());
+    public static Weight Min(this Matrix matrix) => TensorPrimitives.Min<Weight>(matrix.AsSpan());
+
     public static Vector Multiply(this Matrix matrix, Vector vector)
     {
         var destination = Vector.Create(matrix.RowCount);

@@ -48,7 +48,7 @@ public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, 
 
     public void Apply(int dataCounter)
     { 
-        var averagedLearningRate = Optimizer.LearningRate * Math.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
 
         for(int tokenIndex = 0; tokenIndex < Layer.Tokens.Length; tokenIndex++)
         {
@@ -67,9 +67,6 @@ public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, 
         }
         NumericsDebug.AssertValidNumbers(GradientCostWeights);
 
-        //(FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
-        //(SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
-        //Layer.EmbeddingMatrix.SubtractToSelf((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
         double WeightReduction(double firstMoment, double secondMoment)
         {
