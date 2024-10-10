@@ -74,8 +74,8 @@ public sealed class SLM2 : ISample<string, char>
         model ??= Serializer.Load(Embedder).ReduceOrThrow();
 
         SimpleLM.TrainDefault(model, trainingConfig ?? DefaultTrainingConfig(), random);
-        //Serializer.Save(model);
-        //Console.WriteLine("Model saved!");
+        Serializer.Save(model);
+        Console.WriteLine("Model saved!");
         LMHelper.StartChat(model, CONTEXT_SIZE);
         return model;
     }
