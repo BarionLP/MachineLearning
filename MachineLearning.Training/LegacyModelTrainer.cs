@@ -1,3 +1,4 @@
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
@@ -85,6 +86,10 @@ public sealed class LegacyModelTrainer<TInput, TOutput> where TInput : notnull w
                 LearnRate = Config.Optimizer.LearningRate,
             };
         }
+
+        LayerSnapshots.Validate();
+        LayerSnapshots.Clear(Model.Layers);
+        LayerSnapshots.Validate();
     }
 
     public ModelEvaluationResult EvaluateShort() => new()

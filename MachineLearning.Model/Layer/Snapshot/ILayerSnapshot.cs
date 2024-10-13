@@ -39,7 +39,7 @@ public static class LayerSnapshots
         {
             return t;
         }
-        throw new InvalidOperationException();
+        throw new InvalidOperationException($"LayerSnapshot {snapshot} did not match expected Type {typeof(T).Name}");
     }
 
 
@@ -68,6 +68,7 @@ public static class LayerSnapshots
     {
         if (_registry.TryGetValue(layer, out var queue))
         {
+            created -= queue.Count;
             queue.Clear();
         }
     }
