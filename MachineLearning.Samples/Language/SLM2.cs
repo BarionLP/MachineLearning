@@ -61,9 +61,9 @@ public sealed class SLM2 : ISample<string, char>
         var lines = LanguageDataSource.GetLines(AssetManager.Sentences).ToArray();
         //lines.ForEach(l => Embedder.Embed(l));
         Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} tokens");
-        var tokensUsedBySource = new string(lines.SelectMany(s => s).Distinct().Order().ToArray());
+        var tokensUsedBySource = new string([.. lines.SelectMany(s => s).Distinct().Order()]);
         Console.WriteLine($"Source uses '{tokensUsedBySource}'");
-        tokensUsedBySource.ForEach(t => OutputResolver.Expected(t));
+        tokensUsedBySource.Consume(t => OutputResolver.Expected(t));
 
         Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
         return lines.InContextSize(CONTEXT_SIZE).ExpandPerChar();
@@ -71,7 +71,7 @@ public sealed class SLM2 : ISample<string, char>
 
     public static EmbeddedModel<string, char> TrainDefault(EmbeddedModel<string, char>? model = null, TrainingConfig<string, char>? trainingConfig = null, Random? random = null)
     {
-        model ??= Serializer.Load(Embedder).ReduceOrThrow();
+        model ??= Serializer.Load(Embedder).OrThrow();
 
         SimpleLM.TrainDefault(model, trainingConfig ?? DefaultTrainingConfig(), random);
         //Serializer.Save(model);
@@ -81,6 +81,6 @@ public sealed class SLM2 : ISample<string, char>
     }
 
     public static void StartChat() {
-        LMHelper.StartChat(Serializer.Load(Embedder).ReduceOrThrow(), CONTEXT_SIZE);
+        LMHelper.StartChat(Serializer.Load(Embedder).OrThrow(), CONTEXT_SIZE);
     }
 }

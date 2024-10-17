@@ -1,6 +1,6 @@
 ﻿global using Ametrin.Numerics;
 global using Ametrin.Utils;
-global using Ametrin.Utils.Optional;
+global using Ametrin.Optional;
 global using MachineLearning.Data.Entry;
 global using MachineLearning.Model.Activation;
 global using MachineLearning.Model;

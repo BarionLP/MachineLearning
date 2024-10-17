@@ -97,7 +97,7 @@ public sealed class LegacyTrainingContext<TInput, TOutput>(EmbeddedModel<TInput,
         return result;
     }
 
-    private void Apply(int dataCounter) => LayerOptimizers.ForEach(layer => layer.Apply(dataCounter));
-    private void GradientCostReset() => LayerOptimizers.ForEach(layer => layer.GradientCostReset());
-    public void FullReset() => LayerOptimizers.ForEach(layer => layer.FullReset());
+    private void Apply(int dataCounter) => LayerOptimizers.Consume(layer => layer.Apply(dataCounter));
+    private void GradientCostReset() => LayerOptimizers.Consume(layer => layer.GradientCostReset());
+    public void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
 } 

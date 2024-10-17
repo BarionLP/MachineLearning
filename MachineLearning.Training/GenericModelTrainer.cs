@@ -172,7 +172,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
         return result;
     }
 
-    private void Apply(int dataCounter) => LayerOptimizers.ForEach(layer => layer.Apply(dataCounter));
-    private void GradientCostReset() => LayerOptimizers.ForEach(layer => layer.GradientCostReset());
-    private void FullReset() => LayerOptimizers.ForEach(layer => layer.FullReset());
+    private void Apply(int dataCounter) => LayerOptimizers.Consume(layer => layer.Apply(dataCounter));
+    private void GradientCostReset() => LayerOptimizers.Consume(layer => layer.GradientCostReset());
+    private void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
 }

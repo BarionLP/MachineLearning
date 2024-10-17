@@ -10,10 +10,10 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
     public const string FILE_EXTENSION = ".gmw";
     public const uint FORMAT_VERSION = 1;
     
-    public static readonly Dictionary<Type, (string key, uint version, Func<IModel, BinaryWriter, ResultFlag> writer)> ModelSerializers = [];
+    public static readonly Dictionary<Type, (string key, uint version, Func<IModel, BinaryWriter, ErrorState<Exception>> writer)> ModelSerializers = [];
     public static readonly Dictionary<(string key, uint version), Func<BinaryReader, Result<IModel>>> ModelDeserializers = [];
     
-    public static readonly Dictionary<Type, (string key, uint version, Func<ILayer, BinaryWriter, ResultFlag> writer)> LayerSerializers = [];
+    public static readonly Dictionary<Type, (string key, uint version, Func<ILayer, BinaryWriter, ErrorState<Exception>> writer)> LayerSerializers = [];
     public static readonly Dictionary<(string key, uint version), Func<BinaryReader, Result<ILayer>>> LayerDeserializers = [];
 
     static GenericModelSerializer()
@@ -25,11 +25,11 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         RegisterLayer("tokenOut", 1, SaveTokenOutLayer, ReadTokenOutLayer);
     }
 
-    public ResultFlag Save(IModel model)
+    public ErrorState<Exception> Save(IModel model)
     {
         if(!ModelSerializers.TryGetValue(model.GetType(), out var data))
         {
-            return ResultFlag.NotImplemented;
+            return new NotImplementedException();
         }
 
         var (key, modelVersion, serializer) = data;
@@ -44,14 +44,14 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         return serializer(model, writer);
     }
 
-    public static ResultFlag SaveSLM(FeedForwardModel<string, char> model, BinaryWriter writer)
+    public static ErrorState<Exception> SaveSLM(FeedForwardModel<string, char> model, BinaryWriter writer)
     {
         writer.Write(model.LayerCount);
         foreach(var layer in model.Layers)
         {
             if(!LayerSerializers.TryGetValue(layer.GetType(), out var data))
             {
-                return ResultFlag.NotImplemented;
+                return new NotImplementedException();
             }
 
             var (key, subVersion, serializer) = data;
@@ -65,7 +65,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
             }
         }
 
-        return ResultFlag.Succeeded;
+        return null;
     }
     
     public static Result<FeedForwardModel<string, char>> ReadSLM(BinaryReader reader)
@@ -79,25 +79,25 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
 
             if(!LayerDeserializers.TryGetValue((layerKey, layerVersion), out var deserializer))
             {
-                return ResultFlag.NotImplemented;
+                return new NotImplementedException();
             }
 
             var result = deserializer(reader);
-            if(result.IsFail)
+            if(result.Error is Exception error)
             {
-                return result.ResultFlag;
+                return error;
             }
-            layers[i] = result.ReduceOrThrow();
+            layers[i] = result.OrThrow();
         }
 
         if(layers[0] is not IEmbeddingLayer<string> inputLayer)
         {
-            return ResultFlag.InvalidType;
+            return new InvalidDataException();
         }
         
         if(layers[^1] is not IUnembeddingLayer<char> outputLayer)
         {
-            return ResultFlag.InvalidType;
+            return new InvalidDataException();
         }
 
         return new FeedForwardModel<string, char> { 
@@ -107,7 +107,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         };
     }
 
-    public static ResultFlag SaveSimpleLayer(SimpleLayer layer, BinaryWriter writer)
+    public static ErrorState<Exception> SaveSimpleLayer(SimpleLayer layer, BinaryWriter writer)
     {
         writer.Write(layer.InputNodeCount);
         writer.Write(layer.OutputNodeCount);
@@ -124,7 +124,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
             }
         }
 
-        return ResultFlag.Succeeded;
+        return null;
     } 
     
     public static Result<SimpleLayer> ReadSimpleLayer(BinaryReader reader)
@@ -148,7 +148,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         return layer;
     } 
     
-    public static ResultFlag SaveStringLayer(StringEmbeddingLayer layer, BinaryWriter writer)
+    public static ErrorState<Exception> SaveStringLayer(StringEmbeddingLayer layer, BinaryWriter writer)
     {
         writer.Write(layer.Tokens);
         writer.Write(layer.ContextSize);
@@ -163,7 +163,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
             }
         }
 
-        return ResultFlag.Succeeded;
+        return null;
     } 
     
     public static Result<StringEmbeddingLayer> ReadStringLayer(BinaryReader reader)
@@ -185,12 +185,12 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         return layer;
     }
 
-    public static ResultFlag SaveTokenOutLayer(TokenOutputLayer layer, BinaryWriter writer)
+    public static ErrorState<Exception> SaveTokenOutLayer(TokenOutputLayer layer, BinaryWriter writer)
     {
         writer.Write(layer.Tokens);
         writer.Write(layer.WeightedRandom);
 
-        return ResultFlag.Succeeded;
+        return null;
     }
 
     public static Result<TokenOutputLayer> ReadTokenOutLayer(BinaryReader reader)
@@ -209,13 +209,13 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         var fileType = reader.ReadString();
         if(fileType is not FILE_EXTENSION)
         {
-            return ResultFlag.InvalidFile;
+            return new InvalidDataException();
         }
         var formatVersion = reader.ReadUInt32();
         return formatVersion switch
         {
             1 => LoadV1(reader),
-            _ => ResultFlag.NotImplemented,
+            _ => new NotImplementedException(),
         };
     }
 
@@ -225,23 +225,23 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         var modelVersion = reader.ReadUInt32();
         if(!ModelDeserializers.TryGetValue((modelKey, modelVersion), out var deserializer))
         {
-            return ResultFlag.NotImplemented;
+            return new NotImplementedException();
         }
 
         return deserializer(reader);
     }
 
     public static void RegisterModelReader<TModel>(string key, uint version, Func<BinaryReader, Result<TModel>> reader) where TModel : IModel
-        => ModelDeserializers.Add((key, version), (br) => reader(br).Cast<IModel>());
-    public static void RegisterModel<TModel>(string key, uint version, Func<TModel, BinaryWriter, ResultFlag> writer, Func<BinaryReader, Result<TModel>> reader) where TModel : IModel
+        => ModelDeserializers.Add((key, version), (br) => reader(br).Where<IModel>());
+    public static void RegisterModel<TModel>(string key, uint version, Func<TModel, BinaryWriter, ErrorState<Exception>> writer, Func<BinaryReader, Result<TModel>> reader) where TModel : IModel
     {
         RegisterModelReader(key, version, reader);
         ModelSerializers.Add(typeof(TModel), (key, version, (layer, bw) =>  writer((TModel) layer, bw)));
     }
     
     public static void RegisterLayerReader<TLayer>(string key, uint version, Func<BinaryReader, Result<TLayer>> reader) where TLayer : ILayer
-        => LayerDeserializers.Add((key, version), (br) => reader(br).Cast<ILayer>());
-    public static void RegisterLayer<TLayer>(string key, uint version, Func<TLayer, BinaryWriter, ResultFlag> writer, Func<BinaryReader, Result<TLayer>> reader) where TLayer : ILayer
+        => LayerDeserializers.Add((key, version), (br) => reader(br).Where<ILayer>());
+    public static void RegisterLayer<TLayer>(string key, uint version, Func<TLayer, BinaryWriter, ErrorState<Exception>> writer, Func<BinaryReader, Result<TLayer>> reader) where TLayer : ILayer
     {
         RegisterLayerReader(key, version, reader);
         LayerSerializers.Add(typeof(TLayer), (key, version, (layer, bw) =>  writer((TLayer) layer, bw)));

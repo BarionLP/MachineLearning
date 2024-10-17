@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.5.002.0
+VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarionGPT", "BarionGPT\BarionGPT.csproj", "{583A9FAD-329C-467C-AC4A-C2631A7AF61E}"
 EndProject
@@ -10,8 +10,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Training", "MachineLearning.Training\MachineLearning.Training.csproj", "{68FCA961-7AD2-453D-9790-322D470A78AF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Training.GUI", "MachineLearning.Training.GUI\MachineLearning.Training.GUI.csproj", "{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\Ametrin.Utils.csproj", "{F4768C27-F7E1-48ED-A828-5B51E9073939}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Serialization", "MachineLearning.Serialization\MachineLearning.Serialization.csproj", "{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}"
 EndProject
@@ -30,6 +28,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simple", "Simple\Simple.csproj", "{88540E64-78F3-4ACA-B6A9-319EF2A2AF12}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Visual", "MachineLearning.Visual\MachineLearning.Visual.csproj", "{B7DA7703-7CF5-43BF-9CE5-F2EF48314692}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\src\Ametrin.Utils.csproj", "{B2499507-D66D-4058-987F-609EA96357AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Optional", "..\..\Packages\Ametrin.Optional\src\Ametrin.Optional.csproj", "{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,10 +55,6 @@ Global
 		{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA7DB9C1-1001-4DB5-B6E4-403F522A12C4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4768C27-F7E1-48ED-A828-5B51E9073939}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9710AB2-83D7-48D9-AE4C-B5F3FFFCEA23}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -93,6 +91,14 @@ Global
 		{B7DA7703-7CF5-43BF-9CE5-F2EF48314692}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7DA7703-7CF5-43BF-9CE5-F2EF48314692}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7DA7703-7CF5-43BF-9CE5-F2EF48314692}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2499507-D66D-4058-987F-609EA96357AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2499507-D66D-4058-987F-609EA96357AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2499507-D66D-4058-987F-609EA96357AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2499507-D66D-4058-987F-609EA96357AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

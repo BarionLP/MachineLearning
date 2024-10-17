@@ -29,7 +29,7 @@ public sealed class SLM3
 
         var trainer = ModelTrainer.Generic(model, config ?? DefaultTrainingConfig());
         trainer.TrainConsole();
-        Serializer.Save(model).Resolve(
+        Serializer.Save(model).Consume(
             () => Console.WriteLine("Model saved!"),
             flag => Console.WriteLine($"Error saving model: {flag}")
         );
@@ -74,9 +74,9 @@ public sealed class SLM3
         Console.WriteLine("Analyzing Trainings Data...");
         var lines = LanguageDataSource.GetLines(AssetManager.Sentences).ToArray();
         Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} chars");
-        var tokensUsedBySource = new string(lines.SelectMany(s => s).Distinct().Order().ToArray());
+        var tokensUsedBySource = new string([.. lines.SelectMany(s => s).Distinct().Order()]);
         Console.WriteLine($"Source uses '{tokensUsedBySource}'");
-        tokensUsedBySource.ForEach(t => OutputResolver.Expected(t));
+        tokensUsedBySource.Consume(t => OutputResolver.Expected(t));
 
         Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
         return lines.InContextSize(CONTEXT_SIZE).ExpandPerChar();
