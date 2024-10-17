@@ -1,3 +1,4 @@
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
@@ -48,7 +49,6 @@ public sealed class LegacyModelTrainer<TInput, TOutput> where TInput : notnull w
 
     public void Train(CancellationToken? token = null)
     {
-        //var before = EvaluateShort();
         Optimizer.Init();
         Context.FullReset();
         var cachedEvaluation = DataSetEvaluationResult.ZERO;
@@ -59,7 +59,7 @@ public sealed class LegacyModelTrainer<TInput, TOutput> where TInput : notnull w
 
             foreach (var batch in epoch)
             {
-                cachedEvaluation += Context.TrainAndEvaluate(batch, multithread: false);
+                cachedEvaluation += Context.TrainAndEvaluate(batch, multithread: true);
                 if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
@@ -86,6 +86,10 @@ public sealed class LegacyModelTrainer<TInput, TOutput> where TInput : notnull w
                 LearnRate = Config.Optimizer.LearningRate,
             };
         }
+
+        LayerSnapshots.Validate();
+        LayerSnapshots.Clear(Model.Layers);
+        LayerSnapshots.Validate();
     }
 
     public ModelEvaluationResult EvaluateShort() => new()
