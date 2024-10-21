@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Numerics.Tensors;
+﻿using System.Numerics.Tensors;
 
 namespace Ametrin.Numerics;
 
@@ -101,4 +100,19 @@ public static class TensorHelper
     private static void PointwiseMultiplyUnsafe(Tensor left, Tensor right, Tensor destination) => TensorPrimitives.Multiply(left.AsSpan(), right.AsSpan(), destination.AsSpan());
 
     public static Matrix LayerRef(this Tensor tensor, int layer) => new TensorLayerReference(layer, tensor);
+
+    public static Tensor CreateCopy(this Tensor tensor)
+    {
+        var copy = Tensor.Create(tensor.RowCount, tensor.ColumnCount, tensor.LayerCount);
+        tensor.CopyTo(copy);
+        return copy;
+    }
+
+    public static void CopyTo(this Tensor tensor, Tensor destination)
+    {
+        NumericsDebug.AssertSameDimensions(tensor, destination);
+        tensor.AsSpan().CopyTo(destination.AsSpan());
+    }
+
+    public static void ResetZero(this Tensor tensor) => tensor.AsSpan().Clear();
 }

@@ -12,8 +12,8 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 {
     public const uint VERSION = 3;
 
-    public ResultFlag Save<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model) => Save(model.InnerModel);
-    public ResultFlag Save(SimpleModel model)
+    public ErrorState<Exception> Save<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model) => Save(model.InnerModel);
+    public ErrorState<Exception> Save(SimpleModel model)
     {
         using var stream = fileInfo.Create();
         var writer = new BinaryWriter(stream);
@@ -37,10 +37,10 @@ public sealed class ModelSerializer(FileInfo fileInfo)
             }
         }
 
-        return ResultFlag.Succeeded;
+        return null;
     }
 
-    public Result<EmbeddedModel<TInput, TOutput>> Load<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => Load().Map(model => new EmbeddedModel<TInput, TOutput>(model, embedder));
+    public Result<EmbeddedModel<TInput, TOutput>> Load<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => Load().Select(model => new EmbeddedModel<TInput, TOutput>(model, embedder));
     public Result<SimpleModel> Load()
     {
         using var stream = fileInfo.OpenRead();

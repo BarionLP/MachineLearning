@@ -1,4 +1,6 @@
-﻿namespace MachineLearning.Samples;
+﻿using MachineLearning.Model.Layer.Snapshot;
+
+namespace MachineLearning.Samples;
 
 public static class BinaryClassifier
 {
@@ -113,9 +115,20 @@ public static class BinaryClassifier
     public sealed class Embedder : IEmbedder<double[], bool>
     {
         public Vector Embed(double[] input) => Vector.Of(input);
+
+        public Vector Embed(double[] input, ILayerSnapshot snapshot)
+        {
+            throw new NotImplementedException();
+        }
+
         public (bool output, Weight confidence) Unembed(Vector input)
         {
             return (input[0] > input[1], Math.Abs(input[0] - input[1]));
+        }
+
+        public (bool output, int index, Vector weights) Unembed(Vector input, ILayerSnapshot snapshot)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -2,6 +2,7 @@
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace MachineLearning.Model;
 
@@ -13,15 +14,16 @@ public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<
     public IUnembeddingLayer<TOutput> OutputLayer => Embedder;
     public IEnumerable<ILayer> Layers { get;  } = [embedder,..model.Layers, embedder];
     public uint ParameterCount => InnerModel.ParameterCount;
+    public int LayerCount = model.Layers.Length + 2;
 
     ImmutableArray<SimpleLayer> IEmbeddedModel<TInput, TOutput>.HiddenLayers => InnerModel.Layers;
 
     public (TOutput output, Weight confidence) Process(TInput input) => Embedder.Unembed(InnerModel.Forward(Embedder.Embed(input)));
     public (TOutput output, double confidence) Forward(TInput input) => Process(input);
     public (TOutput output, int outIndex, Vector weights) Forward(TInput input, ImmutableArray<ILayerSnapshot> snapshots){
-        var weights = InnerModel.Forward(Embedder.Embed(input));
-        var (result, confidence) = Embedder.Unembed(weights);
-        return (result, weights.AsSpan().IndexOf(confidence), weights);
+        Debug.Assert(snapshots.Length == LayerCount);
+        var weights = InnerModel.Forward(InputLayer.Forward(input, snapshots[0]), snapshots.Skip(1).Take(InnerModel.Layers.Length));
+        return OutputLayer.Forward(weights, snapshots[^1]);
     }
 
     public override string ToString() => $"Embedded {InnerModel}";

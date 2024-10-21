@@ -54,7 +54,6 @@ public sealed class GenericModelTrainer<TInput, TOutput>
 
     public void Train(CancellationToken? token = null)
     {
-        //var before = EvaluateShort();
         Optimizer.Init();
         FullReset();
         var cachedEvaluation = DataSetEvaluationResult.ZERO;
@@ -65,7 +64,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
 
             foreach (var batch in epoch)
             {
-                cachedEvaluation += TrainAndEvaluate(batch, true);
+                cachedEvaluation += TrainAndEvaluate(batch, multithread: true);
                 if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
@@ -104,7 +103,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
 
         if (multithread)
         {
-            object _lock = new();
+            var _lock = new Lock();
             Parallel.ForEach(trainingBatch, (dataPoint) =>
             {
                 var (result, _, weights) = Update(dataPoint);
@@ -151,6 +150,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
         var snapshots = Model.Layers.Select(LayerSnapshots.Get).ToImmutableArray();
         var result = Model.Forward(data.Input, snapshots);
 
+        //last layer gets skipped right now because it never contains weights (unembedding layer). i will change this in the future to allow trained unembedding
         var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(OutputLayerOptimizer.Layer, OutputLayerOptimizer.CostFunction, Config.OutputResolver.Expected(data.Expected), snapshots[LastUsableLayerIndex]);
         OutputLayerOptimizer.Update(nodeValues, snapshots[LastUsableLayerIndex]);
 
@@ -159,9 +159,9 @@ public sealed class GenericModelTrainer<TInput, TOutput>
         {
             var hiddenLayer = LayerOptimizers[hiddenLayerIndex];
             nodeValues = LayerBackPropagation.ComputeHiddenLayerErrors(hiddenLayer.Layer, LayerOptimizers[hiddenLayerIndex + 1].Layer, nodeValues, snapshots[hiddenLayerIndex]);
+            NumericsDebug.RequireValidNumbers(nodeValues);
             hiddenLayer.Update(nodeValues, snapshots[hiddenLayerIndex]);
         }
-
 
         //TODO: verify zip performance
         foreach (var (layer, snapshot) in Model.Layers.Zip(snapshots))
@@ -172,7 +172,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
         return result;
     }
 
-    private void Apply(int dataCounter) => LayerOptimizers.ForEach(layer => layer.Apply(dataCounter));
-    private void GradientCostReset() => LayerOptimizers.ForEach(layer => layer.GradientCostReset());
-    private void FullReset() => LayerOptimizers.ForEach(layer => layer.FullReset());
+    private void Apply(int dataCounter) => LayerOptimizers.Consume(layer => layer.Apply(dataCounter));
+    private void GradientCostReset() => LayerOptimizers.Consume(layer => layer.GradientCostReset());
+    private void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
 }

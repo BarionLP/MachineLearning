@@ -31,7 +31,7 @@ public sealed class StringEmbeddingLayer(string tokens, int contextSize, int emb
         var tokenIdx = Tokens.IndexOf(token);
         if (tokenIdx < 0)
         {
-            throw new ArgumentException($"Unkown token: '{token}'");
+            throw new ArgumentException($"Unknown token: '{token}'");
         }
 
         return EmbeddingMatrix.RowSpan(tokenIdx);
@@ -42,17 +42,17 @@ public sealed class StringEmbeddingLayer(string tokens, int contextSize, int emb
         var snapshot = LayerSnapshots.Is<LayerSnapshots.Embedding>(rawSnapshot);
         snapshot.LastInput = input;
         var output = Forward(input);
-        output.CopyTo(snapshot.LastOutput);
+        //output.CopyTo(snapshot.LastOutput);
         return output;
     }
 
-    public sealed class Initer(Random? random = null) : ILayerInitializer<StringEmbeddingLayer>
+    public sealed class Initializer(Random? random = null) : ILayerInitializer<StringEmbeddingLayer>
     {
         public Random Random { get; } = random ?? Random.Shared;
 
         public void Initialize(StringEmbeddingLayer layer)
         {
-            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
+            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.01));
         }
     }
 }

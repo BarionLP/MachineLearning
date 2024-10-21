@@ -7,7 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Numerics.Tensors" Version="9.0.0-rc.1.24431.7" />
+    <PackageReference Include="System.Numerics.Tensors" Version="9.0.0-rc.2.24473.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Packages\Ametrin.Utils\src\Ametrin.Utils.csproj" />
   </ItemGroup>
 
 </Project>

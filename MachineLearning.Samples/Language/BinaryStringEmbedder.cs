@@ -37,7 +37,7 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
         }
 
         var paddedVector = Vector.Create(totalWidth);
-        vector.AsSpan().CopyTo(paddedVector[totalWidth - vector.Count, vector.Count]);
+        vector.AsSpan().CopyTo(paddedVector.Slice(totalWidth - vector.Count, vector.Count));
         return paddedVector;
     }
 
@@ -88,6 +88,16 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
     }
 
     public (char output, int index, Vector weights) Forward(Vector input, ILayerSnapshot snapshot)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Vector Embed(string input, ILayerSnapshot snapshot)
+    {
+        throw new NotImplementedException();
+    }
+
+    public (char output, int index, Vector weights) Unembed(Vector input, ILayerSnapshot snapshot)
     {
         throw new NotImplementedException();
     }

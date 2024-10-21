@@ -2,23 +2,22 @@ using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Samples.Language;
 
-public sealed class SLM3
+public sealed class SLM3Mini
 {
     public const string TOKENS = " %'(),-.0123456789:=abcdefghijklmnopqrstuvwxyz\0";
-    public const int CONTEXT_SIZE = 128;
+    public const int CONTEXT_SIZE = 64;
 
     public static IOutputResolver<char> OutputResolver { get; } = new CharOutputResolver(TOKENS);
-    public static GenericModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("sentences_3.gmw"));
+    public static GenericModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("sentences_3_mini.gmw"));
     public static FeedForwardModel<string, char> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
         return AdvancedModelBuilder
             .Create<StringEmbeddingLayer, string>(new StringEmbeddingLayer(TOKENS, CONTEXT_SIZE, 12), new StringEmbeddingLayer.Initializer(random))
                 .SetDefaultActivationFunction(LeakyReLUActivation.Instance)
-                .AddLayer(1024 * 2, initializer)
-                .AddLayer(1024 * 2, initializer)
-                .AddLayer(512 + 256, initializer)
+                .AddLayer(1024, initializer)
                 .AddLayer(512, initializer)
+                .AddLayer(256, initializer)
                 .AddLayer(TOKENS.Length, new XavierInitializer(random), SoftMaxActivation.Instance)
             .AddOutputLayer(new TokenOutputLayer(TOKENS, true, random));
     }
@@ -56,14 +55,14 @@ public sealed class SLM3
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.01,
+                LearningRate = 0.02,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
             OutputResolver = OutputResolver,
 
             EvaluationCallback = result => Console.WriteLine(result.Dump()),
-            DumpEvaluationAfterBatches = 1,
+            DumpEvaluationAfterBatches = 64,
 
             RandomSource = random,
         };

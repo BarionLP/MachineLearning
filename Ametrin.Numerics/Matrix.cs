@@ -15,12 +15,13 @@ public interface Matrix
     public int FlatCount { get; }
     public ref Weight this[int row, int column] { get; }
     public ref Weight this[nuint flatIndex] { get; }
+    public ref Weight this[int flatIndex] { get; }
 
     public Span<Weight> AsSpan();
 
     public static Matrix CreateSquare(int size) => Create(size, size);
     public static Matrix Create(int rowCount, int columnCount) => new MatrixFlat(rowCount, columnCount, Vector.Create(rowCount * columnCount));
-    public static Matrix Of(int rowCount, int columnCount, double[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
+    public static Matrix Of(int rowCount, int columnCount, Weight[] storage) => Of(rowCount, columnCount, Vector.Of(storage));
     public static Matrix Of(int rowCount, int columnCount, Vector storage)
     {
         if (storage.Count != columnCount * rowCount)
@@ -36,13 +37,14 @@ public interface Matrix
 
 internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storage) : Matrix
 {
-    public Vector Storage { get; } = storage;
+    internal Vector Storage { get; } = storage;
     public int RowCount { get; } = rowCount;
     public int ColumnCount { get; } = columnCount;
     public int FlatCount => Storage.Count;
 
     public ref Weight this[int row, int column] => ref Storage[GetFlatIndex(row, column)];
     public ref Weight this[nuint flatIndex] => ref Storage[flatIndex];
+    public ref Weight this[int flatIndex] => ref Storage[flatIndex];
     public Span<Weight> AsSpan() => Storage.AsSpan();
 
 
@@ -52,9 +54,10 @@ internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storag
         sb.AppendLine($"Matrix ({RowCount}x{ColumnCount}):");
         for (int i = 0; i < RowCount; i++)
         {
+            sb.Append($"{i}: ");
             for (int j = 0; j < ColumnCount; j++)
             {
-                sb.Append(this[i, j].ToString("F2")).Append(' ');
+                sb.Append(this[i, j].ToString("+#0.00;-#0.00")).Append(' ');
             }
             sb.AppendLine();
         }
@@ -83,6 +86,7 @@ internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : M
 
     public ref Weight this[int row, int column] => ref AsSpan()[row * ColumnCount + column];
     public ref Weight this[nuint index] => ref AsSpan()[(int)index];
+    public ref Weight this[int index] => ref AsSpan()[index];
 
     public Span<Weight> AsSpan() => _tensor.AsSpan().Slice(_startIndex, FlatCount);
 
@@ -104,6 +108,10 @@ internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : M
 
 public static class MatrixHelper
 {
+    public static Weight Sum(this Matrix matrix) => TensorPrimitives.Sum<Weight>(matrix.AsSpan());
+    public static Weight Max(this Matrix matrix) => TensorPrimitives.Max<Weight>(matrix.AsSpan());
+    public static Weight Min(this Matrix matrix) => TensorPrimitives.Min<Weight>(matrix.AsSpan());
+
     public static Vector Multiply(this Matrix matrix, Vector vector)
     {
         var destination = Vector.Create(matrix.RowCount);

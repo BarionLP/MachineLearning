@@ -1,13 +1,4 @@
-﻿using MachineLearning.Model;
-using MachineLearning.Model.Layer;
-using MachineLearning.Model.Layer.Snapshot;
-using System.Collections.Concurrent;
-using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
-
-[assembly: InternalsVisibleTo("MachineLearning.Benchmarks")]
-
-namespace MachineLearning.Training;
+﻿namespace MachineLearning.Training;
 
 public static class ModelTrainer
 {

@@ -3,25 +3,27 @@ using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
-namespace MachineLearning.Training.Optimization.Nadam;
+namespace MachineLearning.Training.Optimization.Adam;
 
-public sealed class StringNadamOptimizer : ILayerOptimizer<StringEmbeddingLayer, LayerSnapshots.Embedding>
+public sealed class StringAdamOptimizer : ILayerOptimizer<StringEmbeddingLayer, LayerSnapshots.Embedding>
 {
     public StringEmbeddingLayer Layer { get; }
     public ICostFunction CostFunction => Optimizer.CostFunction;
-    public NadamOptimizer Optimizer { get; }
+    public AdamOptimizer Optimizer { get; }
 
     public readonly Matrix GradientCostWeights;
     public readonly Matrix FirstMomentWeights;
     public readonly Matrix SecondMomentWeights;
+    public readonly Vector GradientCounts;
 
 
-    public StringNadamOptimizer(NadamOptimizer optimizer, StringEmbeddingLayer layer)
+    public StringAdamOptimizer(AdamOptimizer optimizer, StringEmbeddingLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;
 
         GradientCostWeights = Matrix.OfSize(Layer.EmbeddingMatrix);
+        GradientCounts = Vector.Create(layer.Tokens.Length);
         FirstMomentWeights = Matrix.OfSize(Layer.EmbeddingMatrix);
         SecondMomentWeights = Matrix.OfSize(Layer.EmbeddingMatrix);
     }
@@ -29,14 +31,15 @@ public sealed class StringNadamOptimizer : ILayerOptimizer<StringEmbeddingLayer,
     private readonly Lock _lock = new();
     public void Update(Vector nodeValues, LayerSnapshots.Embedding snapshot)
     {
-        throw new NotImplementedException("fix this first (see base Adam)");
         var i = 0;
         lock (_lock)
         {
             foreach (var c in snapshot.LastInput)
             {
-                var embedding = GradientCostWeights.RowSpan(Layer.Tokens.IndexOf(c));
+                var index = Layer.Tokens.IndexOf(c);
+                var embedding = GradientCostWeights.RowSpan(index);
                 TensorPrimitives.Add(embedding, nodeValues.Slice(i, Layer.EmbeddingSize), embedding);
+                GradientCounts[index]++;
 
                 i += Layer.EmbeddingSize;
             }
@@ -47,32 +50,46 @@ public sealed class StringNadamOptimizer : ILayerOptimizer<StringEmbeddingLayer,
     { 
         var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
 
-        (FirstMomentWeights, GradientCostWeights).MapToFirst(FirstMomentEstimate);
-        (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
-        Layer.EmbeddingMatrix.SubtractToSelf((FirstMomentWeights, SecondMomentWeights, GradientCostWeights).Map(WeightReduction));
-
-        Weight WeightReduction(Weight firstMoment, Weight secondMoment, Weight gradient)
+        for(int tokenIndex = 0; tokenIndex < Layer.Tokens.Length; tokenIndex++)
         {
-            var mHat = Optimizer.FirstDecayRate * firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration + 1)) + (1 - Optimizer.FirstDecayRate) * gradient / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
+            var count = GradientCounts[tokenIndex];
+            if(count > 0)
+            {
+                var gradientCosts = GradientCostWeights.RowRef(tokenIndex);
+                gradientCosts.DivideToSelf(count);
+
+                var firstMoment = FirstMomentWeights.RowRef(tokenIndex);
+                var secondMoment = SecondMomentWeights.RowRef(tokenIndex);
+                (firstMoment, gradientCosts).MapToFirst(FirstMomentEstimate);
+                (secondMoment, gradientCosts).MapToFirst(SecondMomentEstimate);
+                Layer.EmbeddingMatrix.RowRef(tokenIndex).SubtractToSelf((firstMoment, secondMoment).Map(WeightReduction));
+            }
+        }
+        NumericsDebug.AssertValidNumbers(GradientCostWeights);
+
+        double WeightReduction(double firstMoment, double secondMoment)
+        {
+            var mHat = firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
             var vHat = secondMoment / (1 - Math.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
             return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
         }
-        Weight FirstMomentEstimate(Weight lastMoment, Weight gradient)
+
+        double FirstMomentEstimate(double lastMoment, double gradient)
             => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
 
-        Weight SecondMomentEstimate(Weight lastMoment, Weight gradient)
+        double SecondMomentEstimate(double lastMoment, double gradient)
             => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
     }
 
     public void GradientCostReset()
     {
         GradientCostWeights.ResetZero();
+        GradientCounts.ResetZero();
     }
 
     public void FullReset()
     {
         GradientCostReset();
-
         FirstMomentWeights.ResetZero();
         SecondMomentWeights.ResetZero();
     }
