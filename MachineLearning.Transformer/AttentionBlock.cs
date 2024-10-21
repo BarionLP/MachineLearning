@@ -18,6 +18,6 @@ public sealed class AttentionBlock(ModelInfo Info)
     public int GetWeightsCount() => Heads[0].GetWeightsCount() * Info.AttentionHeadCountPerBlock;
 
     public void Initialize(IInitializer initializer) {
-        Heads.ForEach(head => head.Initialize(initializer));
+        Heads.Consume(head => head.Initialize(initializer));
     }
 }

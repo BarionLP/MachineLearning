@@ -63,7 +63,7 @@ public static class LayerSnapshots
         ArgumentOutOfRangeException.ThrowIfNotEqual(away, 0);
     }
 
-    public static void Clear(IEnumerable<ILayer> layers) => layers.ForEach(Clear);
+    public static void Clear(IEnumerable<ILayer> layers) => layers.Consume(Clear);
     public static void Clear(ILayer layer)
     {
         if (_registry.TryGetValue(layer, out var queue))
