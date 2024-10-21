@@ -41,15 +41,15 @@ internal readonly struct MatrixRowReference(int _rowIndex, Matrix _matrix) : Vec
     private readonly int _startIndex = _rowIndex * _matrix.ColumnCount;
     private readonly Matrix _matrix = _matrix;
 
-    public ref double this[int index] => ref _matrix[_startIndex + index];
+    public ref Weight this[int index] => ref _matrix[_startIndex + index];
 
-    public ref double this[nuint index] => ref _matrix[_startIndex + (int)index];
+    public ref Weight this[nuint index] => ref _matrix[_startIndex + (int)index];
 
     public Span<Weight> Slice(int index, int count) => AsSpan().Slice(index, count);
 
     public int Count => _matrix.ColumnCount;
 
-    public Span<double> AsSpan() => _matrix.AsSpan().Slice(_startIndex, _matrix.ColumnCount);
+    public Span<Weight> AsSpan() => _matrix.AsSpan().Slice(_startIndex, _matrix.ColumnCount);
 
     public override string ToString()
     {
@@ -69,7 +69,7 @@ public static class VectorHelper
 {
     public static Weight Sum(this Vector vector)
     {
-        // return TensorPrimitives.Sum<double>(vector.AsSpan()); // seems to be slower
+        // return TensorPrimitives.Sum<double>(vector.AsSpan()); // was slower in preview.7
         ref var ptr = ref MemoryMarshal.GetReference(vector.AsSpan());
         nuint length = (nuint)vector.Count;
 
@@ -108,14 +108,8 @@ public static class VectorHelper
     public static void PointwiseExpToSelf(this Vector vector) => PointwiseExpTo(vector, vector);
     public static void PointwiseExpTo(this Vector vector, Vector destination)
     {
-        //var original = vector.CreateCopy();
         NumericsDebug.AssertSameDimensions(vector, destination);
-        //TensorPrimitives.Exp(vector.AsSpan(), destination.AsSpan());
-
-        for(int i = 0; i < vector.Count; i++)
-        {   
-            destination[i] = Math.Exp(vector[i]);
-        }
+        TensorPrimitives.Exp(vector.AsSpan(), destination.AsSpan());
     }
 
     public static void PointwiseLogToSelf(this Vector vector) => PointwiseLogTo(vector, vector);
@@ -137,18 +131,11 @@ public static class VectorHelper
     {
         NumericsDebug.AssertSameDimensions(vector, destination);
 
-        var max = vector.Max();
-        vector.SubtractPointwiseTo(max, destination);
-        NumericsDebug.AssertValidNumbers(destination);
-        var tmp = destination.PointwiseExp();
-        var sum = tmp.Sum();
-        if(sum is double.NegativeInfinity)
-        {
-            throw new ArgumentException();
-        }
-        tmp.DivideTo(sum, destination);
+        vector.PointwiseExpTo(destination);
+        var sum = destination.Sum();
+        destination.DivideToSelf(sum);
 
-        NumericsDebug.AssertValidNumbers(tmp);
+        NumericsDebug.AssertValidNumbers(destination);
 
         // was slower in .net 9.preview.7
         //TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());
