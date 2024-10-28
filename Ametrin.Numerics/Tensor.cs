@@ -17,7 +17,7 @@ public interface Tensor
 
     public static Tensor CreateCube(int size) => Create(size, size, size);
     public static Tensor Create(int rowCount, int columnCount, int layerCount) => new TensorFlat(rowCount, columnCount, layerCount, Vector.Create(rowCount * columnCount * layerCount));
-    public static Tensor Of(int rowCount, int columnCount, int layerCount, double[] storage) => Of(rowCount, columnCount, layerCount, Vector.Of(storage));
+    public static Tensor Of(int rowCount, int columnCount, int layerCount, Weight[] storage) => Of(rowCount, columnCount, layerCount, Vector.Of(storage));
     public static Tensor Of(int rowCount, int columnCount, int layerCount, Vector storage)
     {
         if (storage.Count != rowCount * columnCount * layerCount)
@@ -33,8 +33,8 @@ public interface Tensor
 
 public readonly struct TensorFlat(int rowCount, int columnCount, int layerCount, Vector storage) : Tensor
 {
-    public ref double this[int row, int column, int layer] => ref Storage[GetFlatIndex(row, column, layer)];
-    public ref double this[nuint flatIndex] => ref Storage[flatIndex];
+    public ref Weight this[int row, int column, int layer] => ref Storage[GetFlatIndex(row, column, layer)];
+    public ref Weight this[nuint flatIndex] => ref Storage[flatIndex];
 
 
     public int RowCount { get; } = rowCount;
@@ -45,7 +45,7 @@ public readonly struct TensorFlat(int rowCount, int columnCount, int layerCount,
 
     public Vector Storage { get; } = storage;
 
-    public Span<double> AsSpan() => Storage.AsSpan();
+    public Span<Weight> AsSpan() => Storage.AsSpan();
 
     internal int GetFlatIndex(int row, int column, int layer)
     {

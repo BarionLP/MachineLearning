@@ -12,9 +12,9 @@ public sealed class RandomInitializer(Random? random = null) : ILayerInitializer
 
     public void Initialize(Matrix weights, Vector biases)
     {
-        var sqrtInputNodeCount = Math.Sqrt(weights.ColumnCount);
+        var sqrtInputNodeCount = MathF.Sqrt(weights.ColumnCount);
 
-        weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 1) / sqrtInputNodeCount);
-        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
+        weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0f, 1f) / sqrtInputNodeCount);
+        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0f, 0.1f));
     }
 }

@@ -2,12 +2,12 @@ namespace MachineLearning.Model.Initialization;
 
 public static class InitializationHelper
 {
-    public static double RandomInNormalDistribution(Random random, double mean, double standardDeviation)
+    public static Weight RandomInNormalDistribution(Random random, Weight mean, Weight standardDeviation)
     {
-        var x1 = 1 - random.NextDouble();
-        var x2 = 1 - random.NextDouble();
+        var x1 = 1 - random.NextSingle();
+        var x2 = 1 - random.NextSingle();
 
-        var y1 = Math.Sqrt(-2.0 * Math.Log(x1)) * Math.Cos(2.0 * Math.PI * x2);
+        var y1 = MathF.Sqrt(-2.0f * MathF.Log(x1)) * MathF.Cos(2.0f * MathF.PI * x2);
         return y1 * standardDeviation + mean;
     }
 }

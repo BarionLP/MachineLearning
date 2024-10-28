@@ -52,7 +52,7 @@ public sealed class StringEmbeddingLayer(string tokens, int contextSize, int emb
 
         public void Initialize(StringEmbeddingLayer layer)
         {
-            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.01));
+            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0f, 0.01f));
         }
     }
 }
