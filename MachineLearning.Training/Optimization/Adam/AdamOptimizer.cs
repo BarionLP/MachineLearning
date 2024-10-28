@@ -6,13 +6,13 @@ namespace MachineLearning.Training.Optimization.Adam;
 
 public class AdamOptimizer : IGenericOptimizer
 {
-    public required Weight LearningRate { get; init; } = 0.1;
-    public Weight FirstDecayRate { get; init; } = 0.9;
-    public Weight SecondDecayRate { get; init; } = 0.99; //or 0.999?
-    public Weight Epsilon { get; init; } = 1e-8;
+    public required Weight LearningRate { get; init; } = 0.1f;
+    public Weight FirstDecayRate { get; init; } = 0.9f;
+    public Weight SecondDecayRate { get; init; } = 0.99f; //or 0.999?
+    public Weight Epsilon { get; init; } = 1e-7f;
     public required ICostFunction CostFunction { get; init; }
 
-    public double Iteration { get; set; } = 1; //(even when retraining!) when starting with 0 gradient estimates shoot to infinity?
+    public Weight Iteration { get; set; } = 1; // (even when retraining!) when starting with 0 gradient estimates shoot to infinity?
 
     public void OnBatchCompleted()
     {
@@ -23,7 +23,7 @@ public class AdamOptimizer : IGenericOptimizer
     {
         SimpleLayer simpleLayer => new SimpleAdamOptimizer(this, simpleLayer),
         StringEmbeddingLayer stringLayer => new StringAdamOptimizer(this, stringLayer),
-        IEmbedder<string, char> or IEmbedder<double[], int> or TokenOutputLayer => new EmptyAdamOptimizer(layer),
+        IEmbedder<string, char> or IEmbedder<float[], int> or TokenOutputLayer => new EmptyAdamOptimizer(layer),
         _ => throw new NotImplementedException($"No Adam implementation for {layer}"),
     };
 }

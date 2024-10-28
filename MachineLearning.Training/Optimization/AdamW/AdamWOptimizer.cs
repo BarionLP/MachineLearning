@@ -5,7 +5,7 @@ namespace MachineLearning.Training.Optimization.AdamW;
 
 public sealed class AdamWOptimizer : AdamOptimizer
 {
-    public Weight WeightDecayCoefficient /*λ*/ { get; init; } = 1e-3; // (1e-5 - 1e-2)
+    public Weight WeightDecayCoefficient /*λ*/ { get; init; } = 1e-3f; // (1e-5 - 1e-2)
 
     public override ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
     {

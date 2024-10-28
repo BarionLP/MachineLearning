@@ -34,7 +34,7 @@ public sealed class SimpleLM : ISample<string, char>
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.01,
+                LearningRate = 0.01f,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 

@@ -10,7 +10,7 @@ namespace MachineLearning.Serialization;
 /// </summary>
 public sealed class ModelSerializer(FileInfo fileInfo)
 {
-    public const uint VERSION = 3;
+    public const uint VERSION = 4;
 
     public ErrorState<Exception> Save<TInput, TOutput>(EmbeddedModel<TInput, TOutput> model) => Save(model.InnerModel);
     public ErrorState<Exception> Save(SimpleModel model)
@@ -23,7 +23,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         {
             writer.Write(layer.InputNodeCount);
             writer.Write(layer.OutputNodeCount);
-            ActivationMethodSerializer.WriteV2(writer, layer.ActivationFunction);
+            ActivationMethodSerializer.WriteV3(writer, layer.ActivationFunction);
 
 
             // encode weights & biases
@@ -49,12 +49,40 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
         return version switch
         {
+            4 => LoadV4(reader),
             3 => LoadV3(reader),
             2 => LoadV2(reader),
             _ => throw new InvalidDataException(),
         };
     }
 
+    private static SimpleModel LoadV4(BinaryReader reader)
+    {
+        var layerCount = reader.ReadInt32();
+        var layers = new SimpleLayer[layerCount];
+
+        foreach (var layerIndex in ..layerCount)
+        {
+            var inputNodeCount = reader.ReadInt32();
+            var outputNodeCount = reader.ReadInt32();
+            var activationMethod = ActivationMethodSerializer.ReadV3(reader);
+            var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
+            layers[layerIndex] = layerBuilder.Create();
+
+            // decode weights & biases
+            foreach (var outputIndex in ..outputNodeCount)
+            {
+                layers[layerIndex].Biases[outputIndex] = reader.ReadSingle();
+                foreach (var inputIndex in ..inputNodeCount)
+                {
+                    layers[layerIndex].Weights[outputIndex, inputIndex] = reader.ReadSingle();
+                }
+            }
+        }
+
+        return new SimpleModel([.. layers]);
+    }
+    
     private static SimpleModel LoadV3(BinaryReader reader)
     {
         var layerCount = reader.ReadInt32();
@@ -71,10 +99,10 @@ public sealed class ModelSerializer(FileInfo fileInfo)
             // decode weights & biases
             foreach (var outputIndex in ..outputNodeCount)
             {
-                layers[layerIndex].Biases[outputIndex] = reader.ReadDouble();
+                layers[layerIndex].Biases[outputIndex] = (float) reader.ReadDouble();
                 foreach (var inputIndex in ..inputNodeCount)
                 {
-                    layers[layerIndex].Weights[outputIndex, inputIndex] = reader.ReadDouble();
+                    layers[layerIndex].Weights[outputIndex, inputIndex] = (float) reader.ReadDouble();
                 }
             }
         }
@@ -98,10 +126,10 @@ public sealed class ModelSerializer(FileInfo fileInfo)
             // decode weights & biases
             foreach (var outputIndex in ..outputNodeCount)
             {
-                layers[layerIndex].Biases[outputIndex] = reader.ReadDouble();
+                layers[layerIndex].Biases[outputIndex] = (float) reader.ReadDouble();
                 foreach (var inputIndex in ..inputNodeCount)
                 {
-                    layers[layerIndex].Weights[outputIndex, inputIndex] = reader.ReadDouble();
+                    layers[layerIndex].Weights[outputIndex, inputIndex] = (float) reader.ReadDouble();
                 }
             }
         }

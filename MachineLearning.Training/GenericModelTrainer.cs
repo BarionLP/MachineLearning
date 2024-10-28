@@ -152,6 +152,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
 
         //last layer gets skipped right now because it never contains weights (unembedding layer). i will change this in the future to allow trained unembedding
         var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(OutputLayerOptimizer.Layer, OutputLayerOptimizer.CostFunction, Config.OutputResolver.Expected(data.Expected), snapshots[LastUsableLayerIndex]);
+        NumericsDebug.AssertValidNumbers(nodeValues);
         OutputLayerOptimizer.Update(nodeValues, snapshots[LastUsableLayerIndex]);
 
 
@@ -159,7 +160,7 @@ public sealed class GenericModelTrainer<TInput, TOutput>
         {
             var hiddenLayer = LayerOptimizers[hiddenLayerIndex];
             nodeValues = LayerBackPropagation.ComputeHiddenLayerErrors(hiddenLayer.Layer, LayerOptimizers[hiddenLayerIndex + 1].Layer, nodeValues, snapshots[hiddenLayerIndex]);
-            NumericsDebug.RequireValidNumbers(nodeValues);
+            NumericsDebug.AssertValidNumbers(nodeValues);
             hiddenLayer.Update(nodeValues, snapshots[hiddenLayerIndex]);
         }
 

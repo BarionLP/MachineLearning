@@ -5,12 +5,12 @@ namespace MachineLearning.Training.Optimization.SGDMomentum;
 
 public sealed class SGDMomentumOptimizer : IGenericOptimizer
 {
-    public required double InitialLearningRate { get; init; } = 0.7;
-    public double LearningRateEpochMultiplier { get; init; } = 0.94;
-    public double Momentum { get; init; } = 0.85;
-    public double Regularization { get; init; } = 0.01;
+    public required Weight InitialLearningRate { get; init; } = 0.7f;
+    public Weight LearningRateEpochMultiplier { get; init; } = 0.94f;
+    public Weight Momentum { get; init; } = 0.85f;
+    public Weight Regularization { get; init; } = 0.01f;
     public ICostFunction CostFunction { get; init; } = MeanSquaredErrorCost.Instance;
-    public double LearningRate { get; private set; }
+    public Weight LearningRate { get; private set; }
 
     public void Init()
     {

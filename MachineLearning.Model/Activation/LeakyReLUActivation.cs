@@ -5,7 +5,7 @@
 /// helps with death neurons in <see cref="ReLUActivation"/> <br/>
 /// </summary>
 /// <param name="alpha">slope for x &lt; 0</param>
-public sealed class LeakyReLUActivation(Weight alpha = 0.01) : ISimdActivationMethod
+public sealed class LeakyReLUActivation(Weight alpha = 0.01f) : ISimdActivationMethod
 {
     public static readonly LeakyReLUActivation Instance = new();
     public Weight Alpha { get; } = alpha;

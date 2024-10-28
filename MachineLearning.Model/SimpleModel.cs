@@ -19,7 +19,7 @@ public sealed class EmbeddedModel<TInput, TOutput>(SimpleModel model, IEmbedder<
     ImmutableArray<SimpleLayer> IEmbeddedModel<TInput, TOutput>.HiddenLayers => InnerModel.Layers;
 
     public (TOutput output, Weight confidence) Process(TInput input) => Embedder.Unembed(InnerModel.Forward(Embedder.Embed(input)));
-    public (TOutput output, double confidence) Forward(TInput input) => Process(input);
+    public (TOutput output, Weight confidence) Forward(TInput input) => Process(input);
     public (TOutput output, int outIndex, Vector weights) Forward(TInput input, ImmutableArray<ILayerSnapshot> snapshots){
         Debug.Assert(snapshots.Length == LayerCount);
         var weights = InnerModel.Forward(InputLayer.Forward(input, snapshots[0]), snapshots.Skip(1).Take(InnerModel.Layers.Length));

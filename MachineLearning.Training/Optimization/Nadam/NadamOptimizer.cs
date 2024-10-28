@@ -13,6 +13,4 @@ public sealed class NadamOptimizer : AdamOptimizer
         IEmbedder<string, char> or TokenOutputLayer => new EmptyAdamOptimizer(layer),
         _ => throw new NotImplementedException($"No Nadam implementation for {layer}"),
     };
-
-    
 }

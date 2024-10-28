@@ -4,7 +4,7 @@ namespace MachineLearning.Samples;
 
 public static class BinaryClassifier
 {
-    public static EmbeddedModel<double[], bool> GetModel()
+    public static EmbeddedModel<Weight[], bool> GetModel()
     {
         var initializer = XavierInitializer.Instance;
         return new ModelBuilder(2)
@@ -15,9 +15,9 @@ public static class BinaryClassifier
             .Build(new Embedder());
     }
 
-    public static TrainingConfig<double[], bool> GetTrainingConfig()
+    public static TrainingConfig<Weight[], bool> GetTrainingConfig()
     {
-        return new TrainingConfig<double[], bool>()
+        return new TrainingConfig<Weight[], bool>()
         {
             TrainingSet = ConstructTrainingData(1028 * 12).ToArray(),
             TestSet = ConstructTrainingData(1028).ToArray(),
@@ -27,7 +27,7 @@ public static class BinaryClassifier
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.2,
+                LearningRate = 0.2f,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
@@ -62,7 +62,7 @@ public static class BinaryClassifier
             {
                 foreach(var charIndex in ..size)
                 {
-                    var (result, _) = model.Process([(double) charIndex / size, (double) lineIndex / (size / 2)]);
+                    var (result, _) = model.Process([(Weight) charIndex / size, (Weight) lineIndex / (size / 2)]);
                     //Console.Write($"{result[0]*100:F0} ");
                     Console.Write(result ? '0' : '.');
                 }
@@ -76,7 +76,7 @@ public static class BinaryClassifier
             {
                 foreach(var charIndex in ..size)
                 {
-                    Console.Write(IsInsideShapes((double) charIndex / size, (double) lineIndex / (size / 2)) ? '0' : '.');
+                    Console.Write(IsInsideShapes((Weight) charIndex / size, (Weight) lineIndex / (size / 2)) ? '0' : '.');
                 }
                 Console.WriteLine();
             }
@@ -87,21 +87,21 @@ public static class BinaryClassifier
     {
         foreach(var _ in ..count)
         {
-            var x = Random.Shared.NextDouble();
-            var y = Random.Shared.NextDouble();
+            var x = Random.Shared.NextSingle();
+            var y = Random.Shared.NextSingle();
             yield return new BinaryDataEntry([x, y], IsInsideShapes(x, y));
         }
     }
 
-    private static bool IsInsideShapes(double x, double y)
+    private static bool IsInsideShapes(Weight x, Weight y)
     {
-        x = 2 * (x - 0.5);
-        y = 2 * (y - 0.5);
+        x = 2 * (x - 0.5f);
+        y = 2 * (y - 0.5f);
 
         y = -y;
 
-        bool insideCircle = Math.Pow(x, 2) + Math.Pow(y, 2) <= Math.Pow(0.5, 2);
-        bool insideRectangle = x >= -1.0 && x <= 0.5 && y >= -0.0 && y <= 0.5;
+        bool insideCircle = MathF.Pow(x, 2) + MathF.Pow(y, 2) <= MathF.Pow(0.5f, 2);
+        bool insideRectangle = x >= -1.0f && x <= 0.5f && y >= -0.0f && y <= 0.5f;
 
         return insideCircle || insideRectangle;
     }
@@ -112,18 +112,18 @@ public static class BinaryClassifier
         private static readonly Vector FALSE = Vector.Of([0, 1]);
         public Vector Expected(bool output) => output ? TRUE : FALSE;
     }
-    public sealed class Embedder : IEmbedder<double[], bool>
+    public sealed class Embedder : IEmbedder<Weight[], bool>
     {
-        public Vector Embed(double[] input) => Vector.Of(input);
+        public Vector Embed(Weight[] input) => Vector.Of(input);
 
-        public Vector Embed(double[] input, ILayerSnapshot snapshot)
+        public Vector Embed(Weight[] input, ILayerSnapshot snapshot)
         {
             throw new NotImplementedException();
         }
 
         public (bool output, Weight confidence) Unembed(Vector input)
         {
-            return (input[0] > input[1], Math.Abs(input[0] - input[1]));
+            return (input[0] > input[1], MathF.Abs(input[0] - input[1]));
         }
 
         public (bool output, int index, Vector weights) Unembed(Vector input, ILayerSnapshot snapshot)

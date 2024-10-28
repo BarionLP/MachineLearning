@@ -55,7 +55,7 @@ public sealed class SLM3Mini
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.02,
+                LearningRate = 0.02f,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 

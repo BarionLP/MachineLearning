@@ -19,7 +19,7 @@ public sealed class SLM2 : ISample<string, char>
             .AddLayer(1024 * 2, initializer)
             .AddLayer(512 + 256, initializer)
             .AddLayer(512, initializer)
-            .AddLayer(TOKENS.Length, new XavierInitializer(random), new SoftMaxActivation(0.5))
+            .AddLayer(TOKENS.Length, new XavierInitializer(random), SoftMaxActivation.Instance)
             .Build(Embedder);
     }
 
@@ -42,7 +42,7 @@ public sealed class SLM2 : ISample<string, char>
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.01,
+                LearningRate = 0.01f,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
