@@ -21,12 +21,12 @@ public sealed class ImageInputNoise : IInputDataNoise<float[]>
             Rotation = Angle.FromDegrees(Random.NextDouble(-MaxAngle, MaxAngle)),
             Offset = (Random.Next(-MaxShift, MaxShift), Random.Next(-MaxShift, MaxShift)),
         };
-        var transformed = transform.ApplySmooth(data, Size);
+        var transformed = transform.ApplySmooth(data.Select(f => (double)f).ToArray(), Size);
 
         foreach(var i in ..transformed.Length)
         {
             transformed[i] += (Random.NextSingle() - 0.5f) * 2 * NoiseStrength;
         }
-        return transformed;
+        return data.Select(d => (float) d).ToArray();
     }
 }

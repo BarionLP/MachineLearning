@@ -131,14 +131,14 @@ public static class VectorHelper
     {
         NumericsDebug.AssertSameDimensions(vector, destination);
 
-        vector.PointwiseExpTo(destination);
-        var sum = destination.Sum();
-        destination.DivideToSelf(sum);
+        //vector.PointwiseExpTo(destination);
+        //var sum = destination.Sum();
+        //destination.DivideToSelf(sum);
 
-        NumericsDebug.AssertValidNumbers(destination);
 
         // was slower in .net 9.preview.7
-        //TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());
+        TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());
+        NumericsDebug.AssertValidNumbers(destination);
     }
 
     public static void MapToSelf(this Vector vector, Func<Weight, Weight> map) => SpanOperations.MapTo(vector.AsSpan(), vector.AsSpan(), map);
