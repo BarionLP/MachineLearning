@@ -9,11 +9,12 @@ public sealed class SLM3Mini
 
     public static IOutputResolver<char> OutputResolver { get; } = new CharOutputResolver(TOKENS);
     public static GenericModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("sentences_3_mini.gmw"));
-    public static FeedForwardModel<string, char> CreateModel(Random? random = null)
+    public static CharTokenizer Tokenizer { get; } = new(TOKENS);
+    public static FeedForwardModel<int[], char> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
         return AdvancedModelBuilder
-            .Create<StringEmbeddingLayer, string>(new StringEmbeddingLayer(TOKENS, CONTEXT_SIZE, 12), new StringEmbeddingLayer.Initializer(random))
+            .Create(new EncodedEmbeddingLayer(TOKENS.Length, CONTEXT_SIZE))
                 .SetDefaultActivationFunction(LeakyReLUActivation.Instance)
                 .AddLayer(1024, initializer)
                 .AddLayer(512, initializer)
@@ -22,7 +23,7 @@ public sealed class SLM3Mini
             .AddOutputLayer(new TokenOutputLayer(TOKENS, true, random));
     }
 
-    public static IEmbeddedModel<string, char> TrainDefault(IEmbeddedModel<string, char>? model = null, TrainingConfig<string, char>? config = null, Random? random = null)
+    public static IEmbeddedModel<int[], char> TrainDefault(IEmbeddedModel<int[], char>? model = null, TrainingConfig<int[], char>? config = null, Random? random = null)
     {
         model ??= CreateModel(random);
 
@@ -32,11 +33,11 @@ public sealed class SLM3Mini
             () => Console.WriteLine("Model saved!"),
             flag => Console.WriteLine($"Error saving model: {flag}")
         );
-        LMHelper.StartChat(model, CONTEXT_SIZE);
+        LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
         return model;
     }
 
-    public static TrainingConfig<string, char> DefaultTrainingConfig(Random? random = null)
+    public static TrainingConfig<int[], char> DefaultTrainingConfig(Random? random = null)
     {
         random ??= Random.Shared;
 
@@ -45,7 +46,7 @@ public sealed class SLM3Mini
 
         var trainingSetSize = (int)(dataSet.Length * 0.9);
 
-        return new TrainingConfig<string, char>()
+        return new()
         {
             TrainingSet = dataSet,
             TestSet = dataSet.Skip(trainingSetSize).ToArray(),
@@ -68,7 +69,7 @@ public sealed class SLM3Mini
         };
     }
 
-    public static IEnumerable<DataEntry<string, char>> GetTrainingSet(Random? random = null)
+    public static IEnumerable<DataEntry<int[], char>> GetTrainingSet(Random? random = null)
     {
         Console.WriteLine("Analyzing Trainings Data...");
         var lines = LanguageDataSource.GetLines(AssetManager.Sentences).ToArray();
@@ -78,6 +79,24 @@ public sealed class SLM3Mini
         tokensUsedBySource.Consume(t => OutputResolver.Expected(t));
 
         Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
-        return lines.InContextSize(CONTEXT_SIZE).ExpandPerChar();
+        return lines.InContextSize(CONTEXT_SIZE).ExpandPerChar().Select(d => new DataEntry<int[], char>(Tokenizer.Tokenize(d.Input), d.Expected));
     }
+}
+
+public sealed class CharTokenizer(string tokens)
+{
+    private readonly string tokens = tokens;
+
+    public int[] Tokenize(string input)
+    {
+        var result = new int[input.Length];
+        foreach (var i in ..input.Length)
+        {
+            result[i] = Tokenize(input[i]);
+        }
+        return result;
+    }
+
+    public int Tokenize(char input) => tokens.IndexOf(input);
+    public char Reverse(int input) => tokens[input];
 }

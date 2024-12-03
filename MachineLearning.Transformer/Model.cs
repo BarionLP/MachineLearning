@@ -60,7 +60,7 @@ public static class TransformerTest
             KeyQueryDimensions = 2,
             AttentionBlockCount = 1,
             AttentionHeadCountPerBlock = 1,
-            Temperature = 1.2,
+            Temperature = 1.2f,
             Initializer = new RandomInitializer(),
         };
 
@@ -73,7 +73,7 @@ public static class TransformerTest
 
         var result = head.GetEmbeddingDelta(pass);
 
-        var loss = (pass.input, result).Map((input, result) => 0.5 * Math.Pow(result - input, 2));
+        var loss = (pass.input, result).Map((input, result) => 0.5f * MathF.Pow(result - input, 2));
 
         head.BackwardPass(loss, pass);
     }
@@ -83,7 +83,7 @@ public sealed class RandomInitializer : IInitializer
 {
     public void Initialize(Span<Weight> vector)
     {
-        SpanOperations.MapTo(vector, vector, s => Random.Shared.NextDouble());
+        SpanOperations.MapTo(vector, vector, s => Random.Shared.NextSingle());
     }
 }
 

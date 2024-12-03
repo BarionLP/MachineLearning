@@ -2,41 +2,41 @@
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<ReadOnlySpan<int>>
+public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 {
     public int OutputNodeCount => ContextSize * EmbeddingSize;
     public uint ParameterCount => 0;
 
     public int EmbeddingSize => EmbeddingMatrix.ColumnCount;
+    public int TokenCount => EmbeddingMatrix.RowCount;
     public int ContextSize { get; }
 
     public Matrix EmbeddingMatrix;
 
-    public EncodedEmbeddingLayer(int highestTokenIndex, int contextSize)
+    public EncodedEmbeddingLayer(int tokenCount, int contextSize) : this(tokenCount, (int)Math.Log2(tokenCount) + 1, contextSize) { }
+    public EncodedEmbeddingLayer(int tokenCount, int embeddingSize, int contextSize)
     {
         ContextSize = contextSize;
-        int embeddingSize = (int) Math.Log2(highestTokenIndex) + 1;
-        EmbeddingMatrix = Matrix.Create(highestTokenIndex, embeddingSize);
+        EmbeddingMatrix = Matrix.Create(tokenCount, embeddingSize);
 
-        var pattern = 1;
-        foreach(var row in ..EmbeddingMatrix.RowCount)
+        var pattern = 0;
+        foreach (var row in ..EmbeddingMatrix.RowCount)
         {
+            pattern++;
             var embedding = EmbeddingMatrix.RowSpan(row);
             for (var i = 0; i < embedding.Length; i++)
-            { 
-                embedding[i] = pattern & (1 << i);
+            {
+                embedding[i] = (pattern & (1 << i)) >> i;
             }
-
-            pattern++;
         }
     }
 
-    public Vector Forward(ReadOnlySpan<int> input)
+    public Vector Forward(int[] input)
     {
         throw new NotImplementedException();
     }
 
-    public Vector Forward(ReadOnlySpan<int> input, ILayerSnapshot _)
+    public Vector Forward(int[] input, ILayerSnapshot _)
     {
         var output = Vector.Create(OutputNodeCount);
         var outSpan = output.AsSpan();
