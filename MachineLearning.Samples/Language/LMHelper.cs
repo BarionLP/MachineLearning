@@ -48,11 +48,11 @@ public static class LMHelper
             {
                 return;
             }
-            Generate(tokenizer.Tokenize(input), model, contextSize);
+            Generate(tokenizer.Tokenize(input), model, contextSize, tokenizer);
         } while (true);
     }
 
-    public static void Generate(int[] input, IEmbeddedModel<int[], char> model, int contextSize)
+    public static void Generate(int[] input, IEmbeddedModel<int[], char> model, int contextSize, CharTokenizer tokenizer)
     {
         Console.Write(input);
         char prediction;
@@ -60,7 +60,7 @@ public static class LMHelper
         do
         {
             (prediction, confidence) = model.Forward(input);
-            input = [.. input, prediction];
+            input = [.. input, tokenizer.Tokenize(prediction)];
             SetConsoleTextColor(confidence);
             Console.Write(prediction);
         } while (!EndSymbols.Contains(prediction) && input.Length < contextSize);

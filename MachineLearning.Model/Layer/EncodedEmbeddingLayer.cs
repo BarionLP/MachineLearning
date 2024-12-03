@@ -33,11 +33,6 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 
     public Vector Forward(int[] input)
     {
-        throw new NotImplementedException();
-    }
-
-    public Vector Forward(int[] input, ILayerSnapshot _)
-    {
         var output = Vector.Create(OutputNodeCount);
         var outSpan = output.AsSpan();
 
@@ -48,4 +43,6 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 
         return output;
     }
+
+    public Vector Forward(int[] input, ILayerSnapshot _) => Forward(input);
 }
