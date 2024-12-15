@@ -20,6 +20,7 @@ public static class LayerBackPropagation
         (EncodedEmbeddingLayer, SimpleLayer) => nextErrors,
         (IEmbedder<string, char>, SimpleLayer) => nextErrors,
         (IEmbedder<float[], int>, SimpleLayer) => nextErrors,
+        (IEmbedder<Vector, Vector>, SimpleLayer) => nextErrors,
         _ => throw new NotImplementedException($"Cannot compute hidden layer errors for {layer} -> {nextLayer}."),
     };
 
