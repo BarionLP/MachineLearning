@@ -1,21 +1,20 @@
 using System.Diagnostics;
-using System.Net.NetworkInformation;
 
 namespace Ametrin.Numerics;
 
 public static class NumericsDebug
 {
     const string VECTOR_SIZE_MISMATCH = "Vectors must match in size";
-    const string MATRIX_DIMENSION_MISMATCH = "Matrices must match in dimensions";
-    const string TENSOR_DIMENSION_MISMATCH = "Tensors must match in dimensions";
+    const string MATRIX_DIMENSION_MISMATCH = "Matrices must match in size";
+    const string TENSOR_DIMENSION_MISMATCH = "Tensors must match in size";
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Matrix a, Matrix b)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount, MATRIX_DIMENSION_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Matrix a, Matrix b, Matrix c)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount &&
@@ -23,7 +22,7 @@ public static class NumericsDebug
                      MATRIX_DIMENSION_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Matrix a, Matrix b, Matrix c, Matrix d)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount &&
@@ -32,13 +31,13 @@ public static class NumericsDebug
                      MATRIX_DIMENSION_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Vector a, Vector b)
     {
         Debug.Assert(a.Count == b.Count, VECTOR_SIZE_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Vector a, Vector b, Vector c)
     {
         Debug.Assert(a.Count == b.Count &&
@@ -46,7 +45,7 @@ public static class NumericsDebug
                      VECTOR_SIZE_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Vector a, Vector b, Vector c, Vector d)
     {
         Debug.Assert(a.Count == b.Count &&
@@ -55,13 +54,13 @@ public static class NumericsDebug
                      VECTOR_SIZE_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Tensor a, Tensor b)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount && a.LayerCount == b.LayerCount, TENSOR_DIMENSION_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Tensor a, Tensor b, Tensor c)
     {
         Debug.Assert(a.RowCount == b.RowCount && a.ColumnCount == b.ColumnCount && a.LayerCount == b.LayerCount &&
@@ -69,19 +68,19 @@ public static class NumericsDebug
                      TENSOR_DIMENSION_MISMATCH);
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertValidNumbers(Vector vector)
     {
         Debug.Assert(!vector.AsSpan().Contains(Weight.NaN), "Vector contains invalid numbers");
     }
 
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertValidNumbers(Matrix vector)
     {
         Debug.Assert(!vector.AsSpan().Contains(Weight.NaN), "Matrix contains invalid numbers");
     }
     
-    [Conditional("DEBUG")]
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertValidNumbers(ReadOnlySpan<Weight> span)
     {
         Debug.Assert(!span.Contains(Weight.NaN), "Span contains invalid numbers");

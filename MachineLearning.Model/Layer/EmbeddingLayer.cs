@@ -43,7 +43,7 @@ public sealed class EmbeddingLayer(int tokenCount, int embeddingSize, int contex
 
         public void Initialize(EmbeddingLayer layer)
         {
-            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.01));
+            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.01f));
         }
     }
 }

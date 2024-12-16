@@ -18,11 +18,16 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
 
     static GenericModelSerializer()
     {
-        RegisterModel("slm", 1, SaveSLM, ReadSLM);
+        RegisterModel("slm", 2, SaveSLM<int[], char>, ReadSLM<int[], char>);
+        RegisterModel("slm", 1, SaveSLM<string, char>, ReadSLM<string, char>);
 
-        RegisterLayer("simple", 1, SaveSimpleLayer, ReadSimpleLayer);
-        RegisterLayer("string", 1, SaveStringLayer, ReadStringLayer);
+        RegisterLayer("simple", 2, SaveSimpleLayer, ReadSimpleLayer);
+        RegisterLayer("string", 2, SaveStringLayer, ReadStringLayer);
+        RegisterLayer("encodedEmbedding", 1, SaveEncodedEmbeddingLayer, ReadEncodedEmbeddingLayer);
         RegisterLayer("tokenOut", 1, SaveTokenOutLayer, ReadTokenOutLayer);
+
+        RegisterLayerReader("simple", 1, ReadSimpleLayerV1);
+        RegisterLayerReader("string", 1, ReadStringLayerV1);
     }
 
     public ErrorState Save(IModel model)
@@ -44,7 +49,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         return serializer(model, writer);
     }
 
-    public static ErrorState SaveSLM(FeedForwardModel<string, char> model, BinaryWriter writer)
+    public static ErrorState SaveSLM<TIn, TOut>(FeedForwardModel<TIn, TOut> model, BinaryWriter writer)
     {
         writer.Write(model.LayerCount);
         foreach (var layer in model.Layers)
@@ -59,7 +64,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
             writer.Write(key);
             writer.Write(subVersion);
             var flag = serializer(layer, writer);
-            if (flag.IsFail)
+            if (!OptionsMarshall.IsSuccess(flag))
             {
                 return flag;
             }
@@ -68,7 +73,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         return null;
     }
 
-    public static Result<FeedForwardModel<string, char>> ReadSLM(BinaryReader reader)
+    public static Result<FeedForwardModel<TIn, TOut>> ReadSLM<TIn, TOut>(BinaryReader reader)
     {
         var layerCount = reader.ReadInt32();
         var layers = new ILayer[layerCount];
@@ -83,24 +88,24 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
             }
 
             var result = deserializer(reader);
-            if (result.Error is Exception error)
+            if (OptionsMarshall.TryGetError(result, out var error))
             {
                 return error;
             }
             layers[i] = result.OrThrow();
         }
 
-        if (layers[0] is not IEmbeddingLayer<string> inputLayer)
+        if (layers[0] is not IEmbeddingLayer<TIn> inputLayer)
         {
             return new InvalidDataException();
         }
 
-        if (layers[^1] is not IUnembeddingLayer<char> outputLayer)
+        if (layers[^1] is not IUnembeddingLayer<TOut> outputLayer)
         {
             return new InvalidDataException();
         }
 
-        return new FeedForwardModel<string, char>
+        return new FeedForwardModel<TIn, TOut>
         {
             InputLayer = inputLayer,
             HiddenLayers = layers.Skip(1).Take(layerCount - 2).Cast<SimpleLayer>().ToImmutableArray(),
@@ -112,7 +117,7 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
     {
         writer.Write(layer.InputNodeCount);
         writer.Write(layer.OutputNodeCount);
-        ActivationMethodSerializer.WriteV2(writer, layer.ActivationFunction);
+        ActivationMethodSerializer.WriteV3(writer, layer.ActivationFunction);
 
 
         // encode weights & biases
@@ -132,6 +137,27 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
     {
         var inputNodeCount = reader.ReadInt32();
         var outputNodeCount = reader.ReadInt32();
+        var activationMethod = ActivationMethodSerializer.ReadV3(reader);
+        var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
+        var layer = layerBuilder.Create();
+
+        // decode weights & biases
+        foreach (var outputIndex in ..outputNodeCount)
+        {
+            layer.Biases[outputIndex] = reader.ReadSingle();
+            foreach (var inputIndex in ..inputNodeCount)
+            {
+                layer.Weights[outputIndex, inputIndex] = reader.ReadSingle();
+            }
+        }
+
+        return layer;
+    }
+
+    public static Result<SimpleLayer> ReadSimpleLayerV1(BinaryReader reader)
+    {
+        var inputNodeCount = reader.ReadInt32();
+        var outputNodeCount = reader.ReadInt32();
         var activationMethod = ActivationMethodSerializer.ReadV2(reader);
         var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
         var layer = layerBuilder.Create();
@@ -139,10 +165,10 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         // decode weights & biases
         foreach (var outputIndex in ..outputNodeCount)
         {
-            layer.Biases[outputIndex] = reader.ReadDouble();
+            layer.Biases[outputIndex] = (float)reader.ReadDouble();
             foreach (var inputIndex in ..inputNodeCount)
             {
-                layer.Weights[outputIndex, inputIndex] = reader.ReadDouble();
+                layer.Weights[outputIndex, inputIndex] = (float)reader.ReadDouble();
             }
         }
 
@@ -179,7 +205,63 @@ public sealed class GenericModelSerializer(FileInfo fileInfo)
         {
             foreach (var embeddingIndex in ..embeddingSize)
             {
-                layer.EmbeddingMatrix[tokenIndex, embeddingIndex] = reader.ReadDouble();
+                layer.EmbeddingMatrix[tokenIndex, embeddingIndex] = reader.ReadSingle();
+            }
+        }
+
+        return layer;
+    }
+
+    public static ErrorState SaveEncodedEmbeddingLayer(EncodedEmbeddingLayer layer, BinaryWriter writer)
+    {
+        writer.Write(layer.TokenCount);
+        writer.Write(layer.EmbeddingSize);
+        writer.Write(layer.ContextSize);
+
+        // encode weights & biases
+        foreach (var tokenIndex in ..layer.TokenCount)
+        {
+            foreach (var embeddingIndex in ..layer.EmbeddingSize)
+            {
+                writer.Write(layer.EmbeddingMatrix[tokenIndex, embeddingIndex]);
+            }
+        }
+
+        return null;
+    }
+
+    public static Result<EncodedEmbeddingLayer> ReadEncodedEmbeddingLayer(BinaryReader reader)
+    {
+        var tokenCount = reader.ReadInt32();
+        var embeddingSize = reader.ReadInt32();
+        var contextSize = reader.ReadInt32();
+        var layer = new EncodedEmbeddingLayer(tokenCount, embeddingSize, contextSize);
+
+        // encode weights & biases
+        foreach (var tokenIndex in ..tokenCount)
+        {
+            foreach (var embeddingIndex in ..embeddingSize)
+            {
+                layer.EmbeddingMatrix[tokenIndex, embeddingIndex] = reader.ReadSingle();
+            }
+        }
+
+        return layer;
+    }
+
+    public static Result<StringEmbeddingLayer> ReadStringLayerV1(BinaryReader reader)
+    {
+        var tokens = reader.ReadString();
+        var contextSize = reader.ReadInt32();
+        var embeddingSize = reader.ReadInt32();
+        var layer = new StringEmbeddingLayer(tokens, contextSize, embeddingSize);
+
+        // encode weights & biases
+        foreach (var tokenIndex in ..tokens.Length)
+        {
+            foreach (var embeddingIndex in ..embeddingSize)
+            {
+                layer.EmbeddingMatrix[tokenIndex, embeddingIndex] = (float)reader.ReadDouble();
             }
         }
 

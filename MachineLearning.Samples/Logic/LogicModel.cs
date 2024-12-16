@@ -33,7 +33,7 @@ public sealed class LogicModel : ISample<string, char>
 
         Optimizer = new AdamWOptimizer
         {
-            LearningRate = 0.1,
+            LearningRate = 0.1f,
             CostFunction = CrossEntropyLoss.Instance,
         },
 

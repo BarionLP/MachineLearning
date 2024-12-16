@@ -22,7 +22,7 @@ public interface ICostFunction
     public Weight TotalCost(Vector output, Vector expected)
     {
         //if (output.Count != expected.Count) throw new ArgumentException("Output and Expected length didn't match");
-        var totalCost = 0.0;
+        var totalCost = 0.0f;
 
         foreach(var i in ..output.Count)
         {

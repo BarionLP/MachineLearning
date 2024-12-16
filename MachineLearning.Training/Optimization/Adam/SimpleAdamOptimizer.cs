@@ -44,8 +44,6 @@ public class SimpleAdamOptimizer : ILayerOptimizer<SimpleLayer, LayerSnapshots.S
     {
         // Compute the gradient for weights
         VectorHelper.MultiplyToMatrixTo(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
-
-        NumericsDebug.AssertValidNumbers(nodeValues);
         NumericsDebug.AssertValidNumbers(snapshot.WeightGradients);
 
         lock (_lock)
@@ -59,7 +57,7 @@ public class SimpleAdamOptimizer : ILayerOptimizer<SimpleLayer, LayerSnapshots.S
     public virtual void Apply(int dataCounter)
     {
         // do i need gradient clipping?
-        var averagedLearningRate = Optimizer.LearningRate / Math.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate / MathF.Sqrt(dataCounter);
 
         // parallelizing makes no difference
         // Update biases
@@ -72,16 +70,16 @@ public class SimpleAdamOptimizer : ILayerOptimizer<SimpleLayer, LayerSnapshots.S
         (SecondMomentWeights, GradientCostWeights).MapToFirst(SecondMomentEstimate);
         Layer.Weights.SubtractToSelf((FirstMomentWeights, SecondMomentWeights).Map(WeightReduction));
 
-        double WeightReduction(double firstMoment, double secondMoment)
+        Weight WeightReduction(Weight firstMoment, Weight secondMoment)
         {
-            var mHat = firstMoment / (1 - Math.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
-            var vHat = secondMoment / (1 - Math.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
-            return averagedLearningRate * mHat / (Math.Sqrt(vHat) + Optimizer.Epsilon);
+            var mHat = firstMoment / (1 - MathF.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
+            var vHat = secondMoment / (1 - MathF.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
+            return averagedLearningRate * mHat / (MathF.Sqrt(vHat) + Optimizer.Epsilon);
         }
-        double FirstMomentEstimate(double lastMoment, double gradient)
+        Weight FirstMomentEstimate(Weight lastMoment, Weight gradient)
             => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
 
-        double SecondMomentEstimate(double lastMoment, double gradient)
+        Weight SecondMomentEstimate(Weight lastMoment, Weight gradient)
             => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
     }
 

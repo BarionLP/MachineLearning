@@ -2,11 +2,10 @@
 
 namespace MachineLearning.Model.Activation;
 
-public sealed class SoftMaxActivation(Weight temperature) : IActivationFunction
+public sealed class SoftMaxActivation : IActivationFunction
 {
-    public static readonly SoftMaxActivation Instance = new(1);
+    public static readonly SoftMaxActivation Instance = new();
 
-    public Weight Temperature { get; } = temperature;
     public void ActivateTo(Vector input, Vector result) => input.SoftMaxTo(result);
     public void DerivativeTo(Vector input, Vector result)
     {

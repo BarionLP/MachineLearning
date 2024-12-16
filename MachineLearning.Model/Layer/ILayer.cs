@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Model.Layer;
 
-public interface IEmbeddingLayer<in TInput> : ILayer
+public interface IEmbeddingLayer<in TInput> : ILayer where TInput : allows ref struct
 {
     public int OutputNodeCount { get; }
 

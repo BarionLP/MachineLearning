@@ -12,5 +12,5 @@ public sealed record ModelInfo
     public required int AttentionHeadCountPerBlock { get; init; }
     public required int AttentionBlockCount { get; init; }
     public required IInitializer Initializer { get; init; }
-    public double Temperature { get; init; } = 1.5;
+    public float Temperature { get; init; } = 1.5f;
 }

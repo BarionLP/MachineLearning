@@ -23,7 +23,7 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
             var b = bytes[index];
             for (var i = 0; i < 8; i++)
             {
-                result[index * 8 + i] = (b & 1 << i) != 0 ? 1.0 : 0.0;
+                result[index * 8 + i] = (b & 1 << i) != 0 ? 1.0f : 0.0f;
             }
         }
 
@@ -82,7 +82,7 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
         throw new NotImplementedException();
     }
 
-    public (char output, double confidence) Forward(Vector input)
+    public (char output, Weight confidence) Forward(Vector input)
     {
         throw new NotImplementedException();
     }

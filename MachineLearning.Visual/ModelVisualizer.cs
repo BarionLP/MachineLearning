@@ -7,7 +7,7 @@ namespace MachineLearning.Visual;
 
 public static class ModelVisualizer
 {
-    public static void Visualize(IEmbeddedModel<string, char> model, DirectoryInfo path)
+    public static void Visualize<TIn, TOut>(IEmbeddedModel<TIn, TOut> model, DirectoryInfo path)
     {
         path.CreateIfNotExists();
         var count = 0;

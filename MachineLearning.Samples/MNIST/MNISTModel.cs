@@ -1,12 +1,12 @@
 ﻿using MachineLearning.Data.Noise;
 using MachineLearning.Data.Source;
-using ModelDefinition = MachineLearning.Model.EmbeddedModel<double[], int>;
+using ModelDefinition = MachineLearning.Model.EmbeddedModel<float[], int>;
 
 namespace MachineLearning.Samples.MNIST;
 
 public class MNISTModel
 {
-    public static IEmbedder<double[], int> Embedder => MNISTEmbedder.Instance;
+    public static IEmbedder<float[], int> Embedder => MNISTEmbedder.Instance;
 
     public static ModelDefinition CreateModel(Random? random = null)
     {
@@ -22,11 +22,11 @@ public class MNISTModel
         return network;
     }
 
-    public static TrainingConfig<double[], int> GetTrainingConfig(Random? random = null)
+    public static TrainingConfig<float[], int> GetTrainingConfig(Random? random = null)
     {
         var dataSource = new MNISTDataSource(AssetManager.MNISTArchive);
 
-        return new TrainingConfig<double[], int>()
+        return new TrainingConfig<float[], int>()
         {
             TrainingSet = dataSource.TrainingSet,
             TestSet = dataSource.TestingSet,
@@ -36,7 +36,7 @@ public class MNISTModel
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.1,
+                LearningRate = 0.1f,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
@@ -44,12 +44,12 @@ public class MNISTModel
             InputNoise = new ImageInputNoise
             {
                 Size = ImageDataEntry.SIZE,
-                NoiseStrength = 0.35,
-                NoiseProbability = 0.75,
+                NoiseStrength = 0.35f,
+                NoiseProbability = 0.75f,
                 MaxShift = 2,
                 MaxAngle = 30,
-                MinScale = 0.8,
-                MaxScale = 1.2,
+                MinScale = 0.8f,
+                MaxScale = 1.2f,
                 Random = random ?? Random.Shared,
             },
 
@@ -72,7 +72,7 @@ public class MNISTModel
         return model;
     }
 
-    public static void TrainDefault(ModelDefinition model, TrainingConfig<double[], int> config)
+    public static void TrainDefault(ModelDefinition model, TrainingConfig<float[], int> config)
     {
         var trainer = ModelTrainer.Generic(model, config);
 

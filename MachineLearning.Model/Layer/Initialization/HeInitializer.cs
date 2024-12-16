@@ -13,9 +13,9 @@ public sealed class HeInitializer(Random? random = null) : ILayerInitializer
     public void Initialize(Matrix weights, Vector biases)
     {
         var inputCount = weights.ColumnCount;
-        var standartDeviation = Math.Sqrt(2.0 / inputCount);
+        var standartDeviation = MathF.Sqrt(2.0f / inputCount);
 
         weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, standartDeviation));
-        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
+        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1f));
     }
 }

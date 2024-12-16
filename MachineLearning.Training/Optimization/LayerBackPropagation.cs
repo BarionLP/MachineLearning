@@ -17,8 +17,10 @@ public static class LayerBackPropagation
     {
         (SimpleLayer simpleLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Simple>(snapshot)),
         (StringEmbeddingLayer stringLayer, SimpleLayer simpleNextLayer) => ComputeHiddenLayerErrors(stringLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Embedding>(snapshot)),
+        (EncodedEmbeddingLayer, SimpleLayer) => nextErrors,
         (IEmbedder<string, char>, SimpleLayer) => nextErrors,
-        (IEmbedder<double[], int>, SimpleLayer) => nextErrors,
+        (IEmbedder<float[], int>, SimpleLayer) => nextErrors,
+        (IEmbedder<uint, (uint, uint)>, SimpleLayer) => nextErrors,
         _ => throw new NotImplementedException($"Cannot compute hidden layer errors for {layer} -> {nextLayer}."),
     };
 
@@ -29,6 +31,8 @@ public static class LayerBackPropagation
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
         var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights);
         weightedInputDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
+
+        NumericsDebug.AssertValidNumbers(weightedInputDerivatives);
         return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
     }
 
@@ -43,6 +47,7 @@ public static class LayerBackPropagation
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
         var costDerivatives = costFunction.Derivative(snapshot.LastActivatedWeights, expected);
 
+        NumericsDebug.AssertValidNumbers(costDerivatives);
         costDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
 
         return costDerivatives;

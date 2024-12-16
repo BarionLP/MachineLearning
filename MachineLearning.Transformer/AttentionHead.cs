@@ -12,7 +12,7 @@ public sealed class AttentionHead(ModelInfo Info)
     public Matrix ValueDownWeights /*W_V*/ { get; } = Matrix.Create(Info.KeyQueryDimensions, Info.EmbeddingDimensions);
     public Matrix ValueUpWeights { get; } = Matrix.Create(Info.EmbeddingDimensions, Info.KeyQueryDimensions);
 
-    private readonly Weight QueryDimensionsSqrt = Math.Sqrt(Info.KeyQueryDimensions);
+    private readonly Weight QueryDimensionsSqrt = MathF.Sqrt(Info.KeyQueryDimensions);
 
     public Matrix GetEmbeddingDelta(HeadPass pass)
     {   
@@ -44,7 +44,7 @@ public sealed class AttentionHead(ModelInfo Info)
             for(int keyIndex = 0; keyIndex < input.RowCount; keyIndex++)
             {
                 //force attendance to 0 (-infty before activation) for earlier tokes, allows training on the whole sentence instead just the next word (can be disabled after training)
-                vector[keyIndex] = keyIndex > queryIndex ? double.NegativeInfinity : keyEmbedding.RowRef(keyIndex).Dot(queryEmbedding.RowRef(queryIndex)) / QueryDimensionsSqrt; // divide by sqrt(QueryDimensions) for numerical stability
+                vector[keyIndex] = keyIndex > queryIndex ? float.NegativeInfinity : keyEmbedding.RowRef(keyIndex).Dot(queryEmbedding.RowRef(queryIndex)) / QueryDimensionsSqrt; // divide by sqrt(QueryDimensions) for numerical stability
             }
             // softmax each row to get a percentage distribution on how much each key token should affect each query token
             vector.SoftMaxToSelf();

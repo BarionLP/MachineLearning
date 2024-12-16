@@ -14,9 +14,9 @@ public sealed class XavierInitializer(Random? random = null) : ILayerInitializer
     {
         var inputCount = weights.ColumnCount;
         var outputCount = biases.Count;
-        var standardDeviation = Math.Sqrt(2.0 / (inputCount + outputCount));
+        var standardDeviation = MathF.Sqrt(2.0f / (inputCount + outputCount));
 
-        weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, standardDeviation));
-        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1));
+        weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0f, standardDeviation));
+        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0f, 0.1f));
     }
 }

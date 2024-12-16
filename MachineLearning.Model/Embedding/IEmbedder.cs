@@ -3,7 +3,7 @@ using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Model.Embedding;
 
-public interface IEmbedder<in TInput, TOutput> : IEmbeddingLayer<TInput>, IUnembeddingLayer<TOutput>
+public interface IEmbedder<in TInput, TOutput> : IEmbeddingLayer<TInput>, IUnembeddingLayer<TOutput> where TInput : allows ref struct
 {
     public Vector Embed(TInput input);
     public Vector Embed(TInput input, ILayerSnapshot snapshot);

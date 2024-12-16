@@ -9,15 +9,15 @@
 public sealed class CrossEntropyLoss : ICostFunction
 {
     public static readonly CrossEntropyLoss Instance = new();
-    const double EPSILON = 1e-10;
+    const Weight EPSILON = 1e-7f;
 
-    public double Cost(double outputActivation, double expected)
+    public Weight Cost(Weight outputActivation, Weight expected)
     {
         outputActivation = Math.Clamp(outputActivation, EPSILON, 1 - EPSILON); //just return 0 or 1?
-        return -(expected * Math.Log(outputActivation) + (1 - expected) * Math.Log(1 - outputActivation));
+        return -(expected * MathF.Log(outputActivation) + (1 - expected) * MathF.Log(1 - outputActivation));
     }
 
-    public double Derivative(double outputActivation, double expected)
+    public Weight Derivative(Weight outputActivation, Weight expected)
     {
         outputActivation = Math.Clamp(outputActivation, EPSILON, 1 - EPSILON); //just return 0 or 1?
         return (outputActivation - expected) / (outputActivation * (1 - outputActivation));

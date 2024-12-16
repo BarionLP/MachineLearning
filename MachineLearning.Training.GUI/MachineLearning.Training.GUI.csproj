@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />
@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc3.3" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc4.5" />
   </ItemGroup>
 
   <PropertyGroup>
