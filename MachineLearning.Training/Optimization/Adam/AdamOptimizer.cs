@@ -23,7 +23,7 @@ public class AdamOptimizer : IGenericOptimizer
     {
         SimpleLayer simpleLayer => new SimpleAdamOptimizer(this, simpleLayer),
         StringEmbeddingLayer stringLayer => new StringAdamOptimizer(this, stringLayer),
-        IEmbedder<string, char> or IEmbedder<float[], int> or IEmbedder<Vector, Vector> or TokenOutputLayer or EncodedEmbeddingLayer => new EmptyAdamOptimizer(layer),
+        IEmbedder<string, char> or IEmbedder<float[], int> or IEmbedder<uint, (uint, uint)> or TokenOutputLayer or EncodedEmbeddingLayer => new EmptyAdamOptimizer(layer),
         _ => throw new NotImplementedException($"No Adam implementation for {layer}"),
     };
 }
