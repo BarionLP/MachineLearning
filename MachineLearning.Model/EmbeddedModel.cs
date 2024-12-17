@@ -11,7 +11,7 @@ public sealed class EmbeddedModel<TIn, TOut> : IModel
     public long ParameterCount => InputLayer.ParameterCount + InnerModel.ParameterCount + OutputLayer.ParameterCount;
 
     public (TOut prediction, Weight confidence) Process(TIn input) 
-        => OutputLayer.Forward(InnerModel.Process(InputLayer.Forward(input)));
+        => OutputLayer.Process(InnerModel.Process(InputLayer.Process(input)));
 
     public override string ToString() => $"Embedded {InnerModel}";
 }

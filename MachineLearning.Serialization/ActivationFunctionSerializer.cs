@@ -1,8 +1,8 @@
 ﻿using MachineLearning.Model.Activation;
 
-namespace MachineLearning.Serialization.Activation;
+namespace MachineLearning.Serialization;
 
-public static class ActivationMethodSerializer
+public static class ActivationFunctionSerializer
 {
     private static readonly Dictionary<string, IActivationFunction> _legacyRegistry = [];
     private static readonly Dictionary<Type, string> _registry = [];
@@ -53,7 +53,7 @@ public static class ActivationMethodSerializer
     public static IActivationFunction ReadV2(BinaryReader reader) => _factory[reader.ReadString()](reader);
     public static IActivationFunction ReadV3(BinaryReader reader) => _factoryV3[(reader.ReadString(), reader.ReadUInt32())](reader);
 
-    static ActivationMethodSerializer()
+    static ActivationFunctionSerializer()
     {
         Register<SigmoidActivation>("sigmoid", 1, reader => SigmoidActivation.Instance);
         Register<SoftMaxActivation>("softmax", 1, reader => SoftMaxActivation.Instance);

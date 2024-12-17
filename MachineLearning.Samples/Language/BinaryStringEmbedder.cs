@@ -71,34 +71,4 @@ public sealed class BinaryStringEmbedder(int contextSize, string tokens, bool we
             return max;
         }
     }
-
-    public Vector Forward(string input)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Vector Forward(string input, ILayerSnapshot snapshot)
-    {
-        throw new NotImplementedException();
-    }
-
-    public (char output, Weight confidence) Forward(Vector input)
-    {
-        throw new NotImplementedException();
-    }
-
-    public (char output, int index, Vector weights) Forward(Vector input, ILayerSnapshot snapshot)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Vector Embed(string input, ILayerSnapshot snapshot)
-    {
-        throw new NotImplementedException();
-    }
-
-    public (char output, int index, Vector weights) Unembed(Vector input, ILayerSnapshot snapshot)
-    {
-        throw new NotImplementedException();
-    }
 }

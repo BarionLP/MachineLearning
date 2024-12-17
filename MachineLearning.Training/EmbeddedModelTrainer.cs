@@ -16,7 +16,6 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[^1];
 
-
     public EmbeddedModelTrainer(EmbeddedModel<TIn, TOut> model, TrainingConfig config, ITrainingSet trainingSet)
     {
         Config = config;
@@ -95,7 +94,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
 
         void UpdateCounters(TrainingData<TIn, TOut> data, Vector weights)
         {
-            if (Model.OutputLayer.Forward(weights).output!.Equals(data.ExpectedValue))
+            if (Model.OutputLayer.Process(weights).output!.Equals(data.ExpectedValue))
             {
                 correctCounter++;
             }

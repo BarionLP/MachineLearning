@@ -14,6 +14,8 @@ public sealed class FeedForwardLayer(Matrix Weights, Vector Biases, IActivationF
 
     public long ParameterCount => Biases.Count + Weights.FlatCount;
 
+    public ILayerSnapshot CreateSnapshot() => new LayerSnapshots.Simple(InputNodeCount, OutputNodeCount);
+
     public Vector Forward(Vector input)
     {
         var result = Weights.Multiply(input);

@@ -1,7 +1,5 @@
-﻿using MachineLearning.Data;
-using MachineLearning.Training.Evaluation;
+﻿using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
-using System.Text;
 
 namespace MachineLearning.Training;
 

@@ -59,9 +59,9 @@ public static class ModelAnalyzer
         {
             switch(layer)
             {
-                case StringEmbeddingLayer em:
-                    Console.WriteLine($"Embedding Layer: Av: {em.EmbeddingMatrix.Sum() / em.EmbeddingMatrix.FlatCount:F4}; Max: {em.EmbeddingMatrix.Max():F4}; Min: {em.EmbeddingMatrix.Min():F4}");
-                    break;
+                //case StringEmbeddingLayer em:
+                //    Console.WriteLine($"Embedding Layer: Av: {em.EmbeddingMatrix.Sum() / em.EmbeddingMatrix.FlatCount:F4}; Max: {em.EmbeddingMatrix.Max():F4}; Min: {em.EmbeddingMatrix.Min():F4}");
+                //    break;
 
                 case FeedForwardLayer sl:
                     Console.WriteLine($"Simple Layer:");

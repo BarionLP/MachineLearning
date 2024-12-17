@@ -22,7 +22,7 @@ public class AdamOptimizer : IGenericOptimizer
     public virtual ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
     {
         FeedForwardLayer simpleLayer => new SimpleAdamOptimizer(this, simpleLayer),
-        StringEmbeddingLayer stringLayer => new StringAdamOptimizer(this, stringLayer),
+        //TrainedEmbeddingLayer stringLayer => new StringAdamOptimizer(this, stringLayer),
         IEmbedder<string, char> or IEmbedder<double[], int> or TokenOutputLayer => new EmptyAdamOptimizer(layer),
         _ => throw new NotImplementedException($"No Adam implementation for {layer}"),
     };

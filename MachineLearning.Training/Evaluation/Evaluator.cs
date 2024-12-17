@@ -32,8 +32,7 @@ public static class Evaluator
     public static DataSetEvaluationResult Evaluate<TInput, TOutput>(
         this EmbeddedModel<TInput, TOutput> model, 
         ICostFunction costFunction, 
-        IOutputResolver<TOutput> outputResolver, 
-        IEnumerable<DataEntry<TInput, TOutput>> dataSet
+        IEnumerable<TrainingData<TInput, TOutput>> dataSet
         ) where TInput : notnull where TOutput : notnull
     {
         int correctCounter = 0;
@@ -42,15 +41,15 @@ public static class Evaluator
         foreach(var entry in dataSet)
         {
             totalCounter++;
-            var outputWeights = model.InnerModel.Process(model.InputLayer.Forward(entry.Input));
-            var (output, confidence) = model.OutputLayer.Forward(outputWeights);
+            var outputWeights = model.InnerModel.Process(model.InputLayer.Process(entry.InputValue));
+            var (output, confidence) = model.OutputLayer.Process(outputWeights);
 
-            if(output.Equals(entry.Expected))
+            if(output.Equals(entry.ExpectedValue))
             {
                 correctCounter++;
             }
 
-            totalCost += costFunction.TotalCost(outputWeights, outputResolver.Expected(entry.Expected));
+            totalCost += costFunction.TotalCost(outputWeights, entry.Expected);
         }
 
         return new()

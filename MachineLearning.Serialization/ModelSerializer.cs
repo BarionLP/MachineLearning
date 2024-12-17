@@ -1,13 +1,12 @@
 ﻿using MachineLearning.Model;
 using MachineLearning.Model.Layer;
-using MachineLearning.Serialization.Activation;
 
 namespace MachineLearning.Serialization;
 
 public sealed class ModelSerializer(FileInfo fileInfo)
 {
     public const string FILE_EXTENSION = ".gmw";
-    public const uint FORMAT_VERSION = 1;
+    public const uint FORMAT_VERSION = 2;
 
     public static readonly Dictionary<Type, (string key, uint version, Func<IModel, BinaryWriter, ErrorState> writer)> ModelSerializers = [];
     public static readonly Dictionary<(string key, uint version), Func<BinaryReader, Result<IModel>>> ModelDeserializers = [];
@@ -22,25 +21,6 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         RegisterLayer("simple", 2, SaveSimpleLayer, ReadSimpleLayer);
         //RegisterLayer("string", 1, SaveStringLayer, ReadStringLayer);
         //RegisterLayer("tokenOut", 1, SaveTokenOutLayer, ReadTokenOutLayer);
-    }
-
-    public ErrorState Save(IModel model)
-    {
-        if (!ModelSerializers.TryGetValue(model.GetType(), out var data))
-        {
-            return new NotImplementedException();
-        }
-
-        var (key, modelVersion, serializer) = data;
-
-        using var stream = fileInfo.Create();
-        using var writer = new BinaryWriter(stream);
-        writer.Write(FILE_EXTENSION);
-        writer.Write(FORMAT_VERSION);
-        writer.Write(key);
-        writer.Write(modelVersion);
-
-        return serializer(model, writer);
     }
 
     public static ErrorState SaveFFM(FeedForwardModel model, BinaryWriter writer)
@@ -99,7 +79,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     {
         writer.Write(layer.InputNodeCount);
         writer.Write(layer.OutputNodeCount);
-        ActivationMethodSerializer.WriteV3(writer, layer.ActivationFunction);
+        ActivationFunctionSerializer.WriteV3(writer, layer.ActivationFunction);
 
 
         // encode weights & biases
@@ -119,7 +99,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     {
         var inputNodeCount = reader.ReadInt32();
         var outputNodeCount = reader.ReadInt32();
-        var activationMethod = ActivationMethodSerializer.ReadV3(reader);
+        var activationMethod = ActivationFunctionSerializer.ReadV3(reader);
         var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
         var layer = layerBuilder.Create();
 
@@ -136,6 +116,25 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         return layer;
     }
 
+    public ErrorState Save(IModel model)
+    {
+        if (!ModelSerializers.TryGetValue(model.GetType(), out var data))
+        {
+            return new NotImplementedException();
+        }
+
+        var (key, modelVersion, serializer) = data;
+
+        using var stream = fileInfo.Create();
+        using var writer = new BinaryWriter(stream);
+        writer.Write(FILE_EXTENSION);
+        writer.Write(FORMAT_VERSION);
+        writer.Write(key);
+        writer.Write(modelVersion);
+
+        return serializer(model, writer);
+    }
+
     public Result<IModel> Load()
     {
         using var stream = fileInfo.OpenRead();
@@ -150,12 +149,12 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var formatVersion = reader.ReadUInt32();
         return formatVersion switch
         {
-            1 => LoadV1(reader),
+            2 => LoadV2(reader),
             _ => new NotImplementedException(),
         };
     }
 
-    private static Result<IModel> LoadV1(BinaryReader reader)
+    private static Result<IModel> LoadV2(BinaryReader reader)
     {
         var modelKey = reader.ReadString();
         var modelVersion = reader.ReadUInt32();

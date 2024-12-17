@@ -1,7 +1,7 @@
 ﻿namespace MachineLearning.Model.Activation;
 
 /// <summary>
-/// overall best <br/>
+/// rectified linear unit: overall best <br/>
 /// use learn rate below 0.1 <br/>
 /// usually bad for output layer because values go uncontrollable high <br/>
 /// can cause death neurons (better <see cref="LeakyReLUActivation"/>) <br/>

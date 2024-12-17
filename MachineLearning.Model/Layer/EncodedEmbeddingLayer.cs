@@ -31,7 +31,7 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
         }
     }
 
-    public Vector Forward(int[] input)
+    public Vector Process(int[] input)
     {
         var output = Vector.Create(OutputNodeCount);
         var outSpan = output.AsSpan();
@@ -44,5 +44,7 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
         return output;
     }
 
-    public Vector Forward(int[] input, ILayerSnapshot _) => Forward(input);
+    public Vector Process(int[] input, ILayerSnapshot _) => Process(input);
+
+    public ILayerSnapshot CreateSnapshot() => LayerSnapshots.Empty;
 }

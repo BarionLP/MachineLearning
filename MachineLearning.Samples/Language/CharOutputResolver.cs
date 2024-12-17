@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Samples.Language;
 
-public sealed class CharOutputResolver(string tokens) : IOutputResolver<char>
+public sealed class CharOutputResolver(string tokens)
 {
     private readonly FrozenDictionary<char, Vector> _values = tokens.Select((c, i) =>
     {

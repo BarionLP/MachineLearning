@@ -3,35 +3,24 @@ using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class TokenOutputLayer(string tokens, bool weightedRandom, Random? random = null) : IUnembeddingLayer<char>
+public sealed class TokenOutputLayer(int tokenCount, bool weightedRandom, Random? random = null) : IUnembeddingLayer<int>
 {
-    public string Tokens { get; } = tokens;
+    public int TokenCount { get; } = tokenCount;
     public bool WeightedRandom { get; } = weightedRandom;
     public Random Random { get; } = random ?? Random.Shared;
 
-    public int InputNodeCount => Tokens.Length;
+    public int InputNodeCount => TokenCount;
     public long ParameterCount => 0;
 
-    public (char, Weight) Forward(Vector input)
+    public (int output, Weight confidence) Process(Vector input)
     {
-        var (result, index, weights) = Forward(input, default!);
-        return (result, weights[index]);
+        var (result, confidence, _) = Process(input, default!);
+        return (result, confidence);
     }
 
-    private static int GetWeightedRandomIndex(Vector weights, Random random)
+    public (int output, Weight confidence, Vector weights) Process(Vector input, ILayerSnapshot snapshot)
     {
-        var value = random.NextDouble();
-        for (int i = 0; i < weights.Count; i++)
-        {
-            value -= weights[i];
-            if (value < 0) return i;
-        }
-        return weights.Count - 1;
-    }
-
-    public (char output, int index, Vector weights) Forward(Vector input, ILayerSnapshot snapshot)
-    {
-        Debug.Assert(input.Count == Tokens.Length);
+        Debug.Assert(input.Count == TokenCount);
 
         // temperature adjustments
         if (WeightedRandom)
@@ -43,6 +32,20 @@ public sealed class TokenOutputLayer(string tokens, bool weightedRandom, Random?
         }
 
         var index = WeightedRandom ? GetWeightedRandomIndex(input, Random) : input.MaximumIndex();
-        return (Tokens[index], index, input);
+        return (index, index, input);
     }
+
+    private static int GetWeightedRandomIndex(Vector weights, Random random)
+    {
+        var value = random.NextDouble();
+        for (int i = 0; i < weights.Count; i++)
+        {
+            value -= weights[i];
+            if (value < 0)
+                return i;
+        }
+        return weights.Count - 1;
+    }
+
+    public ILayerSnapshot CreateSnapshot() => LayerSnapshots.Empty;
 }
