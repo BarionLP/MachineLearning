@@ -1,55 +1,29 @@
 using System.Collections.Immutable;
+using MachineLearning.Data;
 using MachineLearning.Data.Entry;
-using MachineLearning.Model;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
 namespace MachineLearning.Training;
 
-public sealed class GenericModelTrainer<TInput, TOutput>
+public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn, TOut>>
 {
-    public TrainingConfig<TInput, TOutput> Config { get; }
-    public IEmbeddedModel<TInput, TOutput> Model { get; }
+    public TrainingConfig Config { get; }
+    public ITrainingSet TrainingSet { get; }
+    public EmbeddedModel<TIn, TOut> Model { get; }
     public IGenericOptimizer Optimizer { get; }
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
-    public ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[LastUsableLayerIndex];
-    private static readonly Index LastUsableLayerIndex = ^2;
+    public ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[^1];
 
-    public GenericModelTrainer(IEmbeddedModel<TInput, TOutput> model, TrainingConfig<TInput, TOutput> config)
+
+    public EmbeddedModelTrainer(EmbeddedModel<TIn, TOut> model, TrainingConfig config, ITrainingSet trainingSet)
     {
         Config = config;
+        TrainingSet = trainingSet;
         Model = model;
         Optimizer = config.Optimizer;
-        LayerOptimizers = Model.Layers.Select(Optimizer.CreateLayerOptimizer).ToImmutableArray();
-    }
-
-    public void TrainConsole(bool cancelable = true)
-    {
-        using var cts = new CancellationTokenSource();
-        if (cancelable)
-        {
-            Task.Run(async () =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    if (Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.C)
-                    {
-                        Console.WriteLine("Canceling...");
-                        cts.Cancel();
-                        break;
-                    }
-                    await Task.Delay(500);
-                }
-            });
-        }
-
-        Console.WriteLine($"Training {Model}");
-        Console.WriteLine(Config.ToString());
-        Console.WriteLine("Starting Training...");
-        Train(cts.Token);
-        cts.Cancel();
-        Console.WriteLine("Training Done!");
+        LayerOptimizers = Model.InnerModel.Layers.Select(Optimizer.CreateLayerOptimizer).ToImmutableArray();
     }
 
     public void Train(CancellationToken? token = null)
@@ -57,20 +31,16 @@ public sealed class GenericModelTrainer<TInput, TOutput>
         Optimizer.Init();
         FullReset();
         var cachedEvaluation = DataSetEvaluationResult.ZERO;
-        foreach (var epochIndex in ..Config.EpochCount)
+        foreach (var (epochIndex, epoch) in TrainerHelper.GetEpochs(TrainingSet, Config.EpochCount).Index())
         {
-            var epoch = Config.GetEpoch();
-            var batchCount = 0;
-
-            foreach (var batch in epoch)
+            foreach (var (batchIndex, batch) in epoch.Index())
             {
-                cachedEvaluation += TrainAndEvaluate(batch, multithread: true);
-                if ((Config.DumpBatchEvaluation && batchCount % Config.DumpEvaluationAfterBatches == 0) || (batchCount + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
+                cachedEvaluation += TrainAndEvaluate(batch.OfType<TrainingData<TIn, TOut>>());
+                if ((Config.DumpBatchEvaluation && batchIndex % Config.DumpEvaluationAfterBatches == 0) || (batchIndex + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
                     cachedEvaluation = DataSetEvaluationResult.ZERO;
                 }
-                batchCount++;
                 Optimizer.OnBatchCompleted();
 
                 if (token?.IsCancellationRequested is true)
@@ -78,59 +48,59 @@ public sealed class GenericModelTrainer<TInput, TOutput>
                     Optimizer.OnEpochCompleted();
                     return;
                 }
+
+                TrainingEvaluationContext GetContext() => new()
+                {
+                    CurrentBatch = batchIndex + 1,
+                    MaxBatch = epoch.BatchCount,
+                    CurrentEpoch = epochIndex + 1,
+                    MaxEpoch = Config.EpochCount,
+                    LearnRate = Config.Optimizer.LearningRate,
+                };
             }
 
             Optimizer.OnEpochCompleted();
-
-            TrainingEvaluationContext GetContext() => new()
-            {
-                CurrentBatch = batchCount + 1,
-                MaxBatch = epoch.BatchCount,
-                CurrentEpoch = epochIndex + 1,
-                MaxEpoch = Config.EpochCount,
-                LearnRate = Config.Optimizer.LearningRate,
-            };
         }
     }
 
-    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<DataEntry<TInput, TOutput>> trainingBatch, bool multithread)
+    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData<TIn, TOut>> trainingBatch)
     {
-        var sw = Stopwatch.StartNew();
+        var timeStamp = Stopwatch.GetTimestamp();
         GradientCostReset();
         int correctCounter = 0;
         double totalCost = 0;
         var dataCounter = 0;
 
-        if (multithread)
+        if (Config.MultiThread)
         {
             var _lock = new Lock();
-            Parallel.ForEach(trainingBatch, (dataPoint) =>
+            Parallel.ForEach(trainingBatch, (data) =>
             {
-                var (result, _, weights) = Update(dataPoint);
+                var weights = Update(data);
 
                 lock (_lock)
                 {
-                    if (result!.Equals(dataPoint.Expected))
-                    {
-                        correctCounter++;
-                    }
-                    dataCounter++;
-                    totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
+                    UpdateCounters(data, weights);
                 }
             });
         }
         else
         {
-            foreach (var dataPoint in trainingBatch)
+            foreach (var data in trainingBatch)
             {
-                var (result, _, weights) = Update(dataPoint);
-                if (result!.Equals(dataPoint.Expected))
-                {
-                    correctCounter++;
-                }
-                dataCounter++;
-                totalCost += Config.Optimizer.CostFunction.TotalCost(weights, Config.OutputResolver.Expected(dataPoint.Expected));
+                var weights = Update(data);
+                UpdateCounters(data, weights);
             }
+        }
+
+        void UpdateCounters(TrainingData<TIn, TOut> data, Vector weights)
+        {
+            if (Model.OutputLayer.Forward(weights).output!.Equals(data.ExpectedValue))
+            {
+                correctCounter++;
+            }
+            dataCounter++;
+            totalCost += Config.Optimizer.CostFunction.TotalCost(weights, data.Expected);
         }
 
 
@@ -141,31 +111,30 @@ public sealed class GenericModelTrainer<TInput, TOutput>
             TotalCount = dataCounter,
             CorrectCount = correctCounter,
             TotalCost = totalCost,
-            TotalElapsedTime = sw.Elapsed,
+            TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };
     }
 
-    private (TOutput output, int index, Vector weights) Update(DataEntry<TInput, TOutput> data)
+    private Vector Update(TrainingData<TIn, TOut> data)
     {
-        var snapshots = Model.Layers.Select(LayerSnapshots.Get).ToImmutableArray();
-        var result = Model.Forward(data.Input, snapshots);
+        var snapshots = Model.InnerModel.Layers.Select(LayerSnapshots.Get).OfType<LayerSnapshots.Simple>().ToImmutableArray();
+        var result = Model.InnerModel.Process(data.Input, snapshots);
 
-        //last layer gets skipped right now because it never contains weights (unembedding layer). i will change this in the future to allow trained unembedding
-        var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(OutputLayerOptimizer.Layer, OutputLayerOptimizer.CostFunction, Config.OutputResolver.Expected(data.Expected), snapshots[LastUsableLayerIndex]);
+        var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(Model.InnerModel.Layers[^1], OutputLayerOptimizer.CostFunction, data.Expected, snapshots[^1]);
         NumericsDebug.AssertValidNumbers(nodeValues);
-        OutputLayerOptimizer.Update(nodeValues, snapshots[LastUsableLayerIndex]);
+        OutputLayerOptimizer.Update(nodeValues, snapshots[^1]);
 
 
-        for (int hiddenLayerIndex = LayerOptimizers.Length - 3; hiddenLayerIndex >= 0; hiddenLayerIndex--)
+        for (int hiddenLayerIndex = LayerOptimizers.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
         {
             var hiddenLayer = LayerOptimizers[hiddenLayerIndex];
-            nodeValues = LayerBackPropagation.ComputeHiddenLayerErrors(hiddenLayer.Layer, LayerOptimizers[hiddenLayerIndex + 1].Layer, nodeValues, snapshots[hiddenLayerIndex]);
+            nodeValues = LayerBackPropagation.ComputeHiddenLayerErrors(Model.InnerModel.Layers[hiddenLayerIndex], Model.InnerModel.Layers[hiddenLayerIndex + 1], nodeValues, snapshots[hiddenLayerIndex]);
             NumericsDebug.AssertValidNumbers(nodeValues);
             hiddenLayer.Update(nodeValues, snapshots[hiddenLayerIndex]);
         }
 
         //TODO: verify zip performance
-        foreach (var (layer, snapshot) in Model.Layers.Zip(snapshots))
+        foreach (var (layer, snapshot) in Model.InnerModel.Layers.Zip(snapshots))
         {
             LayerSnapshots.Return(layer, snapshot);
         }
@@ -176,4 +145,12 @@ public sealed class GenericModelTrainer<TInput, TOutput>
     private void Apply(int dataCounter) => LayerOptimizers.Consume(layer => layer.Apply(dataCounter));
     private void GradientCostReset() => LayerOptimizers.Consume(layer => layer.GradientCostReset());
     private void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
+}
+
+public interface ITrainer<TModel>
+{
+    public TModel Model { get; }
+    public TrainingConfig Config { get; }
+    public ITrainingSet TrainingSet { get; }
+    void Train(CancellationToken? token = null);
 }

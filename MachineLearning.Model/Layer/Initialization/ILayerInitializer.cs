@@ -1,19 +1,11 @@
 namespace MachineLearning.Model.Layer.Initialization;
 
-public interface ILayerInitializer : ILayerInitializer<SimpleLayer>
+public interface IInitializer<TValue> 
 {
-    void Initialize(Matrix weights, Vector biases);
-
-    void ILayerInitializer<SimpleLayer>.Initialize(SimpleLayer layer) {
-        Initialize(layer.Weights, layer.Biases);
-    }
+    public void Initialize(TValue layer);
 }
 
-public interface ILayerInitializer<TLayer> where TLayer : ILayer {
-    public void Initialize(TLayer layer);
-}
-
-public sealed class NoInitializer<T> : ILayerInitializer<T> where T : ILayer
+public sealed class NoInitializer<T> : IInitializer<T>
 {
     public static NoInitializer<T> Instance { get; } = new();
     public void Initialize(T layer) { }

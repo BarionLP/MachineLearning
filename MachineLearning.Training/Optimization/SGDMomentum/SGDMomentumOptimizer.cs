@@ -23,8 +23,8 @@ public sealed class SGDMomentumOptimizer : IGenericOptimizer
     }
     public ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
     {
-        SimpleLayer simpleLayer => new SimpleSGDMomentumOptimizer(this, simpleLayer),
-        _ => throw new NotImplementedException($"No Nadam implementation for {layer}"),
+        FeedForwardLayer simpleLayer => new SimpleSGDMomentumOptimizer(this, simpleLayer),
+        _ => throw new NotImplementedException($"No SSGDM implementation for {layer}"),
     };
 }
 

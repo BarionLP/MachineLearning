@@ -11,39 +11,44 @@ public sealed class ModelBuilder(int inputNodeCount)
 {
     private List<LayerFactory> Layers { get; } = [];
     public int InputNodeCount { get; } = inputNodeCount;
-    public IActivationFunction DefaultActivationMethod { get; set; } = SigmoidActivation.Instance;
+    public IActivationFunction DefaultActivationFunction { get; set; } = SigmoidActivation.Instance;
 
-    public ModelBuilder SetDefaultActivationMethod(IActivationFunction activationMethod)
+    public ModelBuilder DefaultActivation(IActivationFunction activationMethod)
     {
-        DefaultActivationMethod = activationMethod;
+        DefaultActivationFunction = activationMethod;
         return this;
     }
-    public ModelBuilder AddLayer(int nodeCount, ILayerInitializer<SimpleLayer> initializer, IActivationFunction? activationMethod = null)
+    public ModelBuilder AddLayer(int nodeCount, IInitializer<FeedForwardLayer> initializer, IActivationFunction? activationMethod = null)
     {
         Layers.Add(
             new LayerFactory(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
-            .SetActivationFunction(activationMethod ?? DefaultActivationMethod).SetInitializer(initializer)
+            .SetActivationFunction(activationMethod ?? DefaultActivationFunction).SetInitializer(initializer)
         );
         return this;
     }
     public ModelBuilder AddLayer(int nodeCount, Action<LayerFactory> consumer)
     {
         var layerBuilder = new LayerFactory(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
-            .SetActivationFunction(DefaultActivationMethod);
+            .SetActivationFunction(DefaultActivationFunction);
         consumer.Invoke(layerBuilder);
         Layers.Add(layerBuilder);
         return this;
     }
 
-    public SimpleModel Build() => new(Layers.Select(l => l.Create()).ToImmutableArray());
+    public FeedForwardModel Build() => new() { Layers = Layers.Select(l => l.Create()).ToImmutableArray() };
 
-    public EmbeddedModel<TInput, TOutput> Build<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => new(Build(), embedder);
+    public EmbeddedModel<TInput, TOutput> Build<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => new() 
+    { 
+        InputLayer = embedder,
+        InnerModel = Build(),
+        OutputLayer = embedder,
+    };
 }
 
 public static class AdvancedModelBuilder
 {
 
-    public static HiddenLayerConfig<TInput> Create<TLayer, TInput>(TLayer layer, ILayerInitializer<TLayer> initializer) where TLayer : IEmbeddingLayer<TInput>
+    public static HiddenLayerConfig<TInput> Create<TLayer, TInput>(TLayer layer, IInitializer<TLayer> initializer) where TLayer : IEmbeddingLayer<TInput>
     {
         initializer.Initialize(layer);
         return Create(layer);
@@ -64,7 +69,7 @@ public static class AdvancedModelBuilder
             DefaultActivationFunction = activationFunction;
             return this;
         }
-        public HiddenLayerConfig<TInput> AddLayer(int nodeCount, ILayerInitializer<SimpleLayer> initializer, IActivationFunction? activationMethod = null)
+        public HiddenLayerConfig<TInput> AddLayer(int nodeCount, IInitializer<FeedForwardLayer> initializer, IActivationFunction? activationMethod = null)
         {
             return AddLayer(
                 new LayerFactory(LastOutputNodeCount, nodeCount)
@@ -86,16 +91,16 @@ public static class AdvancedModelBuilder
             return this;
         }
 
-        public FeedForwardModel<TInput, TOutput> AddOutputLayer<TOutput>(Func<int, IUnembeddingLayer<TOutput>> outputLayer)
+        public EmbeddedModel<TInput, TOutput> AddOutputLayer<TOutput>(Func<int, IUnembeddingLayer<TOutput>> outputLayer)
             => AddOutputLayer(outputLayer(LastOutputNodeCount));
 
-        public FeedForwardModel<TInput, TOutput> AddOutputLayer<TOutput>(IUnembeddingLayer<TOutput> outputLayer)
+        public EmbeddedModel<TInput, TOutput> AddOutputLayer<TOutput>(IUnembeddingLayer<TOutput> outputLayer)
         {
             Debug.Assert(LastOutputNodeCount == outputLayer.InputNodeCount);
             return new()
             {
                 InputLayer = InputLayer,
-                HiddenLayers = Layers.Select(l => l.Create()).ToImmutableArray(),
+                InnerModel = new() { Layers = Layers.Select(l => l.Create()).ToImmutableArray() },
                 OutputLayer = outputLayer,
             };
         }

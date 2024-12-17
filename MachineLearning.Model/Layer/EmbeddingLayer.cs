@@ -11,7 +11,7 @@ public sealed class EmbeddingLayer(int tokenCount, int embeddingSize, int contex
     public int OutputNodeCount { get; } = contextSize * embeddingSize;
     public int EmbeddingSize => EmbeddingMatrix.ColumnCount;
     public int ContextSize { get; } = contextSize;
-    public uint ParameterCount => (uint) EmbeddingMatrix.FlatCount;
+    public long ParameterCount => EmbeddingMatrix.FlatCount;
 
     public Vector Forward(int[] input)
     {
@@ -37,7 +37,7 @@ public sealed class EmbeddingLayer(int tokenCount, int embeddingSize, int contex
         return EmbeddingMatrix.RowSpan(index);
     }
 
-    public sealed class Initializer(Random? random = null) : ILayerInitializer<EmbeddingLayer>
+    public sealed class Initializer(Random? random = null) : IInitializer<EmbeddingLayer>
     {
         public Random Random { get; } = random ?? Random.Shared;
 

@@ -1,10 +1,9 @@
-﻿using System.Diagnostics;
-using MachineLearning.Model.Activation;
+﻿using MachineLearning.Model.Activation;
 using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Model.Layer;
 
-public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationFunction Activation) : ILayer
+public sealed class FeedForwardLayer(Matrix Weights, Vector Biases, IActivationFunction Activation) : ILayer
 {
     public int InputNodeCount { get; } = Weights.ColumnCount;
     public int OutputNodeCount { get; } = Biases.Count;
@@ -13,7 +12,7 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationFuncti
 
     public IActivationFunction ActivationFunction { get; } = Activation;
 
-    public uint ParameterCount => (uint)Biases.Count + (uint)Weights.FlatCount;
+    public long ParameterCount => Biases.Count + Weights.FlatCount;
 
     public Vector Forward(Vector input)
     {
@@ -24,15 +23,14 @@ public sealed class SimpleLayer(Matrix Weights, Vector Biases, IActivationFuncti
         return result;
     }
 
-    public Vector Forward(Vector input, ILayerSnapshot snapshot)
+    public Vector Forward(Vector input, LayerSnapshots.Simple snapshot)
     {
-        if (snapshot is not LayerSnapshots.Simple simpleSnapshot) throw new UnreachableException();
-        input.CopyTo(simpleSnapshot.LastRawInput);
-        Weights.MultiplyTo(input, simpleSnapshot.LastWeightedInput);
-        simpleSnapshot.LastWeightedInput.AddToSelf(Biases);
+        input.CopyTo(snapshot.LastRawInput);
+        Weights.MultiplyTo(input, snapshot.LastWeightedInput);
+        snapshot.LastWeightedInput.AddToSelf(Biases);
 
-        ActivationFunction.ActivateTo(simpleSnapshot.LastWeightedInput, simpleSnapshot.LastActivatedWeights);
+        ActivationFunction.ActivateTo(snapshot.LastWeightedInput, snapshot.LastActivatedWeights);
 
-        return simpleSnapshot.LastActivatedWeights;
+        return snapshot.LastActivatedWeights;
     }
 }

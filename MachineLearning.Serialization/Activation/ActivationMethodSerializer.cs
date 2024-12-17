@@ -24,7 +24,6 @@ public static class ActivationMethodSerializer
 
     public static void RegisterV1(string key, IActivationFunction instance) => _legacyRegistry.Add(key, instance);
 
-    public static void WriteV1(BinaryWriter writer, IActivationFunction data) => writer.Write(_registry[data.GetType()]);
     public static IActivationFunction ReadV1(BinaryReader reader) => _legacyRegistry[reader.ReadString()];
     public static void WriteV3(BinaryWriter writer, IActivationFunction data)
     {
@@ -54,7 +53,7 @@ public static class ActivationMethodSerializer
     public static IActivationFunction ReadV2(BinaryReader reader) => _factory[reader.ReadString()](reader);
     public static IActivationFunction ReadV3(BinaryReader reader) => _factoryV3[(reader.ReadString(), reader.ReadUInt32())](reader);
 
-    public static void RegisterDefaults()
+    static ActivationMethodSerializer()
     {
         Register<SigmoidActivation>("sigmoid", 1, reader => SigmoidActivation.Instance);
         Register<SoftMaxActivation>("softmax", 1, reader => SoftMaxActivation.Instance);

@@ -9,7 +9,7 @@ public sealed class AdamWOptimizer : AdamOptimizer
 
     public override ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
     {
-        SimpleLayer simpleLayer => new SimpleAdamWOptimizer(this, simpleLayer),
+        FeedForwardLayer simpleLayer => new SimpleAdamWOptimizer(this, simpleLayer),
         _ => throw new NotImplementedException($"No Nadam implementation for {layer}"),
     };
 }

@@ -18,7 +18,7 @@ public interface IUnembeddingLayer<TOutput> : ILayer
     public (TOutput output, int index, Vector weights) Forward(Vector input, ILayerSnapshot snapshot);
 }
 
-public interface ILayer 
+public interface ILayer
 {
-    public uint ParameterCount { get; }
+    public long ParameterCount { get; }
 };

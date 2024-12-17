@@ -3,13 +3,13 @@ using MachineLearning.Training.Optimization.Adam;
 
 namespace MachineLearning.Training.Optimization.AdamW;
 
-public sealed class SimpleAdamWOptimizer(AdamWOptimizer optimizer, SimpleLayer layer) : SimpleAdamOptimizer(optimizer, layer)
+public sealed class SimpleAdamWOptimizer(AdamWOptimizer optimizer, FeedForwardLayer layer) : SimpleAdamOptimizer(optimizer, layer)
 {
     public new AdamWOptimizer Optimizer { get; } = optimizer;
 
     public override void Apply(int dataCounter)
     {
-        var averagedLearningRate = Optimizer.LearningRate / MathF.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate / Weight.Sqrt(dataCounter);
 
         (FirstMomentBiases, GradientCostBiases).MapToFirst(FirstMomentEstimate);
         (SecondMomentBiases, GradientCostBiases).MapToFirst(SecondMomentEstimate);
@@ -25,9 +25,9 @@ public sealed class SimpleAdamWOptimizer(AdamWOptimizer optimizer, SimpleLayer l
 
         Weight WeightReduction(Weight firstMoment, Weight secondMoment)
         {
-            var mHat = firstMoment / (1 - MathF.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
-            var vHat = secondMoment / (1 - MathF.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
-            return averagedLearningRate * mHat / (MathF.Sqrt(vHat) + Optimizer.Epsilon);
+            var mHat = firstMoment / (1 - Weight.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
+            var vHat = secondMoment / (1 - Weight.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
+            return averagedLearningRate * mHat / (Weight.Sqrt(vHat) + Optimizer.Epsilon);
         }
 
         Weight FirstMomentEstimate(Weight lastMoment, Weight gradient)

@@ -12,7 +12,7 @@ public sealed class StringEmbeddingLayer(string tokens, int contextSize, int emb
     public string Tokens { get; } = tokens;
     public int EmbeddingSize => EmbeddingMatrix.ColumnCount;
     public int ContextSize { get; } = contextSize;
-    public uint ParameterCount => (uint)EmbeddingMatrix.FlatCount;
+    public long ParameterCount => (uint)EmbeddingMatrix.FlatCount;
 
     public Vector Forward(string input)
     {
@@ -46,7 +46,7 @@ public sealed class StringEmbeddingLayer(string tokens, int contextSize, int emb
         return output;
     }
 
-    public sealed class Initializer(Random? random = null) : ILayerInitializer<StringEmbeddingLayer>
+    public sealed class Initializer(Random? random = null) : IInitializer<StringEmbeddingLayer>
     {
         public Random Random { get; } = random ?? Random.Shared;
 

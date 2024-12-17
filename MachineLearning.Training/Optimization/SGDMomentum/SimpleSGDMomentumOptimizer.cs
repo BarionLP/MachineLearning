@@ -4,9 +4,9 @@ using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.SGDMomentum;
 
-public sealed class SimpleSGDMomentumOptimizer : ILayerOptimizer<SimpleLayer, LayerSnapshots.Simple>
+public sealed class SimpleSGDMomentumOptimizer : ILayerOptimizer<FeedForwardLayer, LayerSnapshots.Simple>
 {
-    public SimpleLayer Layer { get; }
+    public FeedForwardLayer Layer { get; }
     public readonly Matrix CostGradientWeights;
     public readonly Vector CostGradientBiases;
     public readonly Matrix WeightVelocities;
@@ -14,7 +14,7 @@ public sealed class SimpleSGDMomentumOptimizer : ILayerOptimizer<SimpleLayer, La
     public ICostFunction CostFunction => Optimizer.CostFunction;
     public SGDMomentumOptimizer Optimizer { get; }
 
-    public SimpleSGDMomentumOptimizer(SGDMomentumOptimizer optimizer, SimpleLayer layer)
+    public SimpleSGDMomentumOptimizer(SGDMomentumOptimizer optimizer, FeedForwardLayer layer)
     {
         Optimizer = optimizer;
         Layer = layer;

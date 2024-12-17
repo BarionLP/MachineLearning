@@ -5,7 +5,7 @@ namespace MachineLearning.Model.Layer;
 public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 {
     public int OutputNodeCount => ContextSize * EmbeddingSize;
-    public uint ParameterCount => 0;
+    public long ParameterCount => 0;
 
     public int EmbeddingSize => EmbeddingMatrix.ColumnCount;
     public int TokenCount => EmbeddingMatrix.RowCount;

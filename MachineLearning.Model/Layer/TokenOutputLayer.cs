@@ -10,7 +10,7 @@ public sealed class TokenOutputLayer(string tokens, bool weightedRandom, Random?
     public Random Random { get; } = random ?? Random.Shared;
 
     public int InputNodeCount => Tokens.Length;
-    public uint ParameterCount => 0;
+    public long ParameterCount => 0;
 
     public (char, Weight) Forward(Vector input)
     {

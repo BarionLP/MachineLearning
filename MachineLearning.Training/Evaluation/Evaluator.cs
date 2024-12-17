@@ -42,8 +42,8 @@ public static class Evaluator
         foreach(var entry in dataSet)
         {
             totalCounter++;
-            var outputWeights = model.InnerModel.Forward(model.Embedder.Embed(entry.Input));
-            var (output, confidence) = model.Embedder.Unembed(outputWeights);
+            var outputWeights = model.InnerModel.Process(model.InputLayer.Forward(entry.Input));
+            var (output, confidence) = model.OutputLayer.Forward(outputWeights);
 
             if(output.Equals(entry.Expected))
             {

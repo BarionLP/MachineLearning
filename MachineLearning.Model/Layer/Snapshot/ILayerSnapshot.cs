@@ -17,7 +17,6 @@ public static class LayerSnapshots
 
         if (queue.TryDequeue(out var snapshot))
         {
-            //Console.WriteLine("Reused Layer");
             away++;
             return snapshot;
         }
@@ -28,7 +27,6 @@ public static class LayerSnapshots
 
     public static void Return(ILayer layer, ILayerSnapshot snapshot)
     {
-        //Console.WriteLine("Returned Layer");
         away--;
         _registry[layer].Enqueue(snapshot);
     }
@@ -49,9 +47,9 @@ public static class LayerSnapshots
         created++;
         return layer switch
         {
-            SimpleLayer simpleLayer => new Simple(simpleLayer.InputNodeCount, simpleLayer.OutputNodeCount),
+            FeedForwardLayer simpleLayer => new Simple(simpleLayer.InputNodeCount, simpleLayer.OutputNodeCount),
             StringEmbeddingLayer => new Embedding(),
-            TokenOutputLayer or IEmbedder<string, char> or IEmbedder<uint, (uint, uint)> or IEmbedder<float[], int> or EncodedEmbeddingLayer => Empty,
+            TokenOutputLayer or IEmbedder<string, char> or IEmbedder<double[], int> => Empty,
             _ => throw new NotImplementedException($"No snapshot for {layer} found"),
         };
     }

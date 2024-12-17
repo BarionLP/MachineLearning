@@ -12,7 +12,7 @@ public interface IEmbedder<in TInput, TOutput> : IEmbeddingLayer<TInput>, IUnemb
 
     int IEmbeddingLayer<TInput>.OutputNodeCount => 0;
     int IUnembeddingLayer<TOutput>.InputNodeCount => 0;
-    uint ILayer.ParameterCount => 0;
+    long ILayer.ParameterCount => 0;
 
     Vector IEmbeddingLayer<TInput>.Forward(TInput input) => Embed(input);
     Vector IEmbeddingLayer<TInput>.Forward(TInput input, ILayerSnapshot snapshot) => Embed(input, snapshot);
