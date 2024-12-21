@@ -12,6 +12,6 @@ public sealed class EmbeddedModel<TIn, TOut> : IModel
 
     public (TOut prediction, Weight confidence) Process(TIn input) 
         => OutputLayer.Process(InnerModel.Process(InputLayer.Process(input)));
-
+    
     public override string ToString() => $"Embedded {InnerModel}";
 }

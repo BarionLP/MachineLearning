@@ -2,11 +2,11 @@ using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
-namespace MachineLearning.Training.Optimization.Adam;
+namespace MachineLearning.Training.Optimization;
 
-public sealed class EmptyAdamOptimizer(ILayer layer) : ILayerOptimizer
+public sealed class EmptyLayerOptimizer : ILayerOptimizer
 {
-    public ILayer Layer { get; } = layer;
+    public static EmptyLayerOptimizer Instance { get; } = new();
     public ICostFunction CostFunction => null!;
 
     public void Apply(int dataCounter) { }

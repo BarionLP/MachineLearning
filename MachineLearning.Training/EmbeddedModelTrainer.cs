@@ -12,7 +12,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
     public TrainingConfig Config { get; }
     public ITrainingSet TrainingSet { get; }
     public EmbeddedModel<TIn, TOut> Model { get; }
-    public IGenericOptimizer Optimizer { get; }
+    public Optimizer Optimizer { get; }
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[^1];
 
@@ -99,7 +99,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
                 correctCounter++;
             }
             dataCounter++;
-            totalCost += Config.Optimizer.CostFunction.TotalCost(weights, data.Expected);
+            totalCost += Config.Optimizer.CostFunction.TotalCost(weights, data.ExpectedWeights);
         }
 
 
@@ -117,9 +117,10 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
     private Vector Update(TrainingData<TIn, TOut> data)
     {
         var snapshots = Model.InnerModel.Layers.Select(LayerSnapshots.Get).OfType<LayerSnapshots.Simple>().ToImmutableArray();
-        var result = Model.InnerModel.Process(data.Input, snapshots);
+        var inputWeights = Model.InputLayer.Process(data.InputValue);
+        var result = Model.InnerModel.Process(inputWeights, snapshots);
 
-        var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(Model.InnerModel.Layers[^1], OutputLayerOptimizer.CostFunction, data.Expected, snapshots[^1]);
+        var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(Model.InnerModel.Layers[^1], OutputLayerOptimizer.CostFunction, data.ExpectedWeights, snapshots[^1]);
         NumericsDebug.AssertValidNumbers(nodeValues);
         OutputLayerOptimizer.Update(nodeValues, snapshots[^1]);
 

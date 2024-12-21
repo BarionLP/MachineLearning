@@ -22,7 +22,7 @@ public sealed class MNISTDataSet(IEnumerable<DataEntry<double[], int>> data) : I
             yield return new Batch(batchSize, data.Skip(i * batchSize).Take(batchSize).Select(d =>
             {
                 var data = Noise.Apply(d.Input);
-                return new TrainingData<double[], int>(data, d.Expected, MNISTModel.Embedder.Embed(data), Expected(d.Expected));
+                return new TrainingData<double[], int>(data, d.Expected, Expected(d.Expected));
             }));
         }
     }

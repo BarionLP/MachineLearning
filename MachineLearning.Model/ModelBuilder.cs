@@ -35,7 +35,7 @@ public sealed class ModelBuilder(int inputNodeCount)
         return this;
     }
 
-    public FeedForwardModel Build() => new() { Layers = Layers.Select(l => l.Create()).ToImmutableArray() };
+    public FeedForwardModel Build() => new() { Layers = [.. Layers.Select(l => l.Create())] };
 
     public EmbeddedModel<TInput, TOutput> Build<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => new() 
     { 
@@ -47,7 +47,6 @@ public sealed class ModelBuilder(int inputNodeCount)
 
 public static class AdvancedModelBuilder
 {
-
     public static HiddenLayerConfig<TInput> Create<TLayer, TInput>(TLayer layer, IInitializer<TLayer> initializer) where TLayer : IEmbeddingLayer<TInput>
     {
         initializer.Initialize(layer);
@@ -64,18 +63,17 @@ public static class AdvancedModelBuilder
         public IActivationFunction DefaultActivationFunction { get; set; } = SigmoidActivation.Instance;
         public int LastOutputNodeCount = layer.OutputNodeCount;
 
-        public HiddenLayerConfig<TInput> SetDefaultActivationFunction(IActivationFunction activationFunction)
+        public HiddenLayerConfig<TInput> DefaultActivation(IActivationFunction activationFunction)
         {
             DefaultActivationFunction = activationFunction;
             return this;
         }
-        public HiddenLayerConfig<TInput> AddLayer(int nodeCount, IInitializer<FeedForwardLayer> initializer, IActivationFunction? activationMethod = null)
-        {
-            return AddLayer(
+        public HiddenLayerConfig<TInput> AddLayer(int nodeCount, IInitializer<FeedForwardLayer> initializer, IActivationFunction? activationMethod = null) 
+            => AddLayer(
                 new LayerFactory(LastOutputNodeCount, nodeCount)
                 .SetActivationFunction(activationMethod ?? DefaultActivationFunction).SetInitializer(initializer)
             );
-        }
+        
         public HiddenLayerConfig<TInput> AddLayer(int nodeCount, Action<LayerFactory> consumer)
         {
             var layerBuilder = new LayerFactory(LastOutputNodeCount, nodeCount)

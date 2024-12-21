@@ -7,7 +7,7 @@ public sealed record TrainingConfig
 {
     public required int EpochCount { get; init; }
 
-    public required IGenericOptimizer Optimizer { get; init; }
+    public required Optimizer Optimizer { get; init; }
     public bool MultiThread { get; init; } = true;
 
     public Action<DataSetEvaluation>? EvaluationCallback { get; init; } = null;

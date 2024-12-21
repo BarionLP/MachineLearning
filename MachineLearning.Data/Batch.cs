@@ -3,7 +3,7 @@ using MachineLearning.Data.Entry;
 
 namespace MachineLearning.Data;
 
-public record Batch(int Size, IEnumerable<TrainingData> DataPoints) : IEnumerable<TrainingData>
+public sealed record Batch(int Size, IEnumerable<TrainingData> DataPoints) : IEnumerable<TrainingData>
 {
     public IEnumerable<TrainingData> DataPoints { get; private set; } = DataPoints;
 

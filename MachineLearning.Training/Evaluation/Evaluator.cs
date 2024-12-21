@@ -49,7 +49,7 @@ public static class Evaluator
                 correctCounter++;
             }
 
-            totalCost += costFunction.TotalCost(outputWeights, entry.Expected);
+            totalCost += costFunction.TotalCost(outputWeights, entry.ExpectedWeights);
         }
 
         return new()

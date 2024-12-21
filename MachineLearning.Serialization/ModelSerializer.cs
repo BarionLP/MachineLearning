@@ -58,7 +58,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
             if (!LayerDeserializers.TryGetValue((layerKey, layerVersion), out var deserializer))
             {
-                return new NotImplementedException();
+                return new NotImplementedException($"No reader registered for {layerKey} v{layerVersion} layer");
             }
 
             var result = deserializer(reader);
@@ -150,7 +150,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         return formatVersion switch
         {
             2 => LoadV2(reader),
-            _ => new NotImplementedException(),
+            _ => new NotImplementedException($".gmw version {formatVersion} is unsupported"),
         };
     }
 
@@ -160,7 +160,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var modelVersion = reader.ReadUInt32();
         if (!ModelDeserializers.TryGetValue((modelKey, modelVersion), out var deserializer))
         {
-            return new NotImplementedException();
+            return new NotImplementedException($"No reader registered for {modelKey} v{modelVersion} model");
         }
 
         return deserializer(reader);
