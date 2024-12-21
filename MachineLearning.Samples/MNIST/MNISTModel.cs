@@ -69,7 +69,7 @@ public static class MNISTModel
     public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig? config = null, Random? random = null)
     {
         model ??= CreateModel(random);
-        var trainer = ModelTrainer.Generic(model, config ?? DefaultTrainingConfig(random), GetTrainingSet());
+        var trainer = ModelTrainer.Create(model, config ?? DefaultTrainingConfig(random), GetTrainingSet());
 
         trainer.TrainConsole();
 

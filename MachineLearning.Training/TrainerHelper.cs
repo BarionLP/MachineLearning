@@ -47,9 +47,7 @@ public static class TrainerHelper
         var sb = new StringBuilder();
         sb.AppendLine();
         sb.AppendLine("Training Info:");
-        //sb.AppendLine($"{TrainingSet.Length} Training Entries");
-        //sb.AppendLine($"{TestSet.Length} Test Entries");
-        sb.AppendLine($"using {config.Optimizer.GetType().Name}");
+        sb.AppendLine($"using {config.Optimizer.GetType().Name}{(config.MultiThread ? " (Multithreaded)" : "")}");
         sb.AppendLine("Training for");
         sb.AppendLine($" - {config.EpochCount} epochs");
         sb.AppendLine($"  - {trainingSet.BatchCount} batches");

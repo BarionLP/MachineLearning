@@ -13,8 +13,8 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 
     public Matrix EmbeddingMatrix;
 
-    public EncodedEmbeddingLayer(int tokenCount, int contextSize) : this(tokenCount, (int)Math.Log2(tokenCount) + 1, contextSize) { }
-    public EncodedEmbeddingLayer(int tokenCount, int embeddingSize, int contextSize)
+    public EncodedEmbeddingLayer(int tokenCount, int contextSize) : this(tokenCount, contextSize, (int) Math.Log2(tokenCount) + 1) { }
+    public EncodedEmbeddingLayer(int tokenCount, int contextSize, int embeddingSize)
     {
         ContextSize = contextSize;
         EmbeddingMatrix = Matrix.Create(tokenCount, embeddingSize);

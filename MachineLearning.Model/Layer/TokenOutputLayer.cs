@@ -22,15 +22,6 @@ public sealed class TokenOutputLayer(int tokenCount, bool weightedRandom, Random
     {
         Debug.Assert(input.Count == TokenCount);
 
-        // temperature adjustments
-        if (WeightedRandom)
-        {
-            // cannot work on self
-            // input.PointwiseLogToSelf();
-            // input.DivideToSelf(temperature);
-            // input.SoftMaxToSelf();
-        }
-
         var index = WeightedRandom ? GetWeightedRandomIndex(input, Random) : input.MaximumIndex();
         return (index, index, input);
     }

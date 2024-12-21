@@ -1,81 +1,75 @@
-//using MachineLearning.Model.Layer;
+using MachineLearning.Data;
+using MachineLearning.Model.Layer;
 
-//namespace MachineLearning.Samples.Language;
+namespace MachineLearning.Samples.Language;
 
-//public sealed class SLM3Mini
-//{
-//    public const string TOKENS = " %'(),-.0123456789:=abcdefghijklmnopqrstuvwxyz\0";
-//    public const int CONTEXT_SIZE = 64;
+public sealed class SLM3Mini : ISample<int[], int>
+{
+    public const string TOKENS = " %'(),-.0123456789:=abcdefghijklmnopqrstuvwxyz\0";
+    public const int CONTEXT_SIZE = 64;
 
-//    public static IOutputResolver<char> OutputResolver { get; } = new CharOutputResolver(TOKENS);
-//    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("sentences_3_mini.gmw"));
-//    public static EmbeddedModel<string, char> CreateModel(Random? random = null)
-//    {
-//        var initializer = new HeInitializer(random);
-//        return AdvancedModelBuilder
-//            .Create<StringEmbeddingLayer, string>(new StringEmbeddingLayer(TOKENS, CONTEXT_SIZE, 12), new StringEmbeddingLayer.Initializer(random))
-//                .SetDefaultActivationFunction(LeakyReLUActivation.Instance)
-//                .AddLayer(1024, initializer)
-//                .AddLayer(512, initializer)
-//                .AddLayer(256, initializer)
-//                .AddLayer(TOKENS.Length, new XavierInitializer(random), SoftMaxActivation.Instance)
-//            .AddOutputLayer(new TokenOutputLayer(TOKENS, true, random));
-//    }
+    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3_mini.gmw"));
+    public static EmbeddedModel<int[], int> CreateModel(Random? random = null)
+    {
+        var initializer = new HeInitializer(random);
+        return AdvancedModelBuilder
+            .Create(new EncodedEmbeddingLayer(TOKENS.Length, CONTEXT_SIZE))
+                .DefaultActivation(LeakyReLUActivation.Instance)
+                .AddLayer(1024, initializer)
+                .AddLayer(512, initializer)
+                .AddLayer(256, initializer)
+                .AddLayer(TOKENS.Length, new XavierInitializer(random), SoftMaxActivation.Instance)
+            .AddOutputLayer(new TokenOutputLayer(TOKENS.Length, true, random));
+    }
 
-//    public static EmbeddedModel<string, char> TrainDefault(EmbeddedModel<string, char>? model = null, TrainingConfig? config = null, Random? random = null)
-//    {
-//        model ??= CreateModel(random);
+    public static EmbeddedModel<int[], int> TrainDefault(EmbeddedModel<int[], int>? model = null, TrainingConfig? config = null, Random? random = null)
+    {
+        model ??= Serializer.Load<EmbeddedModel<int[], int>>().Or(error =>
+        {
+            Console.WriteLine("No existing model found! Creating new!");
+            return CreateModel(random);
+        });
 
-//        var trainer = ModelTrainer.Generic(model.InnerModel, config ?? DefaultTrainingConfig());
-//        trainer.TrainConsole();
-//        Serializer.Save(model).Consume(
-//            () => Console.WriteLine("Model saved!"),
-//            flag => Console.WriteLine($"Error saving model: {flag}")
-//        );
-//        LMHelper.StartChat(model, CONTEXT_SIZE);
-//        return model;
-//    }
+        var trainer = ModelTrainer.Create(model, config ?? DefaultTrainingConfig(), GetTrainingSet());
+        trainer.TrainConsole();
+        Serializer.Save(model).Consume(
+            () => Console.WriteLine("Model saved!"),
+            error => Console.WriteLine($"Error saving model: {error.Message}")
+        );
+        LMHelper.StartChat(model, CONTEXT_SIZE, TOKENS);
+        return model;
+    }
 
-//    public static TrainingConfig DefaultTrainingConfig(Random? random = null)
-//    {
-//        random ??= Random.Shared;
+    public static TrainingConfig DefaultTrainingConfig(Random? random = null) => new()
+    {
+        EpochCount = 32,
 
-//        var dataSet = GetTrainingSet().ToArray();
-//        random.Shuffle(dataSet);
+        Optimizer = new AdamOptimizer
+        {
+            LearningRate = 0.02f,
+            CostFunction = CrossEntropyLoss.Instance,
+        },
 
-//        var trainingSetSize = (int)(dataSet.Length * 0.9);
+        EvaluationCallback = result => Console.WriteLine(result.Dump()),
+        DumpEvaluationAfterBatches = 32,
 
-//        return new TrainingConfig()
-//        {
-//            TrainingSet = dataSet,
-//            TestSet = dataSet.Skip(trainingSetSize).ToArray(),
+        RandomSource = random ?? Random.Shared,
+    };
 
-//            EpochCount = 32,
-//            BatchCount = 256,
+    public static ITrainingSet GetTrainingSet(Random? random = null)
+    {
+        Console.WriteLine("Analyzing Trainings Data...");
+        var lines = LanguageDataHelper.GetLines(AssetManager.Sentences).ToArray();
+        Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} chars");
+        var tokensUsedBySource = new string([.. lines.SelectMany(s => s).Distinct().Order()]);
+        Console.WriteLine($"Source uses '{tokensUsedBySource}'");
 
-//            Optimizer = new AdamOptimizer
-//            {
-//                LearningRate = 0.02f,
-//                CostFunction = CrossEntropyLoss.Instance,
-//            },
-
-//            EvaluationCallback = result => Console.WriteLine(result.Dump()),
-//            DumpEvaluationAfterBatches = 64,
-
-//            RandomSource = random,
-//        };
-//    }
-
-//    public static IEnumerable<DataEntry<string, char>> GetTrainingSet(Random? random = null)
-//    {
-//        Console.WriteLine("Analyzing Trainings Data...");
-//        var lines = LanguageDataSource.GetLines(AssetManager.Sentences).ToArray();
-//        Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} chars");
-//        var tokensUsedBySource = new string([.. lines.SelectMany(s => s).Distinct().Order()]);
-//        Console.WriteLine($"Source uses '{tokensUsedBySource}'");
-//        tokensUsedBySource.Consume(t => OutputResolver.Expected(t));
-
-//        Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
-//        return lines.InContextSize(CONTEXT_SIZE).ExpandPerChar();
-//    }
-//}
+        Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
+        var entries = lines.Select(s => s.EndsWith('\0') ? s : s + '\0').InContextSize(CONTEXT_SIZE).ExpandPerChar();
+        return new PredefinedTrainingSet(entries.ToTrainingData(TOKENS))
+        {
+            BatchCount = 256,
+            Random = random ?? Random.Shared,
+        };
+    }
+}

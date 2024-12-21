@@ -24,11 +24,6 @@ public sealed class SGDMomentumOptimizer : Optimizer
     {
         LearningRate *= LearningRateEpochMultiplier;
     }
-    public ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
-    {
-        FeedForwardLayer simpleLayer => new SimpleSGDMomentumOptimizer(this, simpleLayer),
-        _ => throw new NotImplementedException($"No SSGDM implementation for {layer}"),
-    };
 }
 
 /*

@@ -17,10 +17,12 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     static ModelSerializer()
     {
         RegisterModel("ffm", 1, SaveFFM, ReadFFM);
+        RegisterModel("etm", 1, SaveETM, ReadETM);
 
-        RegisterLayer("simple", 2, SaveSimpleLayer, ReadSimpleLayer);
-        //RegisterLayer("string", 1, SaveStringLayer, ReadStringLayer);
-        //RegisterLayer("tokenOut", 1, SaveTokenOutLayer, ReadTokenOutLayer);
+        RegisterLayerReader("simple", 2, ReadFeedForwardLayer);
+        RegisterLayer("ffl", 1, SaveFeedForwardLayer, ReadFeedForwardLayer);
+        RegisterLayer("eel", 1, SaveEncodedEmbeddingLayer, ReadEncodedEmbeddingLayer);
+        RegisterLayer("tol", 1, SaveTokenOutputLayer, ReadTokenOutputLayer);
     }
 
     public static ErrorState SaveFFM(FeedForwardModel model, BinaryWriter writer)
@@ -28,16 +30,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         writer.Write(model.Layers.Length);
         foreach (var layer in model.Layers)
         {
-            if (!LayerSerializers.TryGetValue(layer.GetType(), out var data))
-            {
-                return new NotImplementedException();
-            }
-
-            var (key, subVersion, serializer) = data;
-
-            writer.Write(key);
-            writer.Write(subVersion);
-            var flag = serializer(layer, writer);
+            var flag = SaveLayer(layer, writer);
             if (!OptionsMarshall.IsSuccess(flag))
             {
                 return flag;
@@ -74,8 +67,69 @@ public sealed class ModelSerializer(FileInfo fileInfo)
             Layers = [.. layers],
         };
     }
+    
+    public static ErrorState SaveETM(EmbeddedModel<int[], int> model, BinaryWriter writer)
+    {
+        if(model.InputLayer is not EncodedEmbeddingLayer eel)
+        {
+            return new NotImplementedException("EmbeddedModel<int[], int> only supports EncodedEmbeddingLayer rn");
+        }
 
-    public static ErrorState SaveSimpleLayer(FeedForwardLayer layer, BinaryWriter writer)
+        var result = SaveEncodedEmbeddingLayer(eel, writer);
+        if (!OptionsMarshall.IsSuccess(result))
+        {
+            return result;
+        }
+        
+        result = SaveFFM(model.InnerModel, writer);
+        if (!OptionsMarshall.IsSuccess(result))
+        {
+            return result;
+        }
+
+        if (model.OutputLayer is not TokenOutputLayer tol)
+        {
+            return new NotImplementedException("EmbeddedModel<int[], int> only supports TokenOutputLayer rn");
+        }
+
+        result = SaveTokenOutputLayer(tol, writer);
+        if (!OptionsMarshall.IsSuccess(result))
+        {
+            return result;
+        }
+
+        return default;
+    }
+
+    public static Result<EmbeddedModel<int[], int>> ReadETM(BinaryReader reader)
+    {
+        var input = ReadEncodedEmbeddingLayer(reader);
+        if (OptionsMarshall.TryGetError(input, out var error))
+        {
+            return error;
+        }
+        
+        var inner = ReadFFM(reader);
+        if (OptionsMarshall.TryGetError(inner, out error))
+        {
+            return error;
+        }
+        
+        var output = ReadTokenOutputLayer(reader);
+        if (OptionsMarshall.TryGetError(output, out error))
+        {
+            return error;
+        }
+
+        return new EmbeddedModel<int[], int>
+        {
+            InputLayer = input.OrThrow(),
+            InnerModel = inner.OrThrow(),
+            OutputLayer = output.OrThrow(),
+        };
+    }
+
+    public static ErrorState SaveFeedForwardLayer(FeedForwardLayer layer, BinaryWriter writer)
     {
         writer.Write(layer.InputNodeCount);
         writer.Write(layer.OutputNodeCount);
@@ -95,7 +149,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         return null;
     }
 
-    public static Result<FeedForwardLayer> ReadSimpleLayer(BinaryReader reader)
+    public static Result<FeedForwardLayer> ReadFeedForwardLayer(BinaryReader reader)
     {
         var inputNodeCount = reader.ReadInt32();
         var outputNodeCount = reader.ReadInt32();
@@ -115,12 +169,58 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
         return layer;
     }
+    
+    public static ErrorState SaveEncodedEmbeddingLayer(EncodedEmbeddingLayer layer, BinaryWriter writer)
+    {
+        writer.Write(layer.TokenCount);
+        writer.Write(layer.ContextSize);
+        writer.Write(layer.EmbeddingSize);
+
+        return default;
+    }
+
+    public static Result<EncodedEmbeddingLayer> ReadEncodedEmbeddingLayer(BinaryReader reader)
+    {
+        var tokenCount = reader.ReadInt32();
+        var contextSize = reader.ReadInt32();
+        var embeddingSize = reader.ReadInt32();
+        return new EncodedEmbeddingLayer(tokenCount, contextSize, embeddingSize);
+    }
+    
+    public static ErrorState SaveTokenOutputLayer(TokenOutputLayer layer, BinaryWriter writer)
+    {
+        writer.Write(layer.TokenCount);
+        writer.Write(layer.WeightedRandom);
+
+        return default;
+    }
+
+    public static Result<TokenOutputLayer> ReadTokenOutputLayer(BinaryReader reader)
+    {
+        var tokenCount = reader.ReadInt32();
+        var weightedRandom = reader.ReadBoolean();
+        return new TokenOutputLayer(tokenCount, weightedRandom);
+    }
+
+    public static ErrorState SaveLayer(ILayer layer, BinaryWriter writer)
+    {
+        if (!LayerSerializers.TryGetValue(layer.GetType(), out var data))
+        {
+            return new NotImplementedException($"No writer registered for {layer.GetType().Name}");
+        }
+
+        var (key, subVersion, serializer) = data;
+
+        writer.Write(key);
+        writer.Write(subVersion);
+        return serializer(layer, writer);
+    }
 
     public ErrorState Save(IModel model)
     {
         if (!ModelSerializers.TryGetValue(model.GetType(), out var data))
         {
-            return new NotImplementedException();
+            return new NotImplementedException($"Saving {model.GetType()} is not implemented");
         }
 
         var (key, modelVersion, serializer) = data;
@@ -135,8 +235,14 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         return serializer(model, writer);
     }
 
+    public Result<TModel> Load<TModel>() where TModel : IModel => Load().Where<TModel>();
     public Result<IModel> Load()
     {
+        if (!fileInfo.Exists)
+        {
+            return new FileNotFoundException(null, fileInfo.FullName);
+        }
+
         using var stream = fileInfo.OpenRead();
         using var reader = new BinaryReader(stream);
 
