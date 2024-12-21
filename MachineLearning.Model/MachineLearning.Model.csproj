@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Packages\Ametrin.Optional\src\Ametrin.Optional.csproj" />
     <ProjectReference Include="..\Ametrin.Numerics\Ametrin.Numerics.csproj" />
     <ProjectReference Include="..\..\..\Packages\Ametrin.Utils\src\Ametrin.Utils.csproj" />
   </ItemGroup>

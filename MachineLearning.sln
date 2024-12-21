@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarionGPT", "BarionGPT\BarionGPT.csproj", "{583A9FAD-329C-467C-AC4A-C2631A7AF61E}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Model", "MachineLearning.Model\MachineLearning.Model.csproj", "{7730AEEE-5540-4E56-8725-66E2E8D8D686}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Training", "MachineLearning.Training\MachineLearning.Training.csproj", "{68FCA961-7AD2-453D-9790-322D470A78AF}"
@@ -19,10 +17,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Samples", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MachineLearning.Benchmarks", "MachineLearning.Benchmarks\MachineLearning.Benchmarks.csproj", "{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Transformer", "MachineLearning.Transformer\MachineLearning.Transformer.csproj", "{57714506-D69C-43BA-B920-37E941A14933}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Mamba", "MachineLearning.Mamba\MachineLearning.Mamba.csproj", "{58038FD1-3686-452B-AEC1-4EB821396F8D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Numerics", "Ametrin.Numerics\Ametrin.Numerics.csproj", "{6B9444C3-726A-483E-9D71-BE0229ACF28D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simple", "Simple\Simple.csproj", "{88540E64-78F3-4ACA-B6A9-319EF2A2AF12}"
@@ -31,18 +25,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MachineLearning.Visual", "M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Utils", "..\..\Packages\Ametrin.Utils\src\Ametrin.Utils.csproj", "{B2499507-D66D-4058-987F-609EA96357AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ametrin.Optional", "..\..\Packages\Ametrin.Optional\src\Ametrin.Optional.csproj", "{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{583A9FAD-329C-467C-AC4A-C2631A7AF61E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7730AEEE-5540-4E56-8725-66E2E8D8D686}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -71,14 +59,6 @@ Global
 		{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FDB6DEC6-512B-42C2-95D6-5772D843E3F8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{57714506-D69C-43BA-B920-37E941A14933}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{57714506-D69C-43BA-B920-37E941A14933}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{57714506-D69C-43BA-B920-37E941A14933}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{57714506-D69C-43BA-B920-37E941A14933}.Release|Any CPU.Build.0 = Release|Any CPU
-		{58038FD1-3686-452B-AEC1-4EB821396F8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{58038FD1-3686-452B-AEC1-4EB821396F8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{58038FD1-3686-452B-AEC1-4EB821396F8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{58038FD1-3686-452B-AEC1-4EB821396F8D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6B9444C3-726A-483E-9D71-BE0229ACF28D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6B9444C3-726A-483E-9D71-BE0229ACF28D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B9444C3-726A-483E-9D71-BE0229ACF28D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -95,10 +75,6 @@ Global
 		{B2499507-D66D-4058-987F-609EA96357AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2499507-D66D-4058-987F-609EA96357AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2499507-D66D-4058-987F-609EA96357AF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9D8784B0-ACEE-4F77-8F2A-2655B1B29858}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
