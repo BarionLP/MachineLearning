@@ -1,19 +1,20 @@
-﻿using MachineLearning.Data.Noise;
+﻿using MachineLearning.Data;
+using MachineLearning.Data.Noise;
 using MachineLearning.Data.Source;
-using ModelDefinition = MachineLearning.Model.EmbeddedModel<float[], int>;
+using ModelDefinition = MachineLearning.Model.EmbeddedModel<double[], int>;
 
 namespace MachineLearning.Samples.MNIST;
 
-public class MNISTModel
+public static class MNISTModel
 {
-    public static IEmbedder<float[], int> Embedder => MNISTEmbedder.Instance;
+    public static IEmbedder<double[], int> Embedder => MNISTEmbedder.Instance;
 
     public static ModelDefinition CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
 
         var network = new ModelBuilder(784)
-                .SetDefaultActivationMethod(LeakyReLUActivation.Instance)
+                .DefaultActivation(LeakyReLUActivation.Instance)
                 .AddLayer(256, initializer)
                 .AddLayer(128, initializer)
                 .AddLayer(10, new XavierInitializer(random), SoftMaxActivation.Instance)
@@ -22,17 +23,33 @@ public class MNISTModel
         return network;
     }
 
-    public static TrainingConfig<float[], int> GetTrainingConfig(Random? random = null)
+    public static ITrainingSet GetTrainingSet(Random? random = null)
     {
         var dataSource = new MNISTDataSource(AssetManager.MNISTArchive);
 
-        return new TrainingConfig<float[], int>()
+        return new MNISTDataSet(dataSource.TrainingSet)
         {
-            TrainingSet = dataSource.TrainingSet,
-            TestSet = dataSource.TestingSet,
-
-            EpochCount = 8,
             BatchCount = 128,
+            Noise = new ImageInputNoise
+            {
+                Size = ImageDataEntry.SIZE,
+                NoiseStrength = 0.35,
+                NoiseProbability = 0.75,
+                MaxShift = 2,
+                MaxAngle = 30,
+                MinScale = 0.8,
+                MaxScale = 1.2,
+                Random = random ?? Random.Shared,
+            },
+            Random = random ?? Random.Shared,
+        };
+    }
+
+    public static TrainingConfig DefaultTrainingConfig(Random? random = null)
+    {
+        return new TrainingConfig()
+        {
+            EpochCount = 8,
 
             Optimizer = new AdamOptimizer
             {
@@ -40,49 +57,30 @@ public class MNISTModel
                 CostFunction = CrossEntropyLoss.Instance,
             },
 
-            OutputResolver = new MNISTOutputResolver(),
-            InputNoise = new ImageInputNoise
-            {
-                Size = ImageDataEntry.SIZE,
-                NoiseStrength = 0.35f,
-                NoiseProbability = 0.75f,
-                MaxShift = 2,
-                MaxAngle = 30,
-                MinScale = 0.8f,
-                MaxScale = 1.2f,
-                Random = random ?? Random.Shared,
-            },
-
             DumpEvaluationAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation.Dump()),
 
-            ShuffleTrainingSetPerEpoch = true,
-
             RandomSource = random ?? Random.Shared,
+
+            MultiThread = false,
         };
     }
 
-    public static ModelDefinition TrainDefault(Random? random = null)
+    public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig? config = null, Random? random = null)
     {
-        var model = CreateModel(random);
-        var config = GetTrainingConfig(random);
-
-        TrainDefault(model, config);
-
-        return model;
-    }
-
-    public static void TrainDefault(ModelDefinition model, TrainingConfig<float[], int> config)
-    {
-        var trainer = ModelTrainer.Generic(model, config);
+        model ??= CreateModel(random);
+        var trainer = ModelTrainer.Create(model, config ?? DefaultTrainingConfig(random), GetTrainingSet());
 
         trainer.TrainConsole();
 
         var images = new ImageDataSource(AssetManager.CustomDigits);
         Benchmark(model, images);
+
+        return model;
     }
 
-    public static void Benchmark(ModelDefinition model, ImageDataSource dataSource) {
+    public static void Benchmark(ModelDefinition model, ImageDataSource dataSource)
+    {
         var correctCounter = 0;
         var counter = 0;
         var previousColor = Console.ForegroundColor;
@@ -100,6 +98,6 @@ public class MNISTModel
             counter++;
         }
         Console.ForegroundColor = previousColor;
-        Console.WriteLine($"Correct: {(double)correctCounter / counter:P0}");
+        Console.WriteLine($"Correct: {(double) correctCounter / counter:P0}");
     }
 }

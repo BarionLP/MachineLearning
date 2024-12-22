@@ -8,7 +8,7 @@ public sealed class LayerFactory(int inputNodeCount, int outputNodeCount)
     public int OutputNodeCount { get; } = outputNodeCount;
     public int InputNodeCount { get; } = inputNodeCount;
     public IActivationFunction ActivationFunction { get; set; } = SigmoidActivation.Instance;
-    public ILayerInitializer<SimpleLayer> Initializer { get; set; } = NoInitializer<SimpleLayer>.Instance;
+    public IInitializer<FeedForwardLayer> Initializer { get; set; } = NoInitializer<FeedForwardLayer>.Instance;
 
     public LayerFactory SetActivationFunction(IActivationFunction activationMethod)
     {
@@ -16,15 +16,15 @@ public sealed class LayerFactory(int inputNodeCount, int outputNodeCount)
         return this;
     }
 
-    public LayerFactory SetInitializer(ILayerInitializer<SimpleLayer> initializer)
+    public LayerFactory SetInitializer(IInitializer<FeedForwardLayer> initializer)
     {
         Initializer = initializer;
         return this;
     }
 
-    public SimpleLayer Create()
+    public FeedForwardLayer Create()
     {
-        var layer = new SimpleLayer(Matrix.Create(OutputNodeCount, InputNodeCount), Vector.Create(OutputNodeCount), ActivationFunction);
+        var layer = new FeedForwardLayer(Matrix.Create(OutputNodeCount, InputNodeCount), Vector.Create(OutputNodeCount), ActivationFunction);
         Initializer.Initialize(layer);
         return layer;
     }

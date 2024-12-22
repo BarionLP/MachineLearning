@@ -9,7 +9,7 @@ public sealed class MeanSquaredErrorCost : ICostFunction
 {
     public static readonly MeanSquaredErrorCost Instance = new();
     public Weight Cost(Weight outputActivation, Weight expected) =>
-        0.5f * MathF.Pow(outputActivation - expected, 2);
+        0.5f * float.Pow(outputActivation - expected, 2);
 
     public Weight Derivative(Weight outputActivation, Weight expected) =>
         outputActivation - expected;

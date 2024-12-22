@@ -5,17 +5,17 @@ namespace MachineLearning.Model.Layer.Initialization;
 /// <summary>
 /// suited for ReLU activations
 /// </summary>
-public sealed class HeInitializer(Random? random = null) : ILayerInitializer
+public sealed class HeInitializer(Random? random = null) : IInitializer<FeedForwardLayer>
 {
     public static HeInitializer Instance { get; } = new HeInitializer();
     public Random Random { get; } = random ?? Random.Shared;
 
-    public void Initialize(Matrix weights, Vector biases)
+    public void Initialize(FeedForwardLayer layer)
     {
-        var inputCount = weights.ColumnCount;
-        var standartDeviation = MathF.Sqrt(2.0f / inputCount);
+        var inputCount = layer.Weights.ColumnCount;
+        var standardDeviation = MathF.Sqrt(2.0f / inputCount);
 
-        weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, standartDeviation));
-        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1f));
+        layer.Weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, standardDeviation));
+        layer.Biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1f));
     }
 }

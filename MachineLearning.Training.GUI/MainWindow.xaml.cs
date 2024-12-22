@@ -28,7 +28,7 @@ public partial class MainWindow : Window
         DataContext = this;
 
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-        ActivationMethodSerializer.RegisterDefaults();
+        ActivationFunctionSerializer.RegisterDefaults();
 
         //var serializer = new ModelSerializer(AssetManager.GetModelFile("mnist.nnw"));
         var model1 = MNISTModel.CreateModel(new Random(42));

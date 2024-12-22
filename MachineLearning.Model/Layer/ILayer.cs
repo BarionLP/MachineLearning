@@ -6,19 +6,21 @@ public interface IEmbeddingLayer<in TInput> : ILayer where TInput : allows ref s
 {
     public int OutputNodeCount { get; }
 
-    public Vector Forward(TInput input);
-    public Vector Forward(TInput input, ILayerSnapshot snapshot);
+    public Vector Process(TInput input);
+    public Vector Process(TInput input, ILayerSnapshot snapshot);
 }
 
 public interface IUnembeddingLayer<TOutput> : ILayer
 {
     public int InputNodeCount { get; }
 
-    public (TOutput output, Weight confidence) Forward(Vector input);
-    public (TOutput output, int index, Vector weights) Forward(Vector input, ILayerSnapshot snapshot);
+    public (TOutput output, Weight confidence) Process(Vector input);
+    public (TOutput output, Weight confidence, Vector weights) Process(Vector input, ILayerSnapshot snapshot);
 }
 
-public interface ILayer 
+public interface ILayer
 {
-    public uint ParameterCount { get; }
+    public long ParameterCount { get; }
+
+    public ILayerSnapshot CreateSnapshot();
 };

@@ -131,13 +131,15 @@ public static class VectorHelper
     {
         NumericsDebug.AssertSameDimensions(vector, destination);
 
-        //vector.PointwiseExpTo(destination);
-        //var sum = destination.Sum();
-        //destination.DivideToSelf(sum);
+        var max = vector.Max();
+        vector.SubtractPointwiseTo(max, destination);
+        destination.PointwiseExpToSelf();
+        var sum = destination.Sum();
+        destination.DivideToSelf(sum);
 
 
         // was slower in .net 9.preview.7
-        TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());
+        //TensorPrimitives.SoftMax(vector.AsSpan(), destination.AsSpan());
         NumericsDebug.AssertValidNumbers(destination);
     }
 

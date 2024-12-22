@@ -4,7 +4,7 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace MachineLearning.Data.Entry;
 
-public sealed record ImageDataEntry(float[] Image, int Digit) : DataEntry<float[], int>(Image, Digit)
+public sealed record ImageDataEntry(double[] Image, int Digit) : DataEntry<double[], int>(Image, Digit)
 {
     public const int SIZE = 28; //TODO: un-hardcode
     public string DumpImage()
@@ -30,10 +30,10 @@ public sealed record ImageDataEntry(float[] Image, int Digit) : DataEntry<float[
 
     public static ImageDataEntry FromRaw(byte[] rawImage, byte rawDigit)
     {
-        var image = new float[rawImage.Length];
+        var image = new double[rawImage.Length];
         foreach(var i in ..rawImage.Length)
         {
-            image[i] = rawImage[i] / 255.0f;
+            image[i] = rawImage[i] / 255.0;
         }
 
         return new(image, rawDigit);
@@ -46,7 +46,7 @@ public sealed record ImageDataEntry(float[] Image, int Digit) : DataEntry<float[
         {
             int row = i / SIZE;
             int column = i % SIZE;
-            image[column, row] = new Rgba32(Image[i], Image[i], Image[i]);
+            image[column, row] = new Rgba32((float) Image[i], (float) Image[i], (float) Image[i]);
         }
         image.SaveAsPng(fileInfo.FullName);
     }

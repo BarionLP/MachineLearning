@@ -10,7 +10,7 @@
 public sealed class SigmoidActivation : ISimpleActivationMethod
 {
     public static readonly SigmoidActivation Instance = new();
-    public Weight Activate(Weight input) => 1 / (1 + MathF.Exp(-input));
+    public Weight Activate(Weight input) => 1 / (1 + float.Exp(-input));
     public Weight Derivative(Weight input)
     {
         var sigmoid = Activate(input);

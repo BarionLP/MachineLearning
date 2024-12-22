@@ -7,6 +7,6 @@
 public sealed class TanhActivation : ISimpleActivationMethod
 {
     public static readonly TanhActivation Instance = new();
-    public Weight Activate(Weight input) => MathF.Tanh(input);
-    public Weight Derivative(Weight input) => 1 - MathF.Pow(MathF.Tanh(input), 2);
+    public Weight Activate(Weight input) => float.Tanh(input);
+    public Weight Derivative(Weight input) => 1 - float.Pow(float.Tanh(input), 2);
 }

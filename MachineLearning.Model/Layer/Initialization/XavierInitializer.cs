@@ -5,18 +5,18 @@ namespace MachineLearning.Model.Layer.Initialization;
 /// <summary>
 /// suited for sigmoid, tanh and softmax activations
 /// </summary>
-public sealed class XavierInitializer(Random? random = null) : ILayerInitializer
+public sealed class XavierInitializer(Random? random = null) : IInitializer<FeedForwardLayer>
 {
     public static XavierInitializer Instance { get; } = new();
     public Random Random { get; } = random ?? Random.Shared;
 
-    public void Initialize(Matrix weights, Vector biases)
+    public void Initialize(FeedForwardLayer layer)
     {
-        var inputCount = weights.ColumnCount;
-        var outputCount = biases.Count;
+        var inputCount = layer.Weights.ColumnCount;
+        var outputCount = layer.Biases.Count;
         var standardDeviation = MathF.Sqrt(2.0f / (inputCount + outputCount));
 
-        weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0f, standardDeviation));
-        biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0f, 0.1f));
+        layer.Weights.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, standardDeviation));
+        layer.Biases.MapToSelf(v => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.1f));
     }
 }

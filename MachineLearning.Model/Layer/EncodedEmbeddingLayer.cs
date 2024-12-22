@@ -5,7 +5,7 @@ namespace MachineLearning.Model.Layer;
 public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 {
     public int OutputNodeCount => ContextSize * EmbeddingSize;
-    public uint ParameterCount => 0;
+    public long ParameterCount => 0;
 
     public int EmbeddingSize => EmbeddingMatrix.ColumnCount;
     public int TokenCount => EmbeddingMatrix.RowCount;
@@ -13,8 +13,8 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 
     public Matrix EmbeddingMatrix;
 
-    public EncodedEmbeddingLayer(int tokenCount, int contextSize) : this(tokenCount, (int)Math.Log2(tokenCount) + 1, contextSize) { }
-    public EncodedEmbeddingLayer(int tokenCount, int embeddingSize, int contextSize)
+    public EncodedEmbeddingLayer(int tokenCount, int contextSize) : this(tokenCount, contextSize, (int) Math.Log2(tokenCount) + 1) { }
+    public EncodedEmbeddingLayer(int tokenCount, int contextSize, int embeddingSize)
     {
         ContextSize = contextSize;
         EmbeddingMatrix = Matrix.Create(tokenCount, embeddingSize);
@@ -31,7 +31,7 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
         }
     }
 
-    public Vector Forward(int[] input)
+    public Vector Process(int[] input)
     {
         var output = Vector.Create(OutputNodeCount);
         var outSpan = output.AsSpan();
@@ -44,5 +44,7 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
         return output;
     }
 
-    public Vector Forward(int[] input, ILayerSnapshot _) => Forward(input);
+    public Vector Process(int[] input, ILayerSnapshot _) => Process(input);
+
+    public ILayerSnapshot CreateSnapshot() => LayerSnapshots.Empty;
 }

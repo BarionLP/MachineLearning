@@ -3,29 +3,27 @@ using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.SGDMomentum;
 
-public sealed class SGDMomentumOptimizer : IGenericOptimizer
+public sealed class SGDMomentumOptimizer : Optimizer
 {
     public required Weight InitialLearningRate { get; init; } = 0.7f;
     public Weight LearningRateEpochMultiplier { get; init; } = 0.94f;
     public Weight Momentum { get; init; } = 0.85f;
     public Weight Regularization { get; init; } = 0.01f;
-    public ICostFunction CostFunction { get; init; } = MeanSquaredErrorCost.Instance;
-    public Weight LearningRate { get; private set; }
 
-    public void Init()
+    public SGDMomentumOptimizer()
+    {
+        Register<FeedForwardLayer>((layer) => new SimpleSGDMomentumOptimizer(this, layer));
+    }
+
+    public override void Init()
     {
         LearningRate = InitialLearningRate;
     }
 
-    public void OnEpochCompleted()
+    public override void OnEpochCompleted()
     {
         LearningRate *= LearningRateEpochMultiplier;
     }
-    public ILayerOptimizer CreateLayerOptimizer(ILayer layer) => layer switch
-    {
-        SimpleLayer simpleLayer => new SimpleSGDMomentumOptimizer(this, simpleLayer),
-        _ => throw new NotImplementedException($"No Nadam implementation for {layer}"),
-    };
 }
 
 /*

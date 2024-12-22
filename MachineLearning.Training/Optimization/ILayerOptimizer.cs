@@ -6,7 +6,6 @@ namespace MachineLearning.Training.Optimization;
 
 public interface ILayerOptimizer
 {
-    public ILayer Layer { get; }
     public ICostFunction CostFunction { get; }
     public void Update(Vector nodeValues, ILayerSnapshot snapshot);
     public void Apply(int dataCounter);
@@ -17,8 +16,6 @@ public interface ILayerOptimizer
 
 public interface ILayerOptimizer<TLayer, TSnapshot> : ILayerOptimizer where TLayer : ILayer where TSnapshot : ILayerSnapshot
 {
-    public new TLayer Layer { get; }
-    ILayer ILayerOptimizer.Layer => Layer;
     public void Update(Vector nodeValues, TSnapshot snapshot);
     void ILayerOptimizer.Update(Vector nodeValues, ILayerSnapshot snapshot) => Update(nodeValues, LayerSnapshots.Is<TSnapshot>(snapshot));
 }

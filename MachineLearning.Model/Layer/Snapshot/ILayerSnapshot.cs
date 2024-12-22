@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using MachineLearning.Model.Embedding;
 
 namespace MachineLearning.Model.Layer.Snapshot;
 
@@ -17,7 +16,6 @@ public static class LayerSnapshots
 
         if (queue.TryDequeue(out var snapshot))
         {
-            //Console.WriteLine("Reused Layer");
             away++;
             return snapshot;
         }
@@ -28,7 +26,6 @@ public static class LayerSnapshots
 
     public static void Return(ILayer layer, ILayerSnapshot snapshot)
     {
-        //Console.WriteLine("Returned Layer");
         away--;
         _registry[layer].Enqueue(snapshot);
     }
@@ -39,21 +36,15 @@ public static class LayerSnapshots
         {
             return t;
         }
-        throw new InvalidOperationException($"LayerSnapshot {snapshot} did not match expected Type {typeof(T).Name}");
+        throw new InvalidOperationException($"LayerSnapshot {snapshot} did not match expected type {typeof(T).Name}");
     }
 
 
-    public static ILayerSnapshot Create(ILayer layer)
+    internal static ILayerSnapshot Create(ILayer layer)
     {
         //Console.WriteLine("Created new Snapshot");
         created++;
-        return layer switch
-        {
-            SimpleLayer simpleLayer => new Simple(simpleLayer.InputNodeCount, simpleLayer.OutputNodeCount),
-            StringEmbeddingLayer => new Embedding(),
-            TokenOutputLayer or IEmbedder<string, char> or IEmbedder<uint, (uint, uint)> or IEmbedder<float[], int> or EncodedEmbeddingLayer => Empty,
-            _ => throw new NotImplementedException($"No snapshot for {layer} found"),
-        };
+        return layer.CreateSnapshot();
     }
 
     public static void Validate()

@@ -1,10 +1,32 @@
-﻿using System.Text;
+﻿using MachineLearning.Data;
+using System.Collections.Frozen;
+using System.Text;
 
 namespace MachineLearning.Samples.Language;
 
-public static class LanguageDataSource
+public static class LanguageDataHelper
 {
-    public const string TOKENS = " !\",-.0123456789:;?_abcdefghijklmnopqrstuvwxyzßäöü"; // add: %
+    public static IEnumerable<TrainingData> ToTrainingData(this IEnumerable<DataEntry<string, char>> source, ITokenizer<string> tokenizer)
+    {
+        var cache = Enumerable.Range(0, tokenizer.TokenCount).Select(i =>
+        {
+            var vector = Vector.Create(tokenizer.TokenCount);
+            vector[i] = 1;
+            return new KeyValuePair<int, Vector>(i, vector);
+        }).ToFrozenDictionary();
+
+        return source.Select(MapData);
+
+
+        TrainingData MapData(DataEntry<string, char> e)
+        {
+            var input = tokenizer.Tokenize(e.Input).ToArray();
+            var expectedToken = tokenizer.TokenizeSingle(e.Expected.ToString());
+
+            return new TrainingData<int[], int>(input, expectedToken, cache[expectedToken]);
+        }
+    }
+
     public static IEnumerable<DataEntry<string, char>> SentencesData(int contextSize) 
         => GetLines(AssetManager.Sentences.FullName).InContextSize(contextSize).ExpandPerChar();
 
@@ -40,8 +62,6 @@ public static class LanguageDataSource
             }
         }
     }
-
-    public static IEnumerable<(string, IEnumerable<char>)> GetInvalidChars(IEnumerable<string> lines) => lines.Select(l => (l, l.Where(c => !TOKENS.Contains(c)))).Where(pair => pair.Item2.Any());
 
     public static IEnumerable<string> GetLines(FileInfo fileInfo) => GetLines(fileInfo.FullName);
     public static IEnumerable<string> GetLines(string path)
