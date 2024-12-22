@@ -1,3 +1,4 @@
+using Ametrin.Guards;
 using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
@@ -9,13 +10,12 @@ public static class LayerBackPropagation
 {
     public static Vector ComputeHiddenLayerErrors(ILayer layer, ILayer nextLayer, Vector nextErrors, ILayerSnapshot snapshot) => (layer, nextLayer) switch
     {
-        (FeedForwardLayer simpleLayer, FeedForwardLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Simple>(snapshot)),
+        (FeedForwardLayer simpleLayer, FeedForwardLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, Guard.Is<LayerSnapshots.Simple>(snapshot)),
         //(TrainedEmbeddingLayer stringLayer, FeedForwardLayer simpleNextLayer) => ComputeHiddenLayerErrors(stringLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Embedding>(snapshot)),
         (IEmbedder<string, char>, FeedForwardLayer) => nextErrors,
         (IEmbedder<double[], int>, FeedForwardLayer) => nextErrors,
         _ => throw new NotImplementedException($"Cannot compute hidden layer errors for {layer} -> {nextLayer}."),
     };
-
 
 
     public static Vector ComputeHiddenLayerErrors(FeedForwardLayer layer, FeedForwardLayer nextLayer, Vector nextErrors, LayerSnapshots.Simple snapshot)

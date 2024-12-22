@@ -1,3 +1,4 @@
+using Ametrin.Guards;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
@@ -17,5 +18,5 @@ public interface ILayerOptimizer
 public interface ILayerOptimizer<TLayer, TSnapshot> : ILayerOptimizer where TLayer : ILayer where TSnapshot : ILayerSnapshot
 {
     public void Update(Vector nodeValues, TSnapshot snapshot);
-    void ILayerOptimizer.Update(Vector nodeValues, ILayerSnapshot snapshot) => Update(nodeValues, LayerSnapshots.Is<TSnapshot>(snapshot));
+    void ILayerOptimizer.Update(Vector nodeValues, ILayerSnapshot snapshot) => Update(nodeValues, Guard.Is<TSnapshot>(snapshot));
 }

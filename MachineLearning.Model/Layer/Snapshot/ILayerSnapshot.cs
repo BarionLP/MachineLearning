@@ -30,16 +30,6 @@ public static class LayerSnapshots
         _registry[layer].Enqueue(snapshot);
     }
 
-    public static T Is<T>(ILayerSnapshot snapshot)
-    {
-        if (snapshot is T t)
-        {
-            return t;
-        }
-        throw new InvalidOperationException($"LayerSnapshot {snapshot} did not match expected type {typeof(T).Name}");
-    }
-
-
     internal static ILayerSnapshot Create(ILayer layer)
     {
         //Console.WriteLine("Created new Snapshot");
