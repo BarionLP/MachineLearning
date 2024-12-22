@@ -1,9 +1,11 @@
+using MachineLearning.Data;
+
 namespace MachineLearning.Samples.Language;
 
 public static class LMHelper
 {
-    private static readonly HashSet<char> EndSymbols = ['\0'];
-    public static void StartChat(EmbeddedModel<int[], int> model, int contextSize, string tokens)
+    private static readonly HashSet<string> EndTokens = ["\0"];
+    public static void StartChat(EmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
     {
         string input;
         do
@@ -14,11 +16,11 @@ public static class LMHelper
                 return;
             }
             Console.Write(input);
-            Generate([.. input.Select(c => tokens.IndexOf(char.ToLower(c)))], model, contextSize, tokens);
+            Generate([.. tokenizer.Tokenize(input)], model, contextSize, tokenizer);
         } while (true);
     }
 
-    public static void Generate(int[] input, EmbeddedModel<int[], int> model, int contextSize, string tokens)
+    public static void Generate(int[] input, EmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
     {
         if (input.Contains(-1))
         {
@@ -27,16 +29,16 @@ public static class LMHelper
         }
 
         int prediction;
-        char token;
+        string token;
         Weight confidence;
         do
         {
             (prediction, confidence) = model.Process(input);
-            token = tokens[prediction];
+            token = tokenizer.GetToken(prediction);
             input = [.. input, prediction];
             SetConsoleTextColor(confidence);
             Console.Write(token);
-        } while (!EndSymbols.Contains(token) && input.Length < contextSize);
+        } while (!EndTokens.Contains(token) && input.Length < contextSize);
         Console.Write("\u001b[0m"); // reset color
         Console.WriteLine();
 

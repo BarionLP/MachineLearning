@@ -6,11 +6,11 @@ namespace MachineLearning.Samples.Language;
 
 public static class LanguageDataHelper
 {
-    public static IEnumerable<TrainingData> ToTrainingData(this IEnumerable<DataEntry<string, char>> source, string tokens)
+    public static IEnumerable<TrainingData> ToTrainingData(this IEnumerable<DataEntry<string, char>> source, ITokenizer<string> tokenizer)
     {
-        var cache = Enumerable.Range(0, tokens.Length).Select(i =>
+        var cache = Enumerable.Range(0, tokenizer.TokenCount).Select(i =>
         {
-            var vector = Vector.Create(tokens.Length);
+            var vector = Vector.Create(tokenizer.TokenCount);
             vector[i] = 1;
             return new KeyValuePair<int, Vector>(i, vector);
         }).ToFrozenDictionary();
@@ -20,8 +20,9 @@ public static class LanguageDataHelper
 
         TrainingData MapData(DataEntry<string, char> e)
         {
-            var input = e.Input.Select(c => tokens.IndexOf(c)).ToArray();
-            var expectedToken = tokens.IndexOf(e.Expected);
+            var input = tokenizer.Tokenize(e.Input).ToArray();
+            var expectedToken = tokenizer.TokenizeSingle(e.Expected.ToString());
+
             return new TrainingData<int[], int>(input, expectedToken, cache[expectedToken]);
         }
     }

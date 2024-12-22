@@ -23,7 +23,7 @@ public sealed class TokenOutputLayer(int tokenCount, bool weightedRandom, Random
         Debug.Assert(input.Count == TokenCount);
 
         var index = WeightedRandom ? GetWeightedRandomIndex(input, Random) : input.MaximumIndex();
-        return (index, index, input);
+        return (index, input[index], input);
     }
 
     private static int GetWeightedRandomIndex(Vector weights, Random random)

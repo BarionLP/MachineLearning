@@ -8,6 +8,7 @@ public sealed class SLM3Mini : ISample<int[], int>
     public const string TOKENS = " %'(),-.0123456789:=abcdefghijklmnopqrstuvwxyz\0";
     public const int CONTEXT_SIZE = 64;
 
+    public static CharTokenizer Tokenizer { get; } = new(TOKENS);
     public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3_mini.gmw"));
     public static EmbeddedModel<int[], int> CreateModel(Random? random = null)
     {
@@ -36,7 +37,7 @@ public sealed class SLM3Mini : ISample<int[], int>
             () => Console.WriteLine("Model saved!"),
             error => Console.WriteLine($"Error saving model: {error.Message}")
         );
-        LMHelper.StartChat(model, CONTEXT_SIZE, TOKENS);
+        LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
         return model;
     }
 
@@ -66,7 +67,7 @@ public sealed class SLM3Mini : ISample<int[], int>
 
         Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
         var entries = lines.Select(s => s.EndsWith('\0') ? s : s + '\0').InContextSize(CONTEXT_SIZE).ExpandPerChar();
-        return new PredefinedTrainingSet(entries.ToTrainingData(TOKENS))
+        return new PredefinedTrainingSet(entries.ToTrainingData(Tokenizer))
         {
             BatchCount = 256,
             Random = random ?? Random.Shared,
