@@ -13,5 +13,5 @@ public static class AssetManager
 
     public static FileInfo GetModelFile(string fileName) => ModelDirectory.File(fileName);
     public static FileInfo GetDataFile(string fileName) => DataDirectory.File(fileName);
-    public static DirectoryInfo GetWeightMap(string modelName) => WeightMapsDirectory.Directory(modelName);
+    public static DirectoryInfo GetWeightMapFolder(string modelName) => WeightMapsDirectory.Directory(modelName);
 }

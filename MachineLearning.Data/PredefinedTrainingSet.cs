@@ -9,7 +9,7 @@ public sealed class PredefinedTrainingSet(IEnumerable<TrainingData> data) : ITra
     public required int BatchCount { get; init; }
     public int BatchSize => data.Length / BatchCount;
 
-    private readonly TrainingData[] data = data.ToArray();
+    private readonly TrainingData[] data = [.. data];
 
     public IEnumerable<Batch> GetBatches()
     {

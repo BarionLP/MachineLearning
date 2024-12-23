@@ -38,7 +38,7 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
 
         foreach (var i in ..input.Length)
         {
-            EmbeddingMatrix.RowSpan(input[i]).CopyTo(outSpan.Slice(i * EmbeddingSize, EmbeddingSize));
+            EmbeddingMatrix.RowSpan(input[i]).CopyTo(outSpan.Slice((i + (ContextSize - input.Length)) * EmbeddingSize, EmbeddingSize));
         }
 
         return output;

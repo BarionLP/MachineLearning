@@ -5,22 +5,21 @@ namespace MachineLearning.Samples.Language;
 
 public sealed class SLM3Mini : ISample<int[], int>
 {
-    public const string TOKENS = " %'(),-.0123456789:=abcdefghijklmnopqrstuvwxyz\0";
     public const int CONTEXT_SIZE = 64;
 
-    public static CharTokenizer Tokenizer { get; } = new(TOKENS);
+    public static CharTokenizer Tokenizer { get; } = new("\0 !%'(),-.0123456789:=?_abcdefghijklmnopqrstuvwxyzﬂ");
     public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3_mini.gmw"));
     public static EmbeddedModel<int[], int> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
         return AdvancedModelBuilder
-            .Create(new EncodedEmbeddingLayer(TOKENS.Length, CONTEXT_SIZE))
+            .Create(new EncodedEmbeddingLayer(Tokenizer.TokenCount, CONTEXT_SIZE))
                 .DefaultActivation(LeakyReLUActivation.Instance)
-                .AddLayer(1024, initializer)
+                .AddLayer(512 + 256, initializer)
                 .AddLayer(512, initializer)
-                .AddLayer(256, initializer)
-                .AddLayer(TOKENS.Length, new XavierInitializer(random), SoftMaxActivation.Instance)
-            .AddOutputLayer(new TokenOutputLayer(TOKENS.Length, true, random));
+                .AddLayer(512, initializer)
+                .AddLayer(Tokenizer.TokenCount, new XavierInitializer(random), SoftMaxActivation.Instance)
+            .AddOutputLayer(new TokenOutputLayer(Tokenizer.TokenCount, true, random));
     }
 
     public static EmbeddedModel<int[], int> TrainDefault(EmbeddedModel<int[], int>? model = null, TrainingConfig? config = null, Random? random = null)
@@ -66,7 +65,9 @@ public sealed class SLM3Mini : ISample<int[], int>
         Console.WriteLine($"Source uses '{tokensUsedBySource}'");
 
         Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
+        
         var entries = lines.Select(s => s.EndsWith('\0') ? s : s + '\0').InContextSize(CONTEXT_SIZE).ExpandPerChar();
+        
         return new PredefinedTrainingSet(entries.ToTrainingData(Tokenizer))
         {
             BatchCount = 256,
