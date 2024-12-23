@@ -71,19 +71,19 @@ public static class NumericsDebug
     [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertValidNumbers(Vector vector)
     {
-        Debug.Assert(!vector.AsSpan().Contains(Weight.NaN), "Vector contains invalid numbers");
+        AssertValidNumbers(vector.AsSpan(), "Vector contains invalid numbers");
     }
 
     [Conditional("DEBUG"), StackTraceHidden]
-    public static void AssertValidNumbers(Matrix vector)
+    public static void AssertValidNumbers(Matrix matrix)
     {
-        Debug.Assert(!vector.AsSpan().Contains(Weight.NaN), "Matrix contains invalid numbers");
+        AssertValidNumbers(matrix.AsSpan(), "Matrix contains invalid numbers");
     }
     
     [Conditional("DEBUG"), StackTraceHidden]
-    public static void AssertValidNumbers(ReadOnlySpan<Weight> span)
+    public static void AssertValidNumbers(ReadOnlySpan<Weight> span, string message = "Span contains invalid numbers")
     {
-        Debug.Assert(!span.Contains(Weight.NaN), "Span contains invalid numbers");
+        Debug.Assert(!span.ContainsAny([Weight.NaN, Weight.NegativeInfinity, Weight.PositiveInfinity]), message);
     }
 
     [StackTraceHidden]
@@ -97,9 +97,9 @@ public static class NumericsDebug
         ThrowIf(vector.AsSpan().Contains(Weight.NaN), "Matrix contains invalid numbers");
     }
     [StackTraceHidden]
-    public static void RequireValidNumbers(ReadOnlySpan<Weight> span)
+    public static void RequireValidNumbers(ReadOnlySpan<Weight> span, string message = "Span contains invalid numbers")
     {
-        ThrowIf(span.Contains(Weight.NaN), "Span contains invalid numbers");
+        ThrowIf(span.ContainsAny([Weight.NaN, Weight.NegativeInfinity, Weight.PositiveInfinity]), message);
     }
 
     [StackTraceHidden]

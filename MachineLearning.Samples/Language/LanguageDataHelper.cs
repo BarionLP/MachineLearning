@@ -27,7 +27,7 @@ public static class LanguageDataHelper
         }
     }
     
-    public static IEnumerable<TrainingData> ToTrainingData(this IEnumerable<DataEntry<int[], int>> source, int tokenCount, int contextSize)
+    public static IEnumerable<TrainingData> ToTrainingData(this IEnumerable<DataEntry<int[], int>> source, int tokenCount)
     {
         var cache = Enumerable.Range(0, tokenCount).Select(i =>
         {
@@ -36,7 +36,7 @@ public static class LanguageDataHelper
             return new KeyValuePair<int, Vector>(i, vector);
         }).ToFrozenDictionary();
 
-        return source.Where(s => s.Input.Length <= contextSize).Select(MapData);
+        return source.Select(MapData);
 
         TrainingData MapData(DataEntry<int[], int> e)
         {
@@ -47,7 +47,7 @@ public static class LanguageDataHelper
     public static IEnumerable<IEnumerable<int>> Tokenize(this IEnumerable<string> source, ITokenizer<string> tokenizer) 
         => source.Select(tokenizer.Tokenize);
 
-    private static readonly HashSet<char> KnownInvalidTokens = [];
+    // private static readonly HashSet<char> KnownInvalidTokens = [];
     public static IEnumerable<int[]> TokenizeSkipInvalid(this IEnumerable<string> source, ITokenizer<string> tokenizer)
     {
         foreach(var sentence in source)
@@ -57,12 +57,12 @@ public static class LanguageDataHelper
             {
                 tokens = tokenizer.Tokenize(sentence).ToArray();
             }
-            catch(Exception e)
+            catch(Exception)
             {
-                if(KnownInvalidTokens.Add(e.Message[15]))
-                {
-                    Console.WriteLine(e.Message);
-                }
+                // if(KnownInvalidTokens.Add(e.Message[15]))
+                // {
+                //     Console.WriteLine(e.Message);
+                // }
                 continue;
             }
             yield return tokens;
@@ -78,18 +78,19 @@ public static class LanguageDataHelper
     public static IEnumerable<string> InContextSize(this IEnumerable<string> data, int contextSize) 
         => data.Where(s => s.Length <= contextSize);
 
-    public static IEnumerable<DataEntry<int[], int>> ExpandPerToken(this IEnumerable<IEnumerable<int>> data, int endToken)
-        => data.Select(Enumerable.ToArray).ExpandPerToken(endToken);
+    public static IEnumerable<DataEntry<int[], int>> ExpandPerToken(this IEnumerable<IEnumerable<int>> data, int endToken, int contextSize)
+        => data.Select(Enumerable.ToArray).ExpandPerToken(endToken, contextSize);
     
-    public static IEnumerable<DataEntry<int[], int>> ExpandPerToken(this IEnumerable<int[]> data, int endToken)
+    public static IEnumerable<DataEntry<int[], int>> ExpandPerToken(this IEnumerable<int[]> data, int endToken, int contextSize)
     {
         foreach (var sentence in data)
         {
-            for (var i = 0; i < sentence.Length; i++)
+            var max = int.Min(contextSize, sentence.Length);
+            for (var i = 0; i < max; i++)
             {
                 yield return new(sentence[..i], sentence[i]);
             }
-            if (sentence[^1] != endToken)
+            if (sentence.Length <= contextSize && sentence[^1] != endToken)
             {
                 yield return new(sentence, endToken);
             }
