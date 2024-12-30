@@ -70,7 +70,6 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
         currentFile = new C4FileReader(downloadTask.Result);
         nextFile++;
         downloadTask = Download(nextFile);
-        Console.WriteLine("Downloading next file...");
         goto lable;
     }
 
@@ -84,6 +83,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
         var file = AssetManager.GetDataFile($"c4-train_noblock/{fileIndex:D5}-of-01024.json.gz");
         if (!file.Exists)
         {
+            Console.WriteLine($"Downloading file {fileIndex:D5}...");
             using var client = new HttpClient();
             using var stream = await client.GetStreamAsync($"https://huggingface.co/datasets/allenai/c4/resolve/main/en.noblocklist/c4-train.{fileIndex:D5}-of-01024.json.gz");
             using var fileStream = file.Create();
