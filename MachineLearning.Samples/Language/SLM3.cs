@@ -3,7 +3,7 @@ using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Samples.Language;
 
-public sealed class SLM3
+public static class SLM3
 {
     // Console.WriteLine(string.Join(", ",
     //     dataSet.GetLines().Take(20000)
@@ -54,7 +54,7 @@ public sealed class SLM3
 
         Optimizer = new AdamOptimizer
         {
-            LearningRate = 0.01f,
+            LearningRate = 0.0001f,
             CostFunction = CrossEntropyLoss.Instance,
         },
 

@@ -17,6 +17,8 @@ public interface Matrix
     public ref Weight this[nuint flatIndex] { get; }
     public ref Weight this[int flatIndex] { get; }
 
+    internal Vector Storage { get; }
+
     public Span<Weight> AsSpan();
 
     public static Matrix CreateSquare(int size) => Create(size, size);
@@ -37,7 +39,7 @@ public interface Matrix
 
 internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storage) : Matrix
 {
-    internal Vector Storage { get; } = storage;
+    public Vector Storage { get; } = storage;
     public int RowCount { get; } = rowCount;
     public int ColumnCount { get; } = columnCount;
     public int FlatCount => Storage.Count;
@@ -79,10 +81,12 @@ internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : M
 {
     private readonly int _startIndex = tensor.RowCount * tensor.ColumnCount * layerIndex;
     private readonly Tensor _tensor = tensor;
+    public Vector Storage => _tensor.Storage.Slice(_startIndex, FlatCount);
 
     public int RowCount => _tensor.RowCount;
     public int ColumnCount => _tensor.ColumnCount;
     public int FlatCount => RowCount * FlatCount;
+
 
     public ref Weight this[int row, int column] => ref AsSpan()[row * ColumnCount + column];
     public ref Weight this[nuint index] => ref AsSpan()[(int)index];
@@ -165,8 +169,6 @@ public static class MatrixHelper
             right.MultiplyTo(row, destinationRow);
         }
     }
-
-    #region ChatGPT
     public static Vector MultiplyTransposed(this Matrix matrix, Vector vector)
     {
         var destination = Vector.Create(vector.Count);
@@ -188,40 +190,6 @@ public static class MatrixHelper
             }
         }
     }
-
-    public static void SoftMaxGradientInPlace(Vector gradient, Vector softmax)
-    {
-        Debug.Assert(gradient.Count == softmax.Count);
-
-        for (int i = 0; i < softmax.Count; i++)
-        {
-            Weight si = softmax[i];
-            gradient[i] *= si * (1 - si); // Gradient of softmax for the diagonal terms
-
-            for (int j = 0; j < softmax.Count; j++)
-            {
-                if (i != j)
-                {
-                    gradient[i] -= si * softmax[j] * gradient[j]; // Gradient of softmax for the off-diagonal terms
-                }
-            }
-        }
-    }
-
-    public static void MultiplyTransposeWithGradient(Vector gradient, Vector inputRow, Matrix weightGradient)
-    {
-        Debug.Assert(gradient.Count == weightGradient.RowCount);
-        Debug.Assert(inputRow.Count == weightGradient.ColumnCount);
-
-        for (int i = 0; i < weightGradient.RowCount; i++)
-        {
-            for (int j = 0; j < weightGradient.ColumnCount; j++)
-            {
-                weightGradient[i, j] += gradient[i] * inputRow[j]; // Compute and accumulate the weight gradient
-            }
-        }
-    }
-    #endregion
 
     public static void MapToSelf(this Matrix matrix, Func<Weight, Weight> map) => matrix.MapTo(map, matrix);
     public static Matrix Map(this Matrix matrix, Func<Weight, Weight> map)
@@ -295,7 +263,7 @@ public static class MatrixHelper
     }
 
     public static Span<Weight> RowSpan(this Matrix matrix, int rowIndex) => matrix.AsSpan().Slice(rowIndex * matrix.ColumnCount, matrix.ColumnCount);
-    public static Vector RowRef(this Matrix matrix, int rowIndex) => new MatrixRowReference(rowIndex, matrix);
+    public static Vector RowRef(this Matrix matrix, int rowIndex) => new VectorSlice(matrix.Storage, matrix.ColumnCount * rowIndex, matrix.ColumnCount);
 
     public static Matrix CreateCopy(this Matrix matrix)
     {

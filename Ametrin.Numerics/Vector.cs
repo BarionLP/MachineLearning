@@ -12,7 +12,7 @@ public interface Vector
     public int Count { get; }
     public ref Weight this[int index] { get; }
     public ref Weight this[nuint index] { get; }
-    public Span<Weight> Slice(int index, int count);
+    public Vector Slice(int index, int count);
     public Span<Weight> AsSpan();
 
     public static Vector Create(int size) => new VectorSimple(size, new Weight[size]);
@@ -31,25 +31,25 @@ internal readonly struct VectorSimple(int count, Weight[] storage) : Vector
     public int Count { get; } = count;
     public ref Weight this[int index] => ref _storage[index];
     public ref Weight this[nuint index] => ref _storage[index];
-    public Span<Weight> Slice(int index, int count) => new(_storage, index, count); // has built-in bound checks
+    public Vector Slice(int index, int count) => new VectorSlice(this, index, count); // has built-in bound checks
     public Span<Weight> AsSpan() => new(_storage, 0, Count);
     public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("+#0.00;-#0.00")))}]";
 }
 
-internal readonly struct MatrixRowReference(int _rowIndex, Matrix _matrix) : Vector
+internal readonly struct VectorSlice(Vector _source, int start, int lenght) : Vector
 {
-    private readonly int _startIndex = _rowIndex * _matrix.ColumnCount;
-    private readonly Matrix _matrix = _matrix;
+    private readonly int _startIndex = start;
+    private readonly Vector _source = _source;
 
-    public ref Weight this[int index] => ref _matrix[_startIndex + index];
+    public ref Weight this[int index] => ref _source[_startIndex + index];
 
-    public ref Weight this[nuint index] => ref _matrix[_startIndex + (int)index];
+    public ref Weight this[nuint index] => ref _source[_startIndex + (int)index];
 
-    public Span<Weight> Slice(int index, int count) => AsSpan().Slice(index, count);
+    public Vector Slice(int index, int count) => new VectorSlice(this, _startIndex + index, count);
 
-    public int Count => _matrix.ColumnCount;
+    public int Count { get; } = lenght;
 
-    public Span<Weight> AsSpan() => _matrix.AsSpan().Slice(_startIndex, _matrix.ColumnCount);
+    public Span<Weight> AsSpan() => _source.AsSpan().Slice(_startIndex, Count);
 
     public override string ToString()
     {
