@@ -394,5 +394,6 @@ public static class VectorHelper
         vector.AsSpan().CopyTo(destination.AsSpan());
     }
 
+    public static void Fill(this Vector vector, Weight value) => vector.AsSpan().Fill(value);
     public static void ResetZero(this Vector vector) => vector.AsSpan().Clear();
 }

@@ -28,7 +28,7 @@ public abstract class Optimizer
             return factory(layer);
         }
 
-        throw new NotImplementedException($"No know {GetType().Name} for {layer.GetType().Name}");
+        throw new NotImplementedException($"No known {GetType().Name} for {layer.GetType().Name}");
     }
 
 
