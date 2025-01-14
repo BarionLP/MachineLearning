@@ -67,30 +67,7 @@ internal readonly struct VectorSlice(Vector _source, int start, int lenght) : Ve
 
 public static class VectorHelper
 {
-    public static Weight Sum(this Vector vector)
-    {
-        // return TensorPrimitives.Sum<double>(vector.AsSpan()); // was slower in preview.7
-        ref var ptr = ref MemoryMarshal.GetReference(vector.AsSpan());
-        nuint length = (nuint)vector.Count;
-
-        var accumulator = SimdVector.Zero;
-        nuint index = 0;
-
-        var limit = length - (nuint)SimdVector.Count;
-        for (; index < limit; index += (nuint)SimdVector.Count)
-        {
-            accumulator += SimdVectorHelper.LoadUnsafe(ref ptr, index);
-        }
-
-        var result = SimdVectorHelper.Sum(accumulator);
-
-        for (; index < length; index++)
-        {
-            result += Unsafe.Add(ref ptr, index);
-        }
-
-        return result;
-    }
+    public static Weight Sum(this Vector vector) => TensorPrimitives.Sum(vector.AsSpan());
 
     public static Weight Dot(this Vector left, Vector right)
     {
@@ -162,11 +139,11 @@ public static class VectorHelper
         NumericsDebug.AssertSameDimensions(vector, destination);
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var destinationPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
-        var mdSize = (nuint)SimdVector.Count;
+        var dataSize = (nuint)SimdVector.Count;
         var totalSize = (nuint)vector.Count;
 
         nuint index = 0;
-        for (; index + mdSize <= totalSize; index += mdSize)
+        for (; index + dataSize <= totalSize; index += dataSize)
         {
             var simdVector = SimdVectorHelper.LoadUnsafe(ref vectorPtr, index);
             SimdVectorHelper.StoreUnsafe(simdMap.Invoke(simdVector), ref destinationPtr, index);
@@ -233,17 +210,17 @@ public static class VectorHelper
 
         ref var matrixPtr = ref MemoryMarshal.GetReference(matrix.AsSpan());
         ref var resultPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
-        var mdSize = (nuint)SimdVector.Count;
+        var dataSize = (nuint)SimdVector.Count;
         var rowCount = (nuint)matrix.RowCount;
         var columnCount = (nuint)matrix.ColumnCount;
 
-
+        // computes d[column] += v[row] * M[row, column] foreach row column pair 
         for (nuint row = 0; row < rowCount; row++)
         {
             var rowValue = new SimdVector(vector[row]);
             var rowOffset = row * columnCount;
             nuint column = 0;
-            for (; column <= columnCount - mdSize; column += mdSize)
+            for (; column + dataSize <= columnCount; column += dataSize)
             {
                 var resultValues = SimdVectorHelper.LoadUnsafe(ref resultPtr, column);
                 var matrixValues = SimdVectorHelper.LoadUnsafe(ref matrixPtr, rowOffset + column);
@@ -277,7 +254,7 @@ public static class VectorHelper
         var rowCount = (nuint)rowVector.Count;
         var columnCount = (nuint)columnVector.Count;
 
-        nuint mdSize = (nuint)SimdVector.Count;
+        var dataSize = (nuint)SimdVector.Count;
 
         for (nuint row = 0; row < rowCount; row++)
         {
@@ -285,7 +262,7 @@ public static class VectorHelper
             var rowOffset = row * columnCount;
 
             nuint column = 0;
-            for (; column <= columnCount - mdSize; column += mdSize)
+            for (; column + dataSize <= columnCount; column += dataSize)
             {
                 var columnValues = SimdVectorHelper.LoadUnsafe(ref columnPtr, column);
                 var destinationValues = rowValue * columnValues;
@@ -378,8 +355,8 @@ public static class VectorHelper
         return maxIndex;
     }
 
-    public static Weight Max(this Vector vector) => TensorPrimitives.Max<Weight>(vector.AsSpan());
-    public static Weight Min(this Vector vector) => TensorPrimitives.Min<Weight>(vector.AsSpan());
+    public static Weight Max(this Vector vector) => TensorPrimitives.Max(vector.AsSpan());
+    public static Weight Min(this Vector vector) => TensorPrimitives.Min(vector.AsSpan());
 
     public static Vector CreateCopy(this Vector vector)
     {

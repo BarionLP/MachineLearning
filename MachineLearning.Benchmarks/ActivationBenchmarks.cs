@@ -1,16 +1,15 @@
 ﻿using MachineLearning.Model.Activation;
-using System.Buffers;
 
 namespace MachineLearning.Benchmarks;
 
 public class ActivationBenchmarks
 {
 
-    IActivationFunction ActivationFunction = SigmoidActivation.Instance;
-    IActivationFunction NewActivationFunction = SoftMaxActivation.Instance;
+    readonly IActivationFunction ActivationFunction = SigmoidActivation.Instance;
+    readonly IActivationFunction NewActivationFunction = SoftMaxActivation.Instance;
 
 
-    double[] InputArray = [];
+    Weight[] InputArray = [];
     Vector input = default!;
     Vector result = default!;
 
@@ -20,7 +19,7 @@ public class ActivationBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        InputArray = Enumerable.Range(0, size).Select(n => Random.Shared.NextDouble()).ToArray();
+        InputArray = [.. Enumerable.Range(0, size).Select(n => Random.Shared.NextSingle())];
         input = Vector.Of(InputArray);
         result = Vector.Create(size);
     }

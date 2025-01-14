@@ -4,9 +4,9 @@ namespace Ametrin.Numerics;
 
 public static class NumericsDebug
 {
-    const string VECTOR_SIZE_MISMATCH = "Vectors must match in size";
-    const string MATRIX_DIMENSION_MISMATCH = "Matrices must match in size";
-    const string TENSOR_DIMENSION_MISMATCH = "Tensors must match in size";
+    const string VECTOR_SIZE_MISMATCH = "Vectors don't match in size";
+    const string MATRIX_DIMENSION_MISMATCH = "Matrices don't match in size";
+    const string TENSOR_DIMENSION_MISMATCH = "Tensors don't match in size";
 
     [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertSameDimensions(Matrix a, Matrix b)
@@ -79,7 +79,7 @@ public static class NumericsDebug
     {
         AssertValidNumbers(matrix.AsSpan(), "Matrix contains invalid numbers");
     }
-    
+
     [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertValidNumbers(ReadOnlySpan<Weight> span, string message = "Span contains invalid numbers")
     {
@@ -89,12 +89,12 @@ public static class NumericsDebug
     [StackTraceHidden]
     public static void RequireValidNumbers(Vector vector)
     {
-        ThrowIf(vector.AsSpan().Contains(Weight.NaN), "Vector contains invalid numbers");
+        RequireValidNumbers(vector.AsSpan(), "Vector contains invalid numbers");
     }
     [StackTraceHidden]
-    public static void RequireValidNumbers(Matrix vector)
+    public static void RequireValidNumbers(Matrix matrix)
     {
-        ThrowIf(vector.AsSpan().Contains(Weight.NaN), "Matrix contains invalid numbers");
+        RequireValidNumbers(matrix.AsSpan(), "Matrix contains invalid numbers");
     }
     [StackTraceHidden]
     public static void RequireValidNumbers(ReadOnlySpan<Weight> span, string message = "Span contains invalid numbers")
@@ -105,7 +105,7 @@ public static class NumericsDebug
     [StackTraceHidden]
     private static void ThrowIf(bool condition, string message)
     {
-        if(condition)
+        if (condition)
         {
             throw new ArgumentException(message);
         }

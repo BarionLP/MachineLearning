@@ -34,11 +34,11 @@ public static class LayerBackPropagation
 
     public static Vector ComputeOutputLayerErrors(FeedForwardLayer layer, ICostFunction costFunction, Vector expected, LayerSnapshots.Simple snapshot)
     {
-        var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
-        var costDerivatives = costFunction.Derivative(snapshot.LastActivatedWeights, expected);
+        var costGradient = costFunction.Derivative(snapshot.LastActivatedWeights, expected);
+        var activationGradient = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
 
-        costDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
+        costGradient.PointwiseMultiplyToSelf(activationGradient);
 
-        return costDerivatives;
+        return costGradient;
     }
 }

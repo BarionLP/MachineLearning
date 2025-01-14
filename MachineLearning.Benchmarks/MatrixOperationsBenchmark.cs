@@ -20,10 +20,10 @@ public class MatrixOperationsBenchmark
     public void Setup()
     {
         var random = new Random(69);
-        matrix1 = Matrix.Of(Rows, Columns, Enumerable.Range(0, Rows * Columns).Select(n => random.NextDouble()).ToArray());
-        matrix2 = Matrix.Of(Rows, Columns, Enumerable.Range(0, Rows * Columns).Select(n => random.NextDouble()).ToArray());
-        rowVector = Vector.Of(Enumerable.Range(0, Rows).Select(n => random.NextDouble()).ToArray());
-        columnVector = Vector.Of(Enumerable.Range(0, Columns).Select(n => random.NextDouble()).ToArray());
+        matrix1 = Matrix.Of(Rows, Columns, [.. Enumerable.Range(0, Rows * Columns).Select(n => random.NextSingle())]);
+        matrix2 = Matrix.Of(Rows, Columns, [.. Enumerable.Range(0, Rows * Columns).Select(n => random.NextSingle())]);
+        rowVector = Vector.Of([.. Enumerable.Range(0, Rows).Select(n => random.NextSingle())]);
+        columnVector = Vector.Of([.. Enumerable.Range(0, Columns).Select(n => random.NextSingle())]);
         resultMatrix = Matrix.Create(Rows, Columns);
     }
 

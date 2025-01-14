@@ -16,8 +16,8 @@ public class TensorBenchmarks
     public void GlobalSetup()
     {
         var random = new Random(69);
-        var data_l = Enumerable.Range(0, Size).Select(v => random.NextDouble()).ToArray();
-        var data_r = Enumerable.Range(0, Size).Select(v => random.NextDouble()).ToArray();
+        var data_l = Enumerable.Range(0, Size).Select(v => random.NextSingle()).ToArray();
+        var data_r = Enumerable.Range(0, Size).Select(v => random.NextSingle()).ToArray();
         vector_l = Vector.Of(data_l);
         vector_r = Vector.Of(data_r);
         result_v = Vector.Create(Size);

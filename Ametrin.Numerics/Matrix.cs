@@ -132,7 +132,7 @@ public static class MatrixHelper
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
         ref var destinationPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
 
-        var mdSize = (nuint)SimdVector.Count;
+        var dataSize = (nuint)SimdVector.Count;
         var rowCount = (nuint)matrix.RowCount;
         var columnCount = (nuint)matrix.ColumnCount;
 
@@ -141,7 +141,7 @@ public static class MatrixHelper
             nuint rowOffset = row * columnCount;
             nuint column = 0;
             var aggregator = SimdVector.Zero;
-            for (; column + mdSize <= columnCount; column += mdSize)
+            for (; column + dataSize <= columnCount; column += dataSize)
             {
                 var matrixVec = SimdVectorHelper.LoadUnsafe(ref matrixPtr, rowOffset + column);
                 var vectorVec = SimdVectorHelper.LoadUnsafe(ref vectorPtr, column);
@@ -171,24 +171,15 @@ public static class MatrixHelper
     }
     public static Vector MultiplyTransposed(this Matrix matrix, Vector vector)
     {
-        var destination = Vector.Create(vector.Count);
-        MultiplyTransposedTo(matrix, vector, destination);
-        return destination;
+        // see MultiplyTransposedTo
+        return vector.Multiply(matrix);
     }
     public static void MultiplyTransposedTo(this Matrix matrix, Vector vector, Vector destination)
     {
-        Debug.Assert(matrix.RowCount == vector.Count);
-        Debug.Assert(matrix.ColumnCount == destination.Count);
-
-        destination.ResetZero(); // Reset destination vector to zero
-
-        for (int col = 0; col < matrix.ColumnCount; col++)
-        {
-            for (int row = 0; row < matrix.RowCount; row++)
-            {
-                destination[col] += matrix[row, col] * vector[row]; // Multiply matrix transpose element by vector element
-            }
-        }
+        // M^T*v is numerically equivalent to v*M
+        // M^T*v produces a column vector
+        // v*M   produces a row vector
+        vector.MultiplyTo(matrix, destination);
     }
 
     public static void MapToSelf(this Matrix matrix, Func<Weight, Weight> map) => matrix.MapTo(map, matrix);
