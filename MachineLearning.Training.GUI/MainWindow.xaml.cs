@@ -5,7 +5,6 @@ using MachineLearning.Model.Layer;
 using MachineLearning.Samples;
 using MachineLearning.Samples.MNIST;
 using MachineLearning.Serialization;
-using MachineLearning.Serialization.Activation;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization.Adam;
 using MachineLearning.Training.Optimization.Nadam;
@@ -34,7 +33,7 @@ public partial class MainWindow : Window
         var model1 = MNISTModel.CreateModel(new Random(42));
         var model2 = MNISTModel.CreateModel(new Random(42));
         //var model = serializer.Load(MNISTEmbedder.Instance).ReduceOrThrow();
-        var config = MNISTModel.GetTrainingConfig();
+        var config = MNISTModel.DefaultTrainingConfig();
 
         var trainer1 = ProgressTracker.CreateLinkedTrainer("Adam Optimizer", SKColors.Blue, model1, config with { Optimizer = new AdamOptimizer
         {

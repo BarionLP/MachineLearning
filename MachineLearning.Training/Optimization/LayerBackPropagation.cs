@@ -21,9 +21,9 @@ public static class LayerBackPropagation
     public static Vector ComputeHiddenLayerErrors(FeedForwardLayer layer, FeedForwardLayer nextLayer, Vector nextErrors, LayerSnapshots.Simple snapshot)
     {
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
-        var weightedInputDerivatives = nextErrors.Multiply(nextLayer.Weights);
-        weightedInputDerivatives.PointwiseMultiplyToSelf(activationDerivatives);
-        return weightedInputDerivatives; // contains now the error values (weightedInputDerivatives*activationDerivatives)
+        var weightedGradient = nextErrors.Multiply(nextLayer.Weights);
+        weightedGradient.PointwiseMultiplyToSelf(activationDerivatives);
+        return weightedGradient; // contains now the error values (weightedGradient*activationDerivatives)
     }
 
     //public static Vector ComputeHiddenLayerErrors(TrainedEmbeddingLayer layer, FeedForwardLayer nextLayer, Vector nextErrors, LayerSnapshots.Embedding snapshot)

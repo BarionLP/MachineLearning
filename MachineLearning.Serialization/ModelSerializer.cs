@@ -59,7 +59,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
             {
                 return error;
             }
-            layers[i] = result.Where<FeedForwardLayer>().OrThrow();
+            layers[i] = result.Require<FeedForwardLayer>().OrThrow();
         }
 
         return new FeedForwardModel
@@ -235,7 +235,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         return serializer(model, writer);
     }
 
-    public Result<TModel> Load<TModel>() where TModel : IModel => Load().Where<TModel>();
+    public Result<TModel> Load<TModel>() where TModel : IModel => Load().Require<TModel>();
     public Result<IModel> Load()
     {
         if (!fileInfo.Exists)
@@ -273,7 +273,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     }
 
     public static void RegisterModelReader<TModel>(string key, uint version, Func<BinaryReader, Result<TModel>> reader) where TModel : IModel
-        => ModelDeserializers.Add((key, version), (br) => reader(br).Where<IModel>());
+        => ModelDeserializers.Add((key, version), (br) => reader(br).Require<IModel>());
     public static void RegisterModel<TModel>(string key, uint version, Func<TModel, BinaryWriter, ErrorState> writer, Func<BinaryReader, Result<TModel>> reader) where TModel : IModel
     {
         RegisterModelReader(key, version, reader);
@@ -281,7 +281,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     }
 
     public static void RegisterLayerReader<TLayer>(string key, uint version, Func<BinaryReader, Result<TLayer>> reader) where TLayer : ILayer
-        => LayerDeserializers.Add((key, version), (br) => reader(br).Where<ILayer>());
+        => LayerDeserializers.Add((key, version), (br) => reader(br).Require<ILayer>());
     public static void RegisterLayer<TLayer>(string key, uint version, Func<TLayer, BinaryWriter, ErrorState> writer, Func<BinaryReader, Result<TLayer>> reader) where TLayer : ILayer
     {
         RegisterLayerReader(key, version, reader);

@@ -116,7 +116,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
 
     private Vector Update(TrainingData<TIn, TOut> data)
     {
-        var snapshots = Model.InnerModel.Layers.Select(LayerSnapshots.Get).OfType<LayerSnapshots.Simple>().ToImmutableArray();
+        var snapshots = Model.InnerModel.Layers.Select(LayerSnapshots.Get).Cast<LayerSnapshots.Simple>().ToImmutableArray();
         var inputWeights = Model.InputLayer.Process(data.InputValue);
         var result = Model.InnerModel.Process(inputWeights, snapshots);
 
