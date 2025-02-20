@@ -13,7 +13,7 @@ public sealed class CumulativeSumTrainingSet(int sequenceLength) : ITrainingSet
 
     public IEnumerable<Batch> GetBatches() => Enumerable.Range(0, BatchCount).Select(_ => Batch.Create(GetTrainingData(), BatchSize));
 
-    public IEnumerable<TrainingData<Vector>> GetTrainingData()
+    public IEnumerable<TrainingData<Vector, Vector>> GetTrainingData()
     {
         while (true)
         {
@@ -21,7 +21,7 @@ public sealed class CumulativeSumTrainingSet(int sequenceLength) : ITrainingSet
         }
     }
 
-    public TrainingData<Vector> GenerateSample()
+    public TrainingData<Vector, Vector> GenerateSample()
     {
         var input = Vector.Create(_sequenceLength);
         for (int t = 0; t < _sequenceLength; t++)
@@ -37,6 +37,6 @@ public sealed class CumulativeSumTrainingSet(int sequenceLength) : ITrainingSet
             expected[t] = runningSum;
         }
 
-        return new TrainingData<Vector>(input, expected);
+        return new TrainingData<Vector, Vector>(input, expected, expected);
     }
 }
