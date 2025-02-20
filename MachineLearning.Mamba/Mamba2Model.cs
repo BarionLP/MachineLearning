@@ -9,8 +9,7 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
 
     public Vector Process(Vector input)
     {
-
-        throw new NotImplementedException();
+        return Layers.Aggregate(input, (v, l) => l.Forward(v, (Mamba2Layer.Snapshot) l.CreateSnapshot()));
     }
 
     public Vector Process(Vector input, ImmutableArray<Mamba2Layer.Snapshot> snapshots)
