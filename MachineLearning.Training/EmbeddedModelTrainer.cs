@@ -34,7 +34,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
         {
             foreach (var (batchIndex, batch) in epoch.Index())
             {
-                cachedEvaluation += TrainAndEvaluate(batch.OfType<TrainingData<TIn, TOut>>());
+                cachedEvaluation += TrainAndEvaluate(batch.Cast<TrainingData<TIn, TOut>>());
                 if ((Config.DumpBatchEvaluation && batchIndex % Config.DumpEvaluationAfterBatches == 0) || (batchIndex + 1 == epoch.BatchCount && Config.DumpEpochEvaluation))
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });

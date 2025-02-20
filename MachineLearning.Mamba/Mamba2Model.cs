@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using MachineLearning.Model;
+using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Mamba;
 
@@ -18,5 +19,13 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
         return Layers.Zip(snapshots).Aggregate(input, (v, l) => l.First.Forward(v, l.Second));
     }
 
+    public Vector Backward(Vector outputGradient, ImmutableArray<Mamba2Layer.Snapshot> snapshots)
+    {
+
+        return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
+    }
+
     public long ParameterCount => throw new NotImplementedException();
+
+    IEnumerable<ILayer> IModel<Vector, Mamba2Layer.Snapshot>.Layers => Layers;
 }

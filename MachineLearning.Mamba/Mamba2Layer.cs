@@ -39,9 +39,9 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
         return snapshot.Output;
     }
 
-    public void BackwardPass(Snapshot snapshot, Vector dCost)
+    public Vector BackwardPass(Snapshot snapshot, Vector outputGradient)
     {
-        Debug.Assert(dCost.Count == SequenceLength);
+        Debug.Assert(outputGradient.Count == SequenceLength);
 
         snapshot.GradientAlpha.ResetZero();
         snapshot.GradientInput.ResetZero();
@@ -52,7 +52,7 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
         for (int t = SequenceLength - 1; t >= 0; t--)
         {
             // dY = derivative of L wrt outputY[t]
-            float dY = dCost[t];
+            float dY = outputGradient[t];
 
             // (a) output[t] = C[t] * H[t]
             // => dC[t] += H[t] * dY
@@ -86,7 +86,10 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
             snapshot.GradientB.RowRef(t).AddToSelf(snapshot.GradientMemory.RowRef(t).Multiply(snapshot.Input[t]));
 
             snapshot.GradientInput[t] += B.RowRef(t).Dot(snapshot.GradientMemory.RowRef(t));  // partial w.r.t. input[t]
+
         }
+
+        return snapshot.GradientInput;
     }
 
     public long ParameterCount { get; }

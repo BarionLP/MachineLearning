@@ -22,4 +22,6 @@ public sealed class FeedForwardModel : IModel<Vector, LayerSnapshots.Simple>
 
     public override string ToString()
         => $"Feed Forward Model ({Layers.Length} Layers, {ParameterCount} Weights)";
+        
+    IEnumerable<ILayer> IModel<Vector, LayerSnapshots.Simple>.Layers => Layers;
 }

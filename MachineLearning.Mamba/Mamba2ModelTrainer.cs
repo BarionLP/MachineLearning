@@ -36,7 +36,7 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
         {
             foreach (var (batchIndex, batch) in epoch.Index())
             {
-                cachedEvaluation += TrainAndEvaluate(batch.OfType<TrainingData<Vector, Vector>>());
+                cachedEvaluation += TrainAndEvaluate(batch.Cast<TrainingData<Vector, Vector>>());
                 if (Config.DumpBatchEvaluation && batchIndex % Config.DumpEvaluationAfterBatches == 0 || batchIndex + 1 == epoch.BatchCount && Config.DumpEpochEvaluation)
                 {
                     Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });

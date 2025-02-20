@@ -49,8 +49,6 @@ public sealed class Mamba2LayerAdam : ILayerOptimizer<Mamba2Layer, Mamba2Layer.S
     public void Update(Vector nodeValues, Mamba2Layer.Snapshot snapshot)
     {
         Layer.BackwardPass(snapshot, nodeValues);
-        // Compute the gradient for weights
-        //VectorHelper.MultiplyToMatrixTo(nodeValues, snapshot.LastRawInput, snapshot.WeightGradients); // GradientCostWeights.AddInPlaceMultiplied ?
 
         NumericsDebug.AssertValidNumbers(nodeValues);
         NumericsDebug.AssertValidNumbers(snapshot.GradientAlpha);
