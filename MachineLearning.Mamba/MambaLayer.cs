@@ -84,7 +84,7 @@ public sealed class MambaLayer(int sequenceLength, int stateDimensions) : ILayer
             // if t>0, add alpha[t]*dH[t] to dH[t-1]
             if (t > 0)
             {
-                st.H.RowRef(t - 1).AddToSelf(st.dH.RowRef(t).Multiply(Alpha[t]));
+                st.dH.RowRef(t - 1).AddToSelf(st.dH.RowRef(t).Multiply(Alpha[t]));
             }
 
             // derivative w.r.t. B[t] and Input[t]
@@ -219,7 +219,7 @@ public sealed class Mamba2LayerAdam : ILayerOptimizer<MambaLayer, MambaLayer.Sna
     public void Apply(int dataCounter)
     {
         // do i need gradient clipping?
-        var averagedLearningRate = Optimizer.LearningRate / Weight.Sqrt(dataCounter);
+        var averagedLearningRate = Optimizer.LearningRate;
 
         // Update biases
         (FirstMomentAlpha, GradientAlpha).MapToFirst(FirstMomentEstimate);
