@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MachineLearning.Model\MachineLearning.Model.csproj" />
+    <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />
+  </ItemGroup>
+
+</Project>
