@@ -33,7 +33,7 @@ internal readonly struct VectorSimple(int count, Weight[] storage) : Vector
     public ref Weight this[nuint index] => ref _storage[index];
     public Vector Slice(int index, int count) => new VectorSlice(this, index, count); // has built-in bound checks
     public Span<Weight> AsSpan() => new(_storage, 0, Count);
-    public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("+#0.00;-#0.00")))}]";
+    public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("+0.00;-0.00;+0.00")))}]";
 }
 
 internal readonly struct VectorSlice(Vector _source, int start, int lenght) : Vector
