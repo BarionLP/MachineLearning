@@ -277,6 +277,41 @@ public static class VectorHelper
         }
     }
 
+    public static void MultiplyToMatrixAddTo(Vector rowVector, Vector columnVector, Matrix destination)
+    {
+        Debug.Assert(rowVector.Count == destination.RowCount);
+        Debug.Assert(columnVector.Count == destination.ColumnCount);
+
+        ref var columnPtr = ref MemoryMarshal.GetReference(columnVector.AsSpan());
+        ref var destinationPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
+
+        var rowCount = (nuint)rowVector.Count;
+        var columnCount = (nuint)columnVector.Count;
+
+        var dataSize = (nuint)SimdVector.Count;
+
+        for (nuint row = 0; row < rowCount; row++)
+        {
+            var rowValue = new SimdVector(rowVector[row]);
+            var rowOffset = row * columnCount;
+
+            nuint column = 0;
+            for (; column + dataSize <= columnCount; column += dataSize)
+            {
+                var columnValues = SimdVectorHelper.LoadUnsafe(ref columnPtr, column);
+                var destinationValues = SimdVectorHelper.LoadUnsafe(ref destinationPtr, rowOffset + column);
+                destinationValues += rowValue * columnValues;
+
+                SimdVectorHelper.StoreUnsafe(destinationValues, ref destinationPtr, rowOffset + column);
+            }
+
+            for (; column < columnCount; column++)
+            {
+                destination[rowOffset + column] += rowVector[row] * columnVector[column];
+            }
+        }
+    }
+
     public static void MultiplyToSelf(this Vector vector, Weight factor) => MultiplyTo(vector, factor, vector);
     public static Vector Multiply(this Vector vector, Weight factor)
     {

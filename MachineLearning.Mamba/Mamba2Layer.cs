@@ -203,8 +203,8 @@ public sealed class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILay
             // output[t] = C^T * H[t]
             // => dC += H[t] * dY
             // => dH[t] += C * dY
-            snapshot.GradientC.AddToSelf(VectorHelper.MultiplyToMatrix(snapshot.Memory.RowRef(t), outputGradient_t));
-            snapshot.GradientMemory.RowRef(t).AddToSelf(C.Multiply(outputGradient_t));
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.Memory.RowRef(t), outputGradient_t, snapshot.GradientC);
+            C.MultiplyAddTo(outputGradient_t, snapshot.GradientMemory.RowRef(t));
 
             // h[t] = alpha[t] * h[t-1] + B * input[t]
             // => wrt alpha[t] = (h[t-1] dot dH[t])
@@ -222,12 +222,12 @@ public sealed class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILay
             // if t>0, add alpha[t]*dH[t] to dH[t-1]
             if (t > 0)
             {
-                snapshot.GradientMemory.RowRef(t - 1).AddToSelf(snapshot.GradientMemory.RowRef(t).Multiply(Alpha[t]));
+                snapshot.GradientMemory.RowRef(t).MultiplyTo(Alpha[t], snapshot.GradientMemory.RowRef(t - 1));
             }
 
             // derivative wrt B[t] and input[t]
             // dB[t] = input[t] * dH[t]
-            snapshot.GradientB.AddToSelf(VectorHelper.MultiplyToMatrix(snapshot.GradientMemory.RowRef(t), snapshot.Input.RowRef(t)));
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.GradientMemory.RowRef(t), snapshot.Input.RowRef(t), snapshot.GradientB);
 
             B.MultiplyTransposedTo(snapshot.GradientMemory.RowRef(t), snapshot.GradientInput.RowRef(t));
 
@@ -250,6 +250,7 @@ public sealed class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILay
 
         return default;
     }
+    
     public static Result<EmbeddedMamba2Layer> Read(BinaryReader reader)
     {
         var sequenceLength = reader.ReadInt32();
