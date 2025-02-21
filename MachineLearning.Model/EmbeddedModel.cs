@@ -2,7 +2,7 @@
 
 namespace MachineLearning.Model;
 
-public sealed class EmbeddedModel<TIn, TOut> : IModel
+public sealed class EmbeddedModel<TIn, TOut> : IEmbeddedModel<TIn, TOut>
 {
     public required IEmbeddingLayer<TIn> InputLayer { get; init; }
     public required FeedForwardModel InnerModel { get; init; }

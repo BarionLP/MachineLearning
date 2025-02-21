@@ -5,7 +5,7 @@ namespace MachineLearning.Samples.Language;
 public static class LMHelper
 {
     private static readonly HashSet<string> EndTokens = ["\0"];
-    public static void StartChat(EmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
+    public static void StartChat(IEmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
     {
         string input;
         do
@@ -20,7 +20,7 @@ public static class LMHelper
         } while (true);
     }
 
-    public static void Generate(int[] input, EmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
+    public static void Generate(int[] input, IEmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
     {
         if (input.Contains(-1))
         {

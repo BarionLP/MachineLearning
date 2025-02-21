@@ -23,3 +23,20 @@ public sealed class CrossEntropyLoss : ICostFunction
         return (output - expected) / (output * (1 - output));
     }
 }
+
+public sealed class CrossEntropyFromSoftmaxLoss : ICostFunction
+{
+    public static readonly CrossEntropyFromSoftmaxLoss Instance = new();
+    const Weight EPSILON = 1e-7f;
+
+    public Weight Cost(Weight output, Weight expected)
+    {
+        output = float.Clamp(output, EPSILON, 1 - EPSILON);
+        return -expected * MathF.Log(output);
+    }
+
+    public Weight Derivative(Weight output, Weight expected)
+    {
+        return output - expected;
+    }
+}

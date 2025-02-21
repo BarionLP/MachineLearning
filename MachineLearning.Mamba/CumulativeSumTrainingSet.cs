@@ -26,7 +26,7 @@ public sealed class CumulativeSumTrainingSet(int sequenceLength) : ITrainingSet
         var input = Vector.Create(_sequenceLength);
         for (int t = 0; t < _sequenceLength; t++)
         {
-            input[t] = (float)(Random.NextSingle() * 5 + 2.5f);
+            input[t] = Random.NextSingle() * 5 + 2.5f;
         }
 
         var expected = Vector.Create(_sequenceLength);

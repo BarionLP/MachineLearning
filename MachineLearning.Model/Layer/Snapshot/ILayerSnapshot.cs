@@ -44,6 +44,7 @@ public static class LayerSnapshots
         ArgumentOutOfRangeException.ThrowIfNotEqual(away, 0);
     }
 
+    public static void Clear() => _registry.Clear();
     public static void Clear(IEnumerable<ILayer> layers) => layers.Consume(Clear);
     public static void Clear(ILayer layer)
     {
@@ -60,13 +61,6 @@ public static class LayerSnapshots
         public readonly Vector LastWeightedInput = Vector.Create(outputNodes);
         public readonly Vector LastActivatedWeights = Vector.Create(outputNodes);
         public readonly Matrix WeightGradients = Matrix.Create(outputNodes, inputNodes);
-    }
-
-    public sealed class Embedding : ILayerSnapshot
-    {
-        public string LastInput { get; set; } = string.Empty;
-        //public Matrix Gradients { get; set; } = Matrix.Create(contextSize, contextSize);
-        //public Vector LastOutput { get; } = Vector.Create(contextSize * embeddingSize);
     }
 
     internal sealed class EmptySnapshot : ILayerSnapshot;

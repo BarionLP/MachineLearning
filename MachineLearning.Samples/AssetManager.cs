@@ -11,7 +11,7 @@ public static class AssetManager
     public static readonly FileInfo Sentences = GetDataFile("sentences.txt");
     public static readonly FileInfo Speech = GetDataFile("speech.txt");
 
-    public static FileInfo GetModelFile(string fileName) => ModelDirectory.File(fileName);
+    public static FileInfo GetModelFile(string fileName) => ModelDirectory.File(fileName.EndsWith(ModelSerializer.FILE_EXTENSION) ? fileName : $"{fileName}{ModelSerializer.FILE_EXTENSION}");
     public static FileInfo GetDataFile(string fileName) => DataDirectory.File(fileName);
     public static DirectoryInfo GetWeightMapFolder(string modelName) => WeightMapsDirectory.Directory(modelName);
 }

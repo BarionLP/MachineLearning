@@ -17,7 +17,7 @@ public interface Matrix
     public ref Weight this[nuint flatIndex] { get; }
     public ref Weight this[int flatIndex] { get; }
 
-    internal Vector Storage { get; }
+    public Vector Storage { get; }
 
     public Span<Weight> AsSpan();
 
@@ -130,7 +130,6 @@ public static class MatrixHelper
 
         ref var matrixPtr = ref MemoryMarshal.GetReference(matrix.AsSpan());
         ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
-        ref var destinationPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
 
         var dataSize = (nuint)SimdVector.Count;
         var rowCount = (nuint)matrix.RowCount;
@@ -150,6 +149,41 @@ public static class MatrixHelper
 
             ref var sum = ref destination[row];
             sum = SimdVectorHelper.Sum(aggregator);
+
+            for (; column < columnCount; column++)
+            {
+                sum += matrix[rowOffset + column] * vector[column];
+            }
+        }
+    }
+
+    public static void MultiplyAddTo(this Matrix matrix, Vector vector, Vector destination)
+    {
+        Debug.Assert(vector.Count == matrix.ColumnCount);
+        Debug.Assert(destination.Count == matrix.RowCount);
+
+        ref var matrixPtr = ref MemoryMarshal.GetReference(matrix.AsSpan());
+        ref var vectorPtr = ref MemoryMarshal.GetReference(vector.AsSpan());
+        // ref var destinationPtr = ref MemoryMarshal.GetReference(destination.AsSpan());
+
+        var dataSize = (nuint)SimdVector.Count;
+        var rowCount = (nuint)matrix.RowCount;
+        var columnCount = (nuint)matrix.ColumnCount;
+
+        for (nuint row = 0; row < rowCount; row++)
+        {
+            nuint rowOffset = row * columnCount;
+            nuint column = 0;
+            var aggregator = SimdVector.Zero;
+            for (; column + dataSize <= columnCount; column += dataSize)
+            {
+                var matrixVec = SimdVectorHelper.LoadUnsafe(ref matrixPtr, rowOffset + column);
+                var vectorVec = SimdVectorHelper.LoadUnsafe(ref vectorPtr, column);
+                aggregator += matrixVec * vectorVec;
+            }
+
+            ref var sum = ref destination[row];
+            sum += SimdVectorHelper.Sum(aggregator);
 
             for (; column < columnCount; column++)
             {
@@ -251,6 +285,31 @@ public static class MatrixHelper
     {
         NumericsDebug.AssertSameDimensions(left, right, destination);
         TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), destination.AsSpan());
+    }
+
+    public static void MultiplyToSelf(this Matrix vector, Weight factor) => MultiplyTo(vector, factor, vector);
+    public static Matrix Multiply(this Matrix vector, Weight factor)
+    {
+        var destination = Matrix.Create(vector.RowCount, vector.ColumnCount);
+        MultiplyTo(vector, factor, destination);
+        return destination;
+    }
+    public static void MultiplyTo(this Matrix vector, Weight factor, Matrix destination)
+    {
+        NumericsDebug.AssertSameDimensions(vector, destination);
+        TensorPrimitives.Multiply(vector.AsSpan(), factor, destination.AsSpan());
+    }
+
+    public static void DivideToSelf(this Matrix vector, Weight divisor) => DivideTo(vector, divisor, vector);
+    public static Matrix Divide(this Matrix vector, Weight divisor)
+    {
+        var destination = Matrix.Create(vector.RowCount, vector.ColumnCount);
+        DivideTo(vector, divisor, destination);
+        return destination;
+    }
+    public static void DivideTo(this Matrix vector, Weight divisor, Matrix destination)
+    {
+        MultiplyTo(vector, 1 / divisor, destination);
     }
 
     public static Span<Weight> RowSpan(this Matrix matrix, int rowIndex) => matrix.AsSpan().Slice(rowIndex * matrix.ColumnCount, matrix.ColumnCount);

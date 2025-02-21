@@ -1,0 +1,171 @@
+using System.Diagnostics;
+using MachineLearning.Model.Activation;
+using MachineLearning.Model.Initialization;
+using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Initialization;
+using MachineLearning.Model.Layer.Snapshot;
+using MachineLearning.Training.Cost;
+using MachineLearning.Training.Optimization;
+using MachineLearning.Training.Optimization.Adam;
+using static MachineLearning.Serialization.ModelSerializationHelper;
+
+namespace MachineLearning.Mamba;
+
+public sealed class UnEmbeddingLayer(int contextSize, Matrix unembeddingMatrix) : ILayer
+{
+    // init randomly with [-0.1; 0.1] or [-0.01; 0.01]
+    public Matrix UnEmbeddingMatrix { get; } = unembeddingMatrix;
+    public int TokenCount => UnEmbeddingMatrix.RowCount;
+
+    // public int OutputNodeCount { get; } = contextSize * embeddingSize;
+    public int ContextSize { get; } = contextSize;
+    public int EmbeddingSize => UnEmbeddingMatrix.ColumnCount;
+    public long ParameterCount => UnEmbeddingMatrix.FlatCount;
+
+    public UnEmbeddingLayer(int tokenCount, int contextSize, int embeddingSize)
+        : this(contextSize, Matrix.Create(tokenCount, embeddingSize)) { }
+
+    // TODO: incorporate all token predictions in the gradient
+    public (Vector, int) Forward(Matrix input, Snapshot snapshot)
+    {
+        Debug.Assert(input.RowCount == ContextSize);
+        Debug.Assert(input.ColumnCount == EmbeddingSize);
+
+        input.CopyTo(snapshot.Input);
+
+        UnEmbeddingMatrix.MultiplyTo(input.RowRef(input.RowCount - 1), snapshot.WeightedInput);
+        SoftMaxActivation.Instance.ActivateTo(snapshot.WeightedInput, snapshot.Output);
+
+        return (snapshot.Output, snapshot.Output.MaximumIndex());
+    }
+
+    public void Backwards(Vector outputGradient, Snapshot snapshot)
+    {
+        Debug.Assert(outputGradient.Count == TokenCount);
+
+        // var tmp = Vector.Create(outputGradient.Count);
+        // SoftMaxActivation.Instance.DerivativeTo(snapshot.WeightedInput, tmp);
+        // tmp.PointwiseMultiplyToSelf(outputGradient);
+
+        // y = W * v
+        // dy = y - expected
+        // => dW += v * dy
+        // => dv += W^T * dy
+        VectorHelper.MultiplyToMatrixTo(outputGradient, snapshot.Input.RowRef(snapshot.Input.RowCount - 1), snapshot.UnEmbeddingGradient);
+        UnEmbeddingMatrix.MultiplyTransposedTo(outputGradient, snapshot.InputGradient.RowRef(snapshot.InputGradient.RowCount - 1));
+    }
+
+    public static ErrorState Save(UnEmbeddingLayer layer, BinaryWriter writer)
+    {
+        writer.Write(layer.TokenCount);
+        writer.Write(layer.ContextSize);
+        writer.Write(layer.EmbeddingSize);
+        WriteMatrix(layer.UnEmbeddingMatrix, writer);
+        return default;
+    }
+    public static Result<UnEmbeddingLayer> Read(BinaryReader reader)
+    {
+        var tokenCount = reader.ReadInt32();
+        var contextSize = reader.ReadInt32();
+        var embeddingSize = reader.ReadInt32();
+        var matrix = ReadMatrix(tokenCount, embeddingSize, reader);
+        return new UnEmbeddingLayer(contextSize, matrix);
+    }
+
+    public ILayerSnapshot CreateSnapshot() => new Snapshot(TokenCount, ContextSize, EmbeddingSize);
+
+    public sealed class Snapshot(int tokenCount, int N, int E) : ILayerSnapshot
+    {
+        public Matrix Input { get; } = Matrix.Create(N, E);
+        public Vector WeightedInput { get; } = Vector.Create(tokenCount);
+        public Vector Output { get; } = Vector.Create(tokenCount);
+
+        public Matrix InputGradient { get; } = Matrix.Create(N, E);
+        public Matrix UnEmbeddingGradient { get; } = Matrix.Create(tokenCount, E);
+    }
+
+    public sealed class Initializer(Random? random = null) : IInitializer<UnEmbeddingLayer>
+    {
+        public Random Random { get; } = random ?? Random.Shared;
+
+        public void Initialize(UnEmbeddingLayer layer)
+        {
+            layer.UnEmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.01f));
+        }
+    }
+}
+
+public sealed class UnEmbeddingLayerAdam : ILayerOptimizer<UnEmbeddingLayer, UnEmbeddingLayer.Snapshot>
+{
+    public UnEmbeddingLayer Layer { get; }
+    public ICostFunction CostFunction => Optimizer.CostFunction;
+    public AdamOptimizer Optimizer { get; }
+
+    public Matrix Gradient { get; }
+
+    // formula symbol M 
+    // exponentially decaying average of past gradients. It is akin to the mean of the gradients.
+    public readonly Matrix FirstMoment;
+
+    // formula symbol V
+    // exponentially decaying average of the squared gradients. It is akin to the uncentered variance of the gradients.
+    public readonly Matrix SecondMoment;
+
+
+    public UnEmbeddingLayerAdam(AdamOptimizer optimizer, UnEmbeddingLayer layer)
+    {
+        Optimizer = optimizer;
+        Layer = layer;
+
+        Gradient = Matrix.OfSize(Layer.UnEmbeddingMatrix);
+        FirstMoment = Matrix.OfSize(Layer.UnEmbeddingMatrix);
+        SecondMoment = Matrix.OfSize(Layer.UnEmbeddingMatrix);
+    }
+
+    private readonly Lock _lock = new();
+    public void Update(Vector nodeValues, UnEmbeddingLayer.Snapshot snapshot)
+    {
+        NumericsDebug.AssertValidNumbers(nodeValues);
+        Layer.Backwards(nodeValues, snapshot);
+
+        NumericsDebug.AssertValidNumbers(snapshot.InputGradient);
+        NumericsDebug.AssertValidNumbers(snapshot.UnEmbeddingGradient);
+
+        lock (_lock)
+        {
+            Gradient.AddToSelf(snapshot.UnEmbeddingGradient);
+        }
+    }
+
+    public void Apply(int dataCounter)
+    {
+        (FirstMoment, Gradient).MapToFirst(FirstMomentEstimate);
+        (SecondMoment, Gradient).MapToFirst(SecondMomentEstimate);
+        Layer.UnEmbeddingMatrix.SubtractToSelf((FirstMoment, SecondMoment).Map(WeightReduction));
+    }
+
+    private float WeightReduction(float firstMoment, float secondMoment)
+    {
+        var mHat = firstMoment / (1 - Weight.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
+        var vHat = secondMoment / (1 - Weight.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
+        return Optimizer.LearningRate * mHat / (Weight.Sqrt(vHat) + Optimizer.Epsilon);
+    }
+
+    private float FirstMomentEstimate(float lastMoment, float gradient)
+        => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
+    private float SecondMomentEstimate(float lastMoment, float gradient)
+        => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
+
+    public void GradientCostReset()
+    {
+        Gradient.ResetZero();
+    }
+
+    public void FullReset()
+    {
+        GradientCostReset();
+
+        FirstMoment.ResetZero();
+        SecondMoment.ResetZero();
+    }
+}

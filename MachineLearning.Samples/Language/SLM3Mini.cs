@@ -7,7 +7,7 @@ public sealed class SLM3Mini : ISample<int[], int>
 {
     public const int CONTEXT_SIZE = 64;
 
-    public static CharTokenizer Tokenizer { get; } = new("\0 !%'(),-.0123456789:=?_abcdefghijklmnopqrstuvwxyzﬂ");
+    public static CharTokenizer Tokenizer { get; } = new("\0 !%'(),-.0123456789:=?_abcdefghijklmnopqrstuvwxyz√ü");
     public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3_mini.gmw"));
     public static EmbeddedModel<int[], int> CreateModel(Random? random = null)
     {

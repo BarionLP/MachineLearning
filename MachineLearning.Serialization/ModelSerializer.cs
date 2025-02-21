@@ -67,10 +67,10 @@ public sealed class ModelSerializer(FileInfo fileInfo)
             Layers = [.. layers],
         };
     }
-    
+
     public static ErrorState SaveETM(EmbeddedModel<int[], int> model, BinaryWriter writer)
     {
-        if(model.InputLayer is not EncodedEmbeddingLayer eel)
+        if (model.InputLayer is not EncodedEmbeddingLayer eel)
         {
             return new NotImplementedException("EmbeddedModel<int[], int> only supports EncodedEmbeddingLayer rn");
         }
@@ -80,7 +80,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         {
             return result;
         }
-        
+
         result = SaveFFM(model.InnerModel, writer);
         if (!OptionsMarshall.IsSuccess(result))
         {
@@ -108,13 +108,13 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         {
             return error;
         }
-        
+
         var inner = ReadFFM(reader);
         if (OptionsMarshall.TryGetError(inner, out error))
         {
             return error;
         }
-        
+
         var output = ReadTokenOutputLayer(reader);
         if (OptionsMarshall.TryGetError(output, out error))
         {
@@ -169,7 +169,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
         return layer;
     }
-    
+
     public static ErrorState SaveEncodedEmbeddingLayer(EncodedEmbeddingLayer layer, BinaryWriter writer)
     {
         writer.Write(layer.TokenCount);
@@ -186,7 +186,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var embeddingSize = reader.ReadInt32();
         return new EncodedEmbeddingLayer(tokenCount, contextSize, embeddingSize);
     }
-    
+
     public static ErrorState SaveTokenOutputLayer(TokenOutputLayer layer, BinaryWriter writer)
     {
         writer.Write(layer.TokenCount);
@@ -286,5 +286,36 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     {
         RegisterLayerReader(key, version, reader);
         LayerSerializers.Add(typeof(TLayer), (key, version, (layer, bw) => writer((TLayer)layer, bw)));
+    }
+}
+
+public static class ModelSerializationHelper
+{
+    public static void WriteMatrix(Matrix matrix, BinaryWriter writer)
+    {
+        WriteVector(matrix.Storage, writer);
+    }
+
+    public static void WriteVector(Vector vector, BinaryWriter writer)
+    {
+        foreach (var i in ..vector.Count)
+        {
+            writer.Write(vector[i]);
+        }
+    }
+
+    public static Matrix ReadMatrix(int rowCount, int columnCount, BinaryReader reader)
+    {
+        return Matrix.Of(rowCount, columnCount, ReadVector(rowCount * columnCount, reader));
+    }
+
+    public static Vector ReadVector(int count, BinaryReader reader)
+    {
+        var result = Vector.Create(count);
+        foreach (var i in ..count)
+        {
+            result[i] = reader.ReadSingle();
+        }
+        return result;
     }
 }
