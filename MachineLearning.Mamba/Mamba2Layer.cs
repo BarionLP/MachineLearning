@@ -32,7 +32,7 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
 
             h.AddToSelf(B.RowRef(t).Multiply(input[t])); // add B_t * x_t
 
-            // y_t = C_t^T * h
+            // output[t] = C_t^T * h
             snapshot.Output[t] = C.RowRef(t).Dot(h);
         }
 
@@ -99,6 +99,150 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
     {
         public Vector Input { get; } = Vector.Create(T);
         public Vector Output { get; } = Vector.Create(T);
+        public Vector GradientInput { get; } = Vector.Create(T);
+
+        public Matrix Memory /*H*/ { get; } = Matrix.Create(T, N); // one row per timestep t
+        public Matrix GradientMemory { get; } = Matrix.Create(T, N);
+
+
+        public Vector GradientAlpha { get; } = Vector.Create(T);
+        public Matrix GradientB { get; } = Matrix.Create(T, N);
+        public Matrix GradientC { get; } = Matrix.Create(T, N);
+
+        public void Reset()
+        {
+            Input.ResetZero();
+            Output.ResetZero();
+            GradientInput.ResetZero();
+            Memory.ResetZero();
+            GradientMemory.ResetZero();
+            GradientAlpha.ResetZero();
+            GradientB.ResetZero();
+            GradientC.ResetZero();
+        }
+    }
+
+    public sealed class Initializer(Random? random = null) : IInitializer<Mamba2Layer>
+    {
+        public Random Random { get; } = random ?? Random.Shared;
+
+        public void Initialize(Mamba2Layer layer)
+        {
+            float scale = 1.0f / MathF.Sqrt(layer.StateDimensions);
+
+            // affects how much memory the model can keep from the previous step
+            // optimally [0.9,1.0] must be [0,1] to prevent vanishing/exploding gradients
+            layer.Alpha.Fill(0.9f);
+
+            layer.B.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0f, scale));
+            layer.C.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0f, scale));
+        }
+    }
+
+}
+
+public sealed class EmbeddedMamba2Layer(int sequenceLength, int stateDimensions, int embeddingDimensions) : ILayer
+{
+    public int SequenceLength /*T*/ { get; } = sequenceLength;
+    public int StateDimensions /*N*/ { get; } = stateDimensions;
+    public int EmbeddingDimensions /*E*/ { get; } = embeddingDimensions;
+
+    // how much memory to keep from the previous step
+    public Vector Alpha { get; } = Vector.Create(sequenceLength);
+
+    // both could be a tensor of (T*N*E) but it makes sense to share this transformation across steps
+    public Matrix B { get; } = Matrix.Create(stateDimensions, embeddingDimensions); // how does the input_t affect the memory h_t
+    public Matrix C { get; } = Matrix.Create(stateDimensions, embeddingDimensions); // how does the memory h_t affect the output_t
+
+    public Matrix Forward(Matrix input, Snapshot snapshot)
+    {
+        Debug.Assert(input.RowCount == SequenceLength);
+        Debug.Assert(input.ColumnCount == EmbeddingDimensions);
+
+        input.CopyTo(snapshot.Input);
+        snapshot.Memory.ResetZero();
+
+        for (int t = 0; t < SequenceLength; t++)
+        {
+            // h = alpha_t * h + B * x_t
+            var h = snapshot.Memory.RowRef(t);
+            if (t > 0)
+            {
+                snapshot.Memory.RowRef(t - 1).MultiplyTo(Alpha[t], h);
+            }
+
+            h.AddToSelf(B.Multiply(input.RowRef(t))); // add B * x_t
+
+            // y_t = C^T * h
+            C.MultiplyTransposedTo(h, snapshot.Output.RowRef(t));
+        }
+
+        return snapshot.Output;
+    }
+
+    public Matrix BackwardPass(Snapshot snapshot, Matrix outputGradient)
+    {
+        Debug.Assert(outputGradient.RowCount == SequenceLength);
+        Debug.Assert(outputGradient.ColumnCount == EmbeddingDimensions);
+
+        snapshot.GradientAlpha.ResetZero();
+        snapshot.GradientInput.ResetZero();
+        snapshot.GradientB.ResetZero();
+        snapshot.GradientC.ResetZero();
+        snapshot.GradientMemory.ResetZero();
+
+        for (int t = SequenceLength - 1; t >= 0; t--)
+        {
+            // dY = derivative of L wrt output[t]
+            var dY = outputGradient.RowRef(t);
+
+            // (a) output[t] = C^T * H[t]
+            // => dC += H[t] * dY
+            // => dH[t] += C * dY
+            snapshot.GradientC.AddToSelf(VectorHelper.MultiplyToMatrix(snapshot.Memory.RowRef(t), dY));
+            snapshot.GradientMemory.RowRef(t).AddToSelf(C.Multiply(dY));
+
+            // (b) h[t] = alpha[t] * h[t-1] + B[t] * inputX[t]
+            // => partial wrt alpha[t] = (h[t-1] dot dH[t])
+            // => partial wrt h[t-1]  += alpha[t] * dH[t]
+            // => partial wrt B[t]    += dH[t] * inputX[t]
+            // => partial wrt inputX[t] = (B[t] dot dH[t])
+
+            // derivative w.r.t alpha[t]
+            // h[t-1] = (t>0) ? st.h[t-1] : zero
+            var hPrev = (t == 0)
+                           ? Vector.Create(StateDimensions)
+                           : snapshot.Memory.RowRef(t - 1);
+
+            snapshot.GradientAlpha[t] += hPrev.Dot(snapshot.GradientMemory.RowRef(t));  // dAlpha
+
+            // derivative w.r.t H[t-1]
+            // if t>0, add alpha[t]*dH[t] to dH[t-1]
+            if (t > 0)
+            {
+                snapshot.GradientMemory.RowRef(t - 1).AddToSelf(snapshot.GradientMemory.RowRef(t).Multiply(Alpha[t]));
+            }
+
+            // derivative w.r.t. B[t] and input[t]
+            // dB[t] = input[t] * dH[t]
+            snapshot.GradientB.RowRef(t).AddToSelf(snapshot.GradientMemory.RowRef(t).Multiply(snapshot.Input[t]));
+
+            snapshot.GradientInput[t] += B.RowRef(t).Dot(snapshot.GradientMemory.RowRef(t));  // partial w.r.t. input[t]
+
+        }
+
+        snapshot.GradientC.Mul()
+
+        return snapshot.GradientInput;
+    }
+
+    public long ParameterCount { get; }
+    public ILayerSnapshot CreateSnapshot() => new Snapshot(SequenceLength, StateDimensions, EmbeddingDimensions);
+
+    public sealed class Snapshot(int T, int N, int E) : ILayerSnapshot
+    {
+        public Matrix Input { get; } = Matrix.Create(T, E);
+        public Matrix Output { get; } = Matrix.Create(T, E);
         public Vector GradientInput { get; } = Vector.Create(T);
 
         public Matrix Memory /*H*/ { get; } = Matrix.Create(T, N); // one row per timestep t

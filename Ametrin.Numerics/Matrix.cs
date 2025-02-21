@@ -262,6 +262,12 @@ public static class MatrixHelper
         matrix.AsSpan().CopyTo(copy.AsSpan());
         return copy;
     }
+    public static void CopyTo(this Matrix matrix, Matrix destination)
+    {
+        NumericsDebug.AssertSameDimensions(matrix, destination);
+        matrix.AsSpan().CopyTo(destination.AsSpan());
+    }
 
+    public static void Fill(this Matrix matrix, Weight value) => matrix.AsSpan().Fill(value);
     public static void ResetZero(this Matrix matrix) => matrix.AsSpan().Clear();
 }
