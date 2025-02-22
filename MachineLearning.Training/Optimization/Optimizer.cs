@@ -23,7 +23,7 @@ public abstract class Optimizer
 
     public ILayerOptimizer CreateLayerOptimizer(ILayer layer)
     {
-        if(_registry.TryGetValue(layer.GetType(), out var factory))
+        if (_registry.TryGetValue(layer.GetType(), out var factory))
         {
             return factory(layer);
         }
@@ -34,7 +34,7 @@ public abstract class Optimizer
 
     public void Register<TLayer>(Func<TLayer, ILayerOptimizer> factory) where TLayer : ILayer
         => _registry.Add(typeof(TLayer), (layer) => factory(Guard.Is<TLayer>(layer)));
-    
-    public void RegisterEmpty<TLayer>() where TLayer : ILayer 
+
+    public void RegisterEmpty<TLayer>() where TLayer : ILayer
         => _registry.Add(typeof(TLayer), static (_) => EmptyLayerOptimizer.Instance);
 }

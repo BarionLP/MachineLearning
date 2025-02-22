@@ -16,5 +16,5 @@ public interface IEmbeddedModel<in TIn, TOut> : IModel
 
 public interface IModel
 {
-    public long ParameterCount { get; }
+    public long WeightCount { get; }
 }

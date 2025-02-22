@@ -1,4 +1,4 @@
 namespace MachineLearning.Model.Attributes;
 
 [AttributeUsage(AttributeTargets.Property)]
-public sealed class WeightsAttribute : Attribute;
+public sealed class ParameterAttribute : Attribute;

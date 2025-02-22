@@ -14,8 +14,10 @@ public static class Helper
         : symbol.BaseType is null ? null : GetGenericILayer(symbol.BaseType);
 
     public static bool IsWeightAttribute(ITypeSymbol symbol) => symbol is { Name: "WeightsAttribute", ContainingAssembly.Name: "MachineLearning.Model", ContainingNamespace.Name: "Attributes" };
+    public static bool IsParameterAttribute(ITypeSymbol symbol) => symbol is { Name: "ParameterAttribute", ContainingAssembly.Name: "MachineLearning.Model", ContainingNamespace.Name: "Attributes" };
     public static bool IsGeneratedLayerAttribute(ITypeSymbol symbol) => symbol is { Name: "GeneratedLayerAttribute", ContainingAssembly.Name: "MachineLearning.Model", ContainingNamespace.Name: "Attributes" };
-    public static bool IsLayerSerializerAttribute(INamedTypeSymbol symbol) => symbol is { Name: "LayerSerializerAttribute", ContainingAssembly.Name: "MachineLearning.Serialization" };
+    public static bool IsGenerateOptimizersAttribute(ITypeSymbol symbol) => symbol is { Name: "GenerateOptimizersAttribute", ContainingAssembly.Name: "MachineLearning.Training", ContainingNamespace.Name: "Attributes" };
+    public static bool IsLayerSerializerAttribute(ITypeSymbol symbol) => symbol is { Name: "LayerSerializerAttribute", ContainingAssembly.Name: "MachineLearning.Serialization" };
     public static bool IsVector(ITypeSymbol symbol) => symbol is { Name: "Vector", ContainingAssembly.Name: "Ametrin.Numerics" };
     public static bool IsMatrix(ITypeSymbol symbol) => symbol is { Name: "Matrix", ContainingAssembly.Name: "Ametrin.Numerics" };
 }

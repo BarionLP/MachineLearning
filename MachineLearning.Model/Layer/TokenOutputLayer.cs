@@ -10,7 +10,7 @@ public sealed class TokenOutputLayer(int tokenCount, bool weightedRandom, Random
     public Random Random { get; } = random ?? Random.Shared;
 
     public int InputNodeCount => TokenCount;
-    public long ParameterCount => 0;
+    public long WeightCount => 0;
 
     public (int output, Weight confidence) Process(Vector input)
     {

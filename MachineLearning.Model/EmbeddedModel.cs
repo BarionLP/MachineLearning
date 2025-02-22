@@ -8,7 +8,7 @@ public sealed class EmbeddedModel<TIn, TOut> : IEmbeddedModel<TIn, TOut>
     public required FeedForwardModel InnerModel { get; init; }
     public required IUnembeddingLayer<TOut> OutputLayer { get; init; }
 
-    public long ParameterCount => InputLayer.ParameterCount + InnerModel.ParameterCount + OutputLayer.ParameterCount;
+    public long WeightCount => InputLayer.WeightCount + InnerModel.WeightCount + OutputLayer.WeightCount;
 
     public (TOut prediction, Weight confidence) Process(TIn input) 
         => OutputLayer.Process(InnerModel.Process(InputLayer.Process(input)));

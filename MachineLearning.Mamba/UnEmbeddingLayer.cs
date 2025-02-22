@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using MachineLearning.Model.Activation;
+using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
-using MachineLearning.Model.Layer.Snapshot;
+using MachineLearning.Serialization;
+using MachineLearning.Training.Attributes;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
 using MachineLearning.Training.Optimization.Adam;
@@ -11,16 +13,15 @@ using static MachineLearning.Serialization.ModelSerializationHelper;
 
 namespace MachineLearning.Mamba;
 
-public sealed class UnEmbeddingLayer(int contextSize, Matrix unembeddingMatrix) : ILayer
+[GeneratedLayer, LayerSerializer("unemb", 2), GenerateOptimizers(OutputGradientType = typeof(Vector))]
+public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnEmbeddingLayer.Snapshot>
 {
+    [Parameter] public int ContextSize { get; }
     // init randomly with [-0.1; 0.1] or [-0.01; 0.01]
-    public Matrix UnEmbeddingMatrix { get; } = unembeddingMatrix;
+    [Weights] public Matrix UnEmbeddingMatrix { get; }
     public int TokenCount => UnEmbeddingMatrix.RowCount;
 
-    // public int OutputNodeCount { get; } = contextSize * embeddingSize;
-    public int ContextSize { get; } = contextSize;
     public int EmbeddingSize => UnEmbeddingMatrix.ColumnCount;
-    public long ParameterCount => UnEmbeddingMatrix.FlatCount;
 
     public UnEmbeddingLayer(int tokenCount, int contextSize, int embeddingSize)
         : this(contextSize, Matrix.Create(tokenCount, embeddingSize)) { }
@@ -39,31 +40,25 @@ public sealed class UnEmbeddingLayer(int contextSize, Matrix unembeddingMatrix) 
         return (snapshot.Output, snapshot.Output.MaximumIndex());
     }
 
-    public void Backwards(Vector outputGradient, Snapshot snapshot)
+    public void Backward(Vector outputGradient, Snapshot snapshot)
     {
         Debug.Assert(outputGradient.Count == TokenCount);
 
+        // this would be neccecary without CrossEntropyFromSoftmaxLoss;
         // var tmp = Vector.Create(outputGradient.Count);
         // SoftMaxActivation.Instance.DerivativeTo(snapshot.WeightedInput, tmp);
         // tmp.PointwiseMultiplyToSelf(outputGradient);
 
         // y = W * v
-        // dy = y - expected
+        // dy = y - expected // because CrossEntropy and Softmax cancel out
         // => dW += v * dy
         // => dv += W^T * dy
-        VectorHelper.MultiplyToMatrixTo(outputGradient, snapshot.Input.RowRef(snapshot.Input.RowCount - 1), snapshot.UnEmbeddingGradient);
+        VectorHelper.MultiplyToMatrixTo(outputGradient, snapshot.Input.RowRef(snapshot.Input.RowCount - 1), snapshot.GradientUnEmbeddingMatrix);
         UnEmbeddingMatrix.MultiplyTransposedTo(outputGradient, snapshot.InputGradient.RowRef(snapshot.InputGradient.RowCount - 1));
     }
 
-    public static ErrorState Save(UnEmbeddingLayer layer, BinaryWriter writer)
-    {
-        writer.Write(layer.TokenCount);
-        writer.Write(layer.ContextSize);
-        writer.Write(layer.EmbeddingSize);
-        WriteMatrixRaw(layer.UnEmbeddingMatrix, writer);
-        return default;
-    }
-    public static Result<UnEmbeddingLayer> Read(BinaryReader reader)
+
+    public static Result<UnEmbeddingLayer> Readv1(BinaryReader reader)
     {
         var tokenCount = reader.ReadInt32();
         var contextSize = reader.ReadInt32();
@@ -72,16 +67,13 @@ public sealed class UnEmbeddingLayer(int contextSize, Matrix unembeddingMatrix) 
         return new UnEmbeddingLayer(contextSize, matrix);
     }
 
-    public ILayerSnapshot CreateSnapshot() => new Snapshot(TokenCount, ContextSize, EmbeddingSize);
-
-    public sealed class Snapshot(int tokenCount, int N, int E) : ILayerSnapshot
+    partial class Snapshot
     {
-        public Matrix Input { get; } = Matrix.Create(N, E);
-        public Vector WeightedInput { get; } = Vector.Create(tokenCount);
-        public Vector Output { get; } = Vector.Create(tokenCount);
+        public Matrix Input { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Vector WeightedInput { get; } = Vector.Create(layer.TokenCount);
+        public Vector Output { get; } = Vector.Create(layer.TokenCount);
 
-        public Matrix InputGradient { get; } = Matrix.Create(N, E);
-        public Matrix UnEmbeddingGradient { get; } = Matrix.Create(tokenCount, E);
+        public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<UnEmbeddingLayer>
@@ -90,7 +82,7 @@ public sealed class UnEmbeddingLayer(int contextSize, Matrix unembeddingMatrix) 
 
         public void Initialize(UnEmbeddingLayer layer)
         {
-            layer.UnEmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.01f));
+            layer.UnEmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.03f));
         }
     }
 }
@@ -126,14 +118,14 @@ public sealed class UnEmbeddingLayerAdam : ILayerOptimizer<UnEmbeddingLayer, UnE
     public void Update(Vector nodeValues, UnEmbeddingLayer.Snapshot snapshot)
     {
         NumericsDebug.AssertValidNumbers(nodeValues);
-        Layer.Backwards(nodeValues, snapshot);
+        Layer.Backward(nodeValues, snapshot);
 
         NumericsDebug.AssertValidNumbers(snapshot.InputGradient);
-        NumericsDebug.AssertValidNumbers(snapshot.UnEmbeddingGradient);
+        NumericsDebug.AssertValidNumbers(snapshot.GradientUnEmbeddingMatrix);
 
         lock (_lock)
         {
-            Gradient.AddToSelf(snapshot.UnEmbeddingGradient);
+            Gradient.AddToSelf(snapshot.GradientUnEmbeddingMatrix);
         }
     }
 

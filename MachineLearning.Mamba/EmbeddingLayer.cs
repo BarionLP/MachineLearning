@@ -1,26 +1,25 @@
-﻿using System.Diagnostics;
-using System.Numerics.Tensors;
+﻿using System.Numerics.Tensors;
+using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
-using MachineLearning.Model.Layer.Snapshot;
+using MachineLearning.Serialization;
 using MachineLearning.Training.Cost;
 using MachineLearning.Training.Optimization;
 using MachineLearning.Training.Optimization.Adam;
-using static MachineLearning.Serialization.ModelSerializationHelper;
 
 
 namespace MachineLearning.Mamba;
 
-public sealed class EmbeddingLayer(int contextSize, Matrix embeddingMatrix) : ILayer
+[GeneratedLayer, LayerSerializer("emb", 2)]
+public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLayer.Snapshot>
 {
+    [Parameter] public int ContextSize { get; }
     // init randomly with [-0.1; 0.1] or [-0.01; 0.01]
-    public Matrix EmbeddingMatrix { get; } = embeddingMatrix;
-    // public int OutputNodeCount { get; } = contextSize * embeddingSize;
-    public int ContextSize { get; } = contextSize;
+    [Weights] public Matrix EmbeddingMatrix { get; }
+
     public int EmbeddingSize => EmbeddingMatrix.ColumnCount;
     public int TokenCount => EmbeddingMatrix.RowCount;
-    public long ParameterCount => EmbeddingMatrix.FlatCount;
 
     public EmbeddingLayer(int tokenCount, int contextSize, int embeddingSize)
         : this(contextSize, Matrix.Create(tokenCount, embeddingSize)) { }
@@ -48,29 +47,10 @@ public sealed class EmbeddingLayer(int contextSize, Matrix embeddingMatrix) : IL
         return EmbeddingMatrix.RowSpan(index);
     }
 
-    public static ErrorState Save(EmbeddingLayer layer, BinaryWriter writer)
-    {
-        writer.Write(layer.TokenCount);
-        writer.Write(layer.ContextSize);
-        writer.Write(layer.EmbeddingSize);
-        WriteMatrixRaw(layer.EmbeddingMatrix, writer);
-        return default;
-    }
-    public static Result<EmbeddingLayer> Read(BinaryReader reader)
-    {
-        var tokenCount = reader.ReadInt32();
-        var contextSize = reader.ReadInt32();
-        var embeddingSize = reader.ReadInt32();
-        var matrix = ReadMatrixRaw(tokenCount, embeddingSize, reader);
-        return new EmbeddingLayer(contextSize, matrix);
-    }
-
-    public ILayerSnapshot CreateSnapshot() => new Snapshot(ContextSize, EmbeddingSize);
-
-    public sealed class Snapshot(int contextSize, int embeddingSize) : ILayerSnapshot
+    partial class Snapshot
     {
         public int[] Input { get; set; } = [];
-        public Matrix Output { get; } = Matrix.Create(contextSize, embeddingSize);
+        public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<EmbeddingLayer>
@@ -79,7 +59,7 @@ public sealed class EmbeddingLayer(int contextSize, Matrix embeddingMatrix) : IL
 
         public void Initialize(EmbeddingLayer layer)
         {
-            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.05f));
+            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.03f));
         }
     }
 }
@@ -88,7 +68,6 @@ public sealed class EmbeddingLayer(int contextSize, Matrix embeddingMatrix) : IL
 public sealed class EmbeddingLayerAdam : ILayerOptimizer<EmbeddingLayer, EmbeddingLayer.Snapshot>
 {
     public EmbeddingLayer Layer { get; }
-    public ICostFunction CostFunction => Optimizer.CostFunction;
     public AdamOptimizer Optimizer { get; }
 
     public readonly Matrix Gradient;

@@ -35,6 +35,7 @@ public interface Matrix
     }
 
     public static Matrix OfSize(Matrix template) => Create(template.RowCount, template.ColumnCount);
+    public static Matrix OfSize(Matrix template, Vector storage) => Of(template.RowCount, template.ColumnCount, storage);
 }
 
 internal readonly struct MatrixFlat(int rowCount, int columnCount, Vector storage) : Matrix

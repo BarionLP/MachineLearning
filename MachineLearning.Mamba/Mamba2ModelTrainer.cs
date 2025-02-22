@@ -114,7 +114,7 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
 
     private Vector Update(TrainingData<Vector, Vector> data)
     {
-        var snapshots = Model.Layers.Select(LayerSnapshots.Get).Cast<Mamba2Layer.Snapshot>().ToImmutableArray();
+        var snapshots = Model.Layers.Select(LayerSnapshots.Get).Cast<Mamba2ScalarLayer.Snapshot>().ToImmutableArray();
         var result = Model.Process(data.InputValue, snapshots);
 
         var gradient = Optimizer.CostFunction.Derivative(result, data.ExpectedWeights);
@@ -140,7 +140,7 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
     private void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
 }
 
-public sealed class EmbeddedMamba2ModelTrainer : ITrainer<EmbeddedMamba2Model>
+public sealed class Mamba2VectorModelTrainer : ITrainer<EmbeddedMamba2Model>
 {
     public TrainingConfig Config { get; }
     public ITrainingSet TrainingSet { get; }
@@ -150,7 +150,7 @@ public sealed class EmbeddedMamba2ModelTrainer : ITrainer<EmbeddedMamba2Model>
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer { get; }
 
-    public EmbeddedMamba2ModelTrainer(EmbeddedMamba2Model model, TrainingConfig config, ITrainingSet trainingSet)
+    public Mamba2VectorModelTrainer(EmbeddedMamba2Model model, TrainingConfig config, ITrainingSet trainingSet)
     {
         Config = config;
         TrainingSet = trainingSet;
@@ -252,7 +252,7 @@ public sealed class EmbeddedMamba2ModelTrainer : ITrainer<EmbeddedMamba2Model>
     private (Vector, int) Update(TrainingData<int[], int> data)
     {
         var inputSnapshot = LayerSnapshots.Get(Model.InputLayer);
-        var snapshots = Model.HiddenLayers.Select(LayerSnapshots.Get).Cast<EmbeddedMamba2Layer.Snapshot>().ToImmutableArray();
+        var snapshots = Model.HiddenLayers.Select(LayerSnapshots.Get).Cast<Mamba2VectorLayer.Snapshot>().ToImmutableArray();
         var outputSnapshot = (UnEmbeddingLayer.Snapshot)LayerSnapshots.Get(Model.OutputLayer);
 
         var (weights, result) = Model.Process(data.InputValue, [inputSnapshot, .. snapshots, outputSnapshot]);

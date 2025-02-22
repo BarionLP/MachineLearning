@@ -5,7 +5,7 @@
 public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 {
     private static readonly DiagnosticDescriptor WeightsMustBeTensors = new(
-        "ML001", "Non-Tensor used as Weights", "WeightsAttribute can only be used on Vectors and Matrices", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true
+        "ML001", "Non-Tensor used as Weights", "WeightsAttribute can only be used on Tensors not {0}", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true
     );
     private static readonly DiagnosticDescriptor InvalidGeneratedLayer = new(
         "ML002", "Invalid GeneratedLayerAttribute", "GeneratedLayerAttribute can only be used on instances of ILayer<TInput, TOutput, TSnapshot>", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true
@@ -13,8 +13,11 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
     private static readonly DiagnosticDescriptor InvalidLayerSerializer = new(
         "ML003", "Invalid LayerSerializerAttribute", "LayerSerializerAttribute can only be used with GeneratedLayerAttribute", "Usage", DiagnosticSeverity.Error, isEnabledByDefault: true
     );
+    private static readonly DiagnosticDescriptor BothParamWeightUsed = new(
+        "ML004", "Invalid Layer configuration", "WeightsAttribute and ParameterAttribute cannot be used together", "Usage", DiagnosticSeverity.Error, isEnabledByDefault: true
+    );
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = [WeightsMustBeTensors, InvalidGeneratedLayer, InvalidLayerSerializer];
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = [WeightsMustBeTensors, InvalidGeneratedLayer, InvalidLayerSerializer, BothParamWeightUsed];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -31,7 +34,9 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
             static (ctx, token) => ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) as INamedTypeSymbol
         ).Where(symbol => symbol!.GetAttributes().Any(a => IsGeneratedLayerAttribute(a.AttributeClass!)) && ImplementsGenericILayer(symbol));
 
-        context.RegisterSourceOutput(layers, GenerateLayer);
+        // Debugger.Launch();
+
+        context.RegisterSourceOutput(layers.Combine(context.CompilationProvider), GenerateLayer);
     }
 
     private static void AnalyzePropertySymbol(SymbolAnalysisContext context)
@@ -41,7 +46,12 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         {
             if (!(IsVector(propertySymbol.Type!) || IsMatrix(propertySymbol.Type!)))
             {
-                context.ReportDiagnostic(Diagnostic.Create(WeightsMustBeTensors, propertySymbol.Locations[0]));
+                context.ReportDiagnostic(Diagnostic.Create(WeightsMustBeTensors, propertySymbol.Locations[0], propertySymbol.Type));
+            }
+
+            if (propertySymbol.GetAttributes().Any(a => IsParameterAttribute(a.AttributeClass!)))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(BothParamWeightUsed, propertySymbol.Locations[0]));
             }
         }
     }
@@ -62,8 +72,11 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         }
     }
 
-    private static void GenerateLayer(SourceProductionContext context, INamedTypeSymbol? layer)
+    private static void GenerateLayer(SourceProductionContext context, (INamedTypeSymbol?, Compilation) pair)
     {
+        var (layer, compilation) = pair;
+
+
         if (layer is null) return;
 
         var ilayer = GetGenericILayer(layer);
@@ -74,6 +87,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         var tout = ilayer.TypeArguments[1];
 
         var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
+        var parameter = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsParameterAttribute(a.AttributeClass!)));
 
         var sb = new StringBuilder();
         sb.AppendLine($$"""
@@ -83,16 +97,16 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         
         partial class {{layer.Name}} 
         {
-            public {{layer.Name}}({{string.Join(", ", weights.Select(p => $"{p.Type} {p.Name.ToLower()}"))}})
+            public {{layer.Name}}({{string.Join(", ", parameter.Concat(weights).Select(p => $"{p.Type} {p.Name.ToLower()}"))}})
             {
-                {{string.Join("\n\t\t", weights.Select(p => $"this.{p.Name} = {p.Name.ToLower()};"))}}
+                {{string.Join("\n\t\t", parameter.Concat(weights).Select(p => $"this.{p.Name} = {p.Name.ToLower()};"))}}
             }
 
             public ILayerSnapshot CreateSnapshot() => new Snapshot(this);
 
-            public long ParameterCount => {{string.Join(" + ", weights.Select(p => IsVector(p.Type) ? $"{p.Name}.Count" : $"{p.Name}.FlatCount"))}};
+            public long WeightCount => {{string.Join(" + ", weights.Select(p => IsVector(p.Type) ? $"{p.Name}.Count" : $"{p.Name}.FlatCount"))}};
 
-            public partial class Snapshot({{layer.Name}} layer) : ILayerSnapshot
+            public sealed partial class Snapshot({{layer.Name}} layer) : ILayerSnapshot
             {
                 // TODO: 
                 // public {{tin.Name}} Input { get; } = {{tin.Name}}.Create(T, E);
@@ -121,19 +135,25 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
                     public static ErrorState Save({{layer.Name}} layer, BinaryWriter writer)
                     {
+                        {{string.Join("\n\t\t\t", parameter.Select(w => $"writer.Write(layer.{w.Name});"))}}
                         {{string.Join("\n\t\t\t", weights.Select(w => $"Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
                         return default;
                     }
 
                     public static Result<{{layer.Name}}> Read(BinaryReader reader)
                     {
-                        return new {{layer.Name}}({{string.Join(", ", weights.Select(w => $"Read{w.Type.Name}(reader)"))}});
+                        return new {{layer.Name}}({{string.Join(", ", [.. parameter.Select(w => $"reader.Read{w.Type.Name}()"), .. weights.Select(w => $"Read{w.Type.Name}(reader)")])}});
                     }
                 }
             """);
         }
 
         sb.AppendLine("}");
+
+        if (layer.GetAttributes().FirstOrDefault(a => IsGenerateOptimizersAttribute(a.AttributeClass!)) is AttributeData attributeData)
+        {
+            AdamLayerGenerator.GenerateAdam(context, compilation, new(layer, tin, tout, weights), attributeData);
+        }
 
         context.AddSource($"{layer.Name}.g.cs", sb.ToString());
     }

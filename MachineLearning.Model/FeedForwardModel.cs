@@ -8,7 +8,7 @@ namespace MachineLearning.Model;
 public sealed class FeedForwardModel : IModel<Vector, LayerSnapshots.Simple>
 {
     public required ImmutableArray<FeedForwardLayer> Layers { get; init; }
-    public long ParameterCount => Layers.Sum(l => l.ParameterCount);
+    public long WeightCount => Layers.Sum(l => l.WeightCount);
 
 
     public Vector Process(Vector input)
@@ -21,7 +21,7 @@ public sealed class FeedForwardModel : IModel<Vector, LayerSnapshots.Simple>
     }
 
     public override string ToString()
-        => $"Feed Forward Model ({Layers.Length} Layers, {ParameterCount} Weights)";
+        => $"Feed Forward Model ({Layers.Length} Layers, {WeightCount} Weights)";
         
     IEnumerable<ILayer> IModel<Vector, LayerSnapshots.Simple>.Layers => Layers;
 }

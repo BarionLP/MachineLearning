@@ -21,7 +21,7 @@ public interface IUnembeddingLayer<TOutput> : ILayer<Vector, TOutput, ILayerSnap
 
 public interface ILayer
 {
-    public long ParameterCount { get; }
+    public long WeightCount { get; }
 
     public ILayerSnapshot CreateSnapshot();
 };

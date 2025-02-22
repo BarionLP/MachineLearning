@@ -32,6 +32,6 @@ public sealed class FeedForwardLayer(Matrix Weights, Vector Biases, IActivationF
         return snapshot.LastActivatedWeights;
     }
 
-    public long ParameterCount => Biases.Count + Weights.FlatCount;
+    public long WeightCount => Biases.Count + Weights.FlatCount;
     public ILayerSnapshot CreateSnapshot() => new LayerSnapshots.Simple(InputNodeCount, OutputNodeCount);
 }
