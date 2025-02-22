@@ -53,7 +53,7 @@ public sealed class EmbeddingLayer(int contextSize, Matrix embeddingMatrix) : IL
         writer.Write(layer.TokenCount);
         writer.Write(layer.ContextSize);
         writer.Write(layer.EmbeddingSize);
-        WriteMatrix(layer.EmbeddingMatrix, writer);
+        WriteMatrixRaw(layer.EmbeddingMatrix, writer);
         return default;
     }
     public static Result<EmbeddingLayer> Read(BinaryReader reader)
@@ -61,7 +61,7 @@ public sealed class EmbeddingLayer(int contextSize, Matrix embeddingMatrix) : IL
         var tokenCount = reader.ReadInt32();
         var contextSize = reader.ReadInt32();
         var embeddingSize = reader.ReadInt32();
-        var matrix = ReadMatrix(tokenCount, embeddingSize, reader);
+        var matrix = ReadMatrixRaw(tokenCount, embeddingSize, reader);
         return new EmbeddingLayer(contextSize, matrix);
     }
 

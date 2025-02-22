@@ -1,5 +1,4 @@
-﻿using MachineLearning.Model.Embedding;
-using MachineLearning.Model.Layer;
+﻿using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Training.Optimization.Adam;
 

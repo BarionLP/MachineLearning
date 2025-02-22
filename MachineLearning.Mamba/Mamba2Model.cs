@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using MachineLearning.Model;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
+using MachineLearning.Serialization;
 
 namespace MachineLearning.Mamba;
 
@@ -63,20 +64,20 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
     {
         writer.Write(model.HiddenLayers.Length);
 
-        if (OptionsMarshall.TryGetError(EmbeddingLayer.Save(model.InputLayer, writer), out var error1))
+        if (OptionsMarshall.TryGetError(ModelSerializer.SaveLayer(model.InputLayer, writer), out var error1))
         {
             return error1;
         }
 
         foreach (var layer in model.HiddenLayers)
         {
-            if (OptionsMarshall.TryGetError(EmbeddedMamba2Layer.Save(layer, writer), out var error2))
+            if (OptionsMarshall.TryGetError(ModelSerializer.SaveLayer(layer, writer), out var error2))
             {
                 return error2;
             }
         }
 
-        if (OptionsMarshall.TryGetError(UnEmbeddingLayer.Save(model.OutputLayer, writer), out var error3))
+        if (OptionsMarshall.TryGetError(ModelSerializer.SaveLayer(model.OutputLayer, writer), out var error3))
         {
             return error3;
         }
@@ -88,7 +89,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
     {
         var hiddenLayerCount = reader.ReadInt32();
 
-        var input = EmbeddingLayer.Read(reader);
+        var input = ModelSerializer.ReadLayer(reader).Require<EmbeddingLayer>(v => new InvalidCastException("Mamba requires an EmbeddingLayer"));
         if (OptionsMarshall.TryGetError(input, out var error1))
         {
             return error1;
@@ -96,7 +97,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
         var hiddenLayers = new EmbeddedMamba2Layer[hiddenLayerCount];
         foreach (var i in ..hiddenLayerCount)
         {
-            var layer = EmbeddedMamba2Layer.Read(reader);
+            var layer = ModelSerializer.ReadLayer(reader).Require<EmbeddedMamba2Layer>(v => new InvalidCastException("Mamba requires EmbeddedMamba2Layer"));
             if (OptionsMarshall.TryGetError(layer, out var error2))
             {
                 return error2;
@@ -104,7 +105,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
             hiddenLayers[i] = layer.OrThrow();
         }
 
-        var output = UnEmbeddingLayer.Read(reader);
+        var output = ModelSerializer.ReadLayer(reader).Require<UnEmbeddingLayer>(v => new InvalidCastException("Mamba requires an UnEmbeddingLayer"));
         if (OptionsMarshall.TryGetError(output, out var error3))
         {
             return error3;

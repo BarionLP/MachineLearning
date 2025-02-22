@@ -46,15 +46,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var layers = new FeedForwardLayer[layerCount];
         foreach (var i in ..layerCount)
         {
-            var layerKey = reader.ReadString();
-            var layerVersion = reader.ReadUInt32();
-
-            if (!LayerDeserializers.TryGetValue((layerKey, layerVersion), out var deserializer))
-            {
-                return new NotImplementedException($"No reader registered for {layerKey} v{layerVersion} layer");
-            }
-
-            var result = deserializer(reader);
+            var result = ReadLayer(reader);
             if (OptionsMarshall.TryGetError(result, out var error))
             {
                 return error;
@@ -216,6 +208,19 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         return serializer(layer, writer);
     }
 
+    public static Result<ILayer> ReadLayer(BinaryReader reader)
+    {
+        var layerKey = reader.ReadString();
+        var layerVersion = reader.ReadUInt32();
+
+        if (!LayerDeserializers.TryGetValue((layerKey, layerVersion), out var deserializer))
+        {
+            return new NotImplementedException($"No reader registered for {layerKey} v{layerVersion} layer");
+        }
+
+        return deserializer(reader);
+    }
+
     public ErrorState Save(IModel model)
     {
         if (!ModelSerializers.TryGetValue(model.GetType(), out var data))
@@ -291,12 +296,23 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
 public static class ModelSerializationHelper
 {
+    public static void WriteMatrixRaw(Matrix matrix, BinaryWriter writer)
+    {
+        WriteVectorRaw(matrix.Storage, writer);
+    }
     public static void WriteMatrix(Matrix matrix, BinaryWriter writer)
     {
-        WriteVector(matrix.Storage, writer);
+        writer.Write(matrix.RowCount);
+        writer.Write(matrix.ColumnCount);
+        WriteVectorRaw(matrix.Storage, writer);
     }
 
     public static void WriteVector(Vector vector, BinaryWriter writer)
+    {
+        writer.Write(vector.Count);
+        WriteVectorRaw(vector, writer);
+    }
+    public static void WriteVectorRaw(Vector vector, BinaryWriter writer)
     {
         foreach (var i in ..vector.Count)
         {
@@ -304,12 +320,24 @@ public static class ModelSerializationHelper
         }
     }
 
-    public static Matrix ReadMatrix(int rowCount, int columnCount, BinaryReader reader)
+    public static Matrix ReadMatrix(BinaryReader reader)
     {
-        return Matrix.Of(rowCount, columnCount, ReadVector(rowCount * columnCount, reader));
+        int rowCount = reader.ReadInt32();
+        int columnCount = reader.ReadInt32();
+        return ReadMatrixRaw(rowCount, columnCount, reader);
+    }
+    public static Matrix ReadMatrixRaw(int rowCount, int columnCount, BinaryReader reader)
+    {
+        return Matrix.Of(rowCount, columnCount, ReadVectorRaw(rowCount * columnCount, reader));
     }
 
-    public static Vector ReadVector(int count, BinaryReader reader)
+    public static Vector ReadVector(BinaryReader reader)
+    {
+        var count = reader.ReadInt32();
+        return ReadVectorRaw(count, reader);   
+    }
+
+    public static Vector ReadVectorRaw(int count, BinaryReader reader)
     {
         var result = Vector.Create(count);
         foreach (var i in ..count)

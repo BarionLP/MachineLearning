@@ -1,8 +1,9 @@
-﻿using MachineLearning.Model.Layer.Snapshot;
+﻿using System.Formats.Tar;
+using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Model.Layer;
 
-public interface IEmbeddingLayer<in TInput> : ILayer where TInput : allows ref struct
+public interface IEmbeddingLayer<TInput> : ILayer<TInput, Vector, ILayerSnapshot>
 {
     public int OutputNodeCount { get; }
 
@@ -10,7 +11,7 @@ public interface IEmbeddingLayer<in TInput> : ILayer where TInput : allows ref s
     public Vector Process(TInput input, ILayerSnapshot snapshot);
 }
 
-public interface IUnembeddingLayer<TOutput> : ILayer
+public interface IUnembeddingLayer<TOutput> : ILayer<Vector, TOutput, ILayerSnapshot>
 {
     public int InputNodeCount { get; }
 
@@ -24,3 +25,9 @@ public interface ILayer
 
     public ILayerSnapshot CreateSnapshot();
 };
+
+public interface ILayer<TIn, TOut, TSnapshot> : ILayer where TSnapshot : ILayerSnapshot;
+public interface ILayer<TArch, TSnapshot> : ILayer<TArch, TArch, TSnapshot> where TSnapshot : ILayerSnapshot
+{
+    public TArch Forward(TArch input, TSnapshot snapshot);
+}

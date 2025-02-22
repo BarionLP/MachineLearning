@@ -60,7 +60,7 @@ public sealed class UnEmbeddingLayer(int contextSize, Matrix unembeddingMatrix) 
         writer.Write(layer.TokenCount);
         writer.Write(layer.ContextSize);
         writer.Write(layer.EmbeddingSize);
-        WriteMatrix(layer.UnEmbeddingMatrix, writer);
+        WriteMatrixRaw(layer.UnEmbeddingMatrix, writer);
         return default;
     }
     public static Result<UnEmbeddingLayer> Read(BinaryReader reader)
@@ -68,7 +68,7 @@ public sealed class UnEmbeddingLayer(int contextSize, Matrix unembeddingMatrix) 
         var tokenCount = reader.ReadInt32();
         var contextSize = reader.ReadInt32();
         var embeddingSize = reader.ReadInt32();
-        var matrix = ReadMatrix(tokenCount, embeddingSize, reader);
+        var matrix = ReadMatrixRaw(tokenCount, embeddingSize, reader);
         return new UnEmbeddingLayer(contextSize, matrix);
     }
 

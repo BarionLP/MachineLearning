@@ -5,3 +5,5 @@
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 ML001 | Usage | Warning | AdamLayerOptimizerAnalyzer
+ML002 | Usage | Warning | AdamLayerOptimizerAnalyzer
+ML003 | Usage | Error | SerializationAnalyzer

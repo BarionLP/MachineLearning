@@ -1,0 +1,140 @@
+﻿namespace ML.Analyzer;
+
+[Generator]
+[DiagnosticAnalyzer(LanguageNames.CSharp)]
+public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
+{
+    private static readonly DiagnosticDescriptor WeightsMustBeTensors = new(
+        "ML001", "Non-Tensor used as Weights", "WeightsAttribute can only be used on Vectors and Matrices", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true
+    );
+    private static readonly DiagnosticDescriptor InvalidGeneratedLayer = new(
+        "ML002", "Invalid GeneratedLayerAttribute", "GeneratedLayerAttribute can only be used on instances of ILayer<TInput, TOutput, TSnapshot>", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true
+    );
+    private static readonly DiagnosticDescriptor InvalidLayerSerializer = new(
+        "ML003", "Invalid LayerSerializerAttribute", "LayerSerializerAttribute can only be used with GeneratedLayerAttribute", "Usage", DiagnosticSeverity.Error, isEnabledByDefault: true
+    );
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = [WeightsMustBeTensors, InvalidGeneratedLayer, InvalidLayerSerializer];
+
+    public override void Initialize(AnalysisContext context)
+    {
+        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+        context.EnableConcurrentExecution();
+        context.RegisterSymbolAction(AnalyzePropertySymbol, SymbolKind.Property);
+        context.RegisterSymbolAction(AnalyzeClassSymbol, SymbolKind.NamedType);
+    }
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var layers = context.SyntaxProvider.CreateSyntaxProvider(
+            static (node, _) => node is ClassDeclarationSyntax { AttributeLists.Count: > 0 },
+            static (ctx, token) => ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) as INamedTypeSymbol
+        ).Where(symbol => symbol!.GetAttributes().Any(a => IsGeneratedLayerAttribute(a.AttributeClass!)) && ImplementsGenericILayer(symbol));
+
+        context.RegisterSourceOutput(layers, GenerateLayer);
+    }
+
+    private static void AnalyzePropertySymbol(SymbolAnalysisContext context)
+    {
+        var propertySymbol = (IPropertySymbol)context.Symbol;
+        if (propertySymbol.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)))
+        {
+            if (!(IsVector(propertySymbol.Type!) || IsMatrix(propertySymbol.Type!)))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(WeightsMustBeTensors, propertySymbol.Locations[0]));
+            }
+        }
+    }
+
+    private static void AnalyzeClassSymbol(SymbolAnalysisContext context)
+    {
+        var typeSymbol = (INamedTypeSymbol)context.Symbol;
+        if (typeSymbol.GetAttributes().Any(a => IsGeneratedLayerAttribute(a.AttributeClass!)))
+        {
+            if (!ImplementsGenericILayer(typeSymbol))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(InvalidGeneratedLayer, typeSymbol.Locations[0]));
+            }
+        }
+        else if (typeSymbol.GetAttributes().Any(a => IsLayerSerializerAttribute(a.AttributeClass!)))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(InvalidLayerSerializer, typeSymbol.Locations[0]));
+        }
+    }
+
+    private static void GenerateLayer(SourceProductionContext context, INamedTypeSymbol? layer)
+    {
+        if (layer is null) return;
+
+        var ilayer = GetGenericILayer(layer);
+
+        if (ilayer is null) return;
+
+        var tin = ilayer.TypeArguments[0];
+        var tout = ilayer.TypeArguments[1];
+
+        var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
+
+        var sb = new StringBuilder();
+        sb.AppendLine($$"""
+        using MachineLearning.Model.Layer.Snapshot;
+
+        namespace {{layer.ContainingNamespace}};
+        
+        partial class {{layer.Name}} 
+        {
+            public {{layer.Name}}({{string.Join(", ", weights.Select(p => $"{p.Type} {p.Name.ToLower()}"))}})
+            {
+                {{string.Join("\n\t\t", weights.Select(p => $"this.{p.Name} = {p.Name.ToLower()};"))}}
+            }
+
+            public ILayerSnapshot CreateSnapshot() => new Snapshot(this);
+
+            public long ParameterCount => {{string.Join(" + ", weights.Select(p => IsVector(p.Type) ? $"{p.Name}.Count" : $"{p.Name}.FlatCount"))}};
+
+            public partial class Snapshot({{layer.Name}} layer) : ILayerSnapshot
+            {
+                // TODO: 
+                // public {{tin.Name}} Input { get; } = {{tin.Name}}.Create(T, E);
+                // public {{tin.Name}} GradientInput { get; } = {{tin.Name}}.Create(T, E);
+                // public {{tout.Name}} Output { get; } = {{tout.Name}}.Create(T, E);
+        """);
+
+        foreach (var weight in weights)
+        {
+            sb.AppendLine($"\t\tpublic {weight.Type} Gradient{weight.Name} {{ get; }} = {weight.Type}.OfSize(layer.{weight.Name});");
+        }
+
+        sb.AppendLine("\t}");
+
+        if (layer!.GetAttributes().FirstOrDefault(a => IsLayerSerializerAttribute(a.AttributeClass!)) is AttributeData ad)
+        {
+            sb.Insert(0, "using static MachineLearning.Serialization.ModelSerializationHelper;\n");
+            sb.AppendLine($$"""
+                public static partial class Serializer
+                {
+                    [System.Runtime.CompilerServices.ModuleInitializer]
+                    internal static void Register()
+                    {
+                        MachineLearning.Serialization.ModelSerializer.RegisterLayer("{{ad.ConstructorArguments[0].Value}}", {{ad.ConstructorArguments[1].Value}}, Save, Read);
+                    }
+
+                    public static ErrorState Save({{layer.Name}} layer, BinaryWriter writer)
+                    {
+                        {{string.Join("\n\t\t\t", weights.Select(w => $"Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
+                        return default;
+                    }
+
+                    public static Result<{{layer.Name}}> Read(BinaryReader reader)
+                    {
+                        return new {{layer.Name}}({{string.Join(", ", weights.Select(w => $"Read{w.Type.Name}(reader)"))}});
+                    }
+                }
+            """);
+        }
+
+        sb.AppendLine("}");
+
+        context.AddSource($"{layer.Name}.g.cs", sb.ToString());
+    }
+}

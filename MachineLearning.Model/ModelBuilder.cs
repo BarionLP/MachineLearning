@@ -37,12 +37,12 @@ public sealed class ModelBuilder(int inputNodeCount)
 
     public FeedForwardModel Build() => new() { Layers = [.. Layers.Select(l => l.Create())] };
 
-    public EmbeddedModel<TInput, TOutput> Build<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => new() 
-    { 
-        InputLayer = embedder,
-        InnerModel = Build(),
-        OutputLayer = embedder,
-    };
+    // public EmbeddedModel<TInput, TOutput> Build<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => new() 
+    // { 
+    //     InputLayer = embedder,
+    //     InnerModel = Build(),
+    //     OutputLayer = embedder,
+    // };
 }
 
 public static class AdvancedModelBuilder

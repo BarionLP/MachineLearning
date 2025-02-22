@@ -4,17 +4,26 @@ using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
 using MachineLearning.Model.Layer.Snapshot;
+using MachineLearning.Serialization;
 using static MachineLearning.Serialization.ModelSerializationHelper;
 
 namespace MachineLearning.Mamba;
 
-public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILayer
+[GeneratedLayer]
+public sealed partial class Mamba2Layer : ILayer<Vector, Mamba2Layer.Snapshot>
 {
-    public int SequenceLength /*T*/ { get; } = sequenceLength;
-    public int StateDimensions /*N*/ { get; } = stateDimensions;
-    public Vector Alpha { get; } = Vector.Create(sequenceLength); // how much memory to keep from the previous step
-    public Matrix B { get; } = Matrix.Create(sequenceLength, stateDimensions); // how does the input_t affect the memory h_t
-    public Matrix C { get; } = Matrix.Create(sequenceLength, stateDimensions); // how does the memory h_t affect the output_t
+    public int SequenceLength /*T*/ => Alpha.Count;
+    public int StateDimensions /*N*/ => B.ColumnCount;
+    [Weights] public Vector Alpha { get; } // how much memory to keep from the previous step
+    [Weights] public Matrix B { get; } // how does the input_t affect the memory h_t
+    [Weights] public Matrix C { get; } // how does the memory h_t affect the output_t
+
+    public Mamba2Layer(int sequenceLength, int stateDimensions)
+    {
+        Alpha = Vector.Create(sequenceLength);
+        B = Matrix.Create(sequenceLength, stateDimensions);
+        C = Matrix.Create(sequenceLength, stateDimensions);
+    }
 
     public Vector Forward(Vector input, Snapshot snapshot)
     {
@@ -94,34 +103,14 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
         return snapshot.GradientInput;
     }
 
-    public long ParameterCount { get; }
-    public ILayerSnapshot CreateSnapshot() => new Snapshot(SequenceLength, StateDimensions);
-
-    public sealed class Snapshot(int T, int N) : ILayerSnapshot
+    partial class Snapshot
     {
-        public Vector Input { get; } = Vector.Create(T);
-        public Vector Output { get; } = Vector.Create(T);
-        public Vector GradientInput { get; } = Vector.Create(T);
+        public Vector Input { get; } = Vector.Create(layer.SequenceLength);
+        public Vector GradientInput { get; } = Vector.Create(layer.SequenceLength);
+        public Vector Output { get; } = Vector.Create(layer.SequenceLength);
 
-        public Matrix Memory /*H*/ { get; } = Matrix.Create(T, N); // one row per timestep t
-        public Matrix GradientMemory { get; } = Matrix.Create(T, N);
-
-
-        public Vector GradientAlpha { get; } = Vector.Create(T);
-        public Matrix GradientB { get; } = Matrix.Create(T, N);
-        public Matrix GradientC { get; } = Matrix.Create(T, N);
-
-        public void Reset()
-        {
-            Input.ResetZero();
-            Output.ResetZero();
-            GradientInput.ResetZero();
-            Memory.ResetZero();
-            GradientMemory.ResetZero();
-            GradientAlpha.ResetZero();
-            GradientB.ResetZero();
-            GradientC.ResetZero();
-        }
+        public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
+        public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<Mamba2Layer>
@@ -143,19 +132,19 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
 
 }
 
-[Layer<Matrix>]
-public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILayer
+[GeneratedLayer, LayerSerializer("vmam2", 2)]
+public sealed partial class EmbeddedMamba2Layer : ILayer<Matrix, EmbeddedMamba2Layer.Snapshot>
 {
     public int SequenceLength /*T*/ => Alpha.Count;
     public int StateDimensions /*N*/ => B.RowCount;
     public int EmbeddingDimensions /*E*/ => B.ColumnCount;
 
     // how much memory to keep from the previous step
-    [Weights] public Vector Alpha { get; } = alpha;
+    [Weights] public Vector Alpha { get; }
 
-    // both could be a tensor of (T*N*E) but it makes sense to share this transformation across steps so only (N*E)
-    [Weights] public Matrix B { get; } = b; // how does the input_t affect the memory h_t
-    [Weights] public Matrix C { get; } = c; // how does the memory h_t affect the output_t
+    // both could be a tensor (T*N*E) but it makes sense to share this transformation across steps so only (N*E)
+    [Weights] public Matrix B { get; } // how does the input_t affect the memory h_t
+    [Weights] public Matrix C { get; } // how does the memory h_t affect the output_t
 
     public EmbeddedMamba2Layer(int sequenceLength, int stateDimensions, int embeddingDimensions)
         : this(Vector.Create(sequenceLength), Matrix.Create(stateDimensions, embeddingDimensions), Matrix.Create(stateDimensions, embeddingDimensions)) { }
@@ -186,7 +175,15 @@ public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c
         return snapshot.Output;
     }
 
-    private readonly Vector Zero = Vector.Create(b.RowCount);
+    private Vector Zero
+    {
+        get
+        {
+            field ??= Vector.Create(StateDimensions);
+            return field;
+        }
+    }
+
     public Matrix BackwardPass(Snapshot snapshot, Matrix outputGradient)
     {
         Debug.Assert(outputGradient.RowCount == SequenceLength);
@@ -241,33 +238,12 @@ public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c
         return snapshot.GradientInput;
     }
 
-    public static ErrorState Save(EmbeddedMamba2Layer layer, BinaryWriter writer)
+    public partial class Snapshot
     {
-        writer.Write(layer.SequenceLength);
-        writer.Write(layer.StateDimensions);
-        writer.Write(layer.EmbeddingDimensions);
-        WriteVector(layer.Alpha, writer);
-        WriteMatrix(layer.B, writer);
-        WriteMatrix(layer.C, writer);
+        public Matrix Input { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
+        public Matrix GradientInput { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
+        public Matrix Output { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
 
-        return default;
-    }
-
-    public static Result<EmbeddedMamba2Layer> Read(BinaryReader reader)
-    {
-        var sequenceLength = reader.ReadInt32();
-        var stateDimensions = reader.ReadInt32();
-        var embeddingDimensions = reader.ReadInt32();
-        var alpha = ReadVector(sequenceLength, reader);
-        var b = ReadMatrix(stateDimensions, embeddingDimensions, reader);
-        var c = ReadMatrix(stateDimensions, embeddingDimensions, reader);
-        return new EmbeddedMamba2Layer(alpha, b, c);
-    }
-
-    public long ParameterCount => Alpha.Count + B.FlatCount + C.FlatCount;
-
-    partial class Snapshot
-    {
         public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions); // one row per timestep
         public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
     }
