@@ -143,7 +143,7 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
 
 }
 
-[Layer]
+[Layer<Matrix>]
 public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILayer
 {
     public int SequenceLength /*T*/ => Alpha.Count;
@@ -156,7 +156,6 @@ public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c
     // both could be a tensor of (T*N*E) but it makes sense to share this transformation across steps so only (N*E)
     [Weights] public Matrix B { get; } = b; // how does the input_t affect the memory h_t
     [Weights] public Matrix C { get; } = c; // how does the memory h_t affect the output_t
-    [Weights] public int D { get; } = 0;
 
     public EmbeddedMamba2Layer(int sequenceLength, int stateDimensions, int embeddingDimensions)
         : this(Vector.Create(sequenceLength), Matrix.Create(stateDimensions, embeddingDimensions), Matrix.Create(stateDimensions, embeddingDimensions)) { }
@@ -266,32 +265,11 @@ public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c
     }
 
     public long ParameterCount => Alpha.Count + B.FlatCount + C.FlatCount;
-    public ILayerSnapshot CreateSnapshot() => new Snapshot(SequenceLength, StateDimensions, EmbeddingDimensions);
 
-    public sealed class Snapshot(int T, int N, int E) : ILayerSnapshot
+    partial class Snapshot
     {
-        public Matrix Input { get; } = Matrix.Create(T, E);
-        public Matrix Output { get; } = Matrix.Create(T, E);
-        public Matrix GradientInput { get; } = Matrix.Create(T, E);
-
-        public Matrix Memory /*H*/ { get; } = Matrix.Create(T, N); // one row per timestep
-        public Matrix GradientMemory { get; } = Matrix.Create(T, N);
-
-        public Vector GradientAlpha { get; } = Vector.Create(T);
-        public Matrix GradientB { get; } = Matrix.Create(N, E);
-        public Matrix GradientC { get; } = Matrix.Create(N, E);
-
-        public void Reset()
-        {
-            Input.ResetZero();
-            Output.ResetZero();
-            GradientInput.ResetZero();
-            Memory.ResetZero();
-            GradientMemory.ResetZero();
-            GradientAlpha.ResetZero();
-            GradientB.ResetZero();
-            GradientC.ResetZero();
-        }
+        public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions); // one row per timestep
+        public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<EmbeddedMamba2Layer>

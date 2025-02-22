@@ -22,6 +22,7 @@ public interface Vector
         ArgumentOutOfRangeException.ThrowIfGreaterThan(size, array.Length);
         return new VectorSimple(size, array);
     }
+    public static Vector OfSize(Vector template) => Create(template.Count);
 }
 
 // stores its own count to allow longer arrays from ArrayPool as storage
