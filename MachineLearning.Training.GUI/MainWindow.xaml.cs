@@ -27,7 +27,6 @@ public partial class MainWindow : Window
         DataContext = this;
 
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-        ActivationFunctionSerializer.RegisterDefaults();
 
         //var serializer = new ModelSerializer(AssetManager.GetModelFile("mnist.nnw"));
         var model1 = MNISTModel.CreateModel(new Random(42));
@@ -35,28 +34,28 @@ public partial class MainWindow : Window
         //var model = serializer.Load(MNISTEmbedder.Instance).ReduceOrThrow();
         var config = MNISTModel.DefaultTrainingConfig();
 
-        var trainer1 = ProgressTracker.CreateLinkedTrainer("Adam Optimizer", SKColors.Blue, model1, config with { Optimizer = new AdamOptimizer
-        {
-            LearningRate = 0.1,
-            CostFunction = CrossEntropyLoss.Instance,
-        },
-        DumpEvaluationAfterBatches = 4,
-        });
+        // var trainer1 = ProgressTracker.CreateLinkedTrainer("Adam Optimizer", SKColors.Blue, model1, config with { Optimizer = new AdamOptimizer
+        // {
+        //     LearningRate = 0.1f,
+        //     CostFunction = CrossEntropyLoss.Instance,
+        // },
+        // DumpEvaluationAfterBatches = 4,
+        // });
         
-        var trainer2 = ProgressTracker.CreateLinkedTrainer("Nadam Optimizer", SKColors.Red, model2, config with { Optimizer = new NadamOptimizer
-        {
-            LearningRate = 0.1,
-            CostFunction = CrossEntropyLoss.Instance,
-        },
-        DumpEvaluationAfterBatches = 4,
+        // var trainer2 = ProgressTracker.CreateLinkedTrainer("Nadam Optimizer", SKColors.Red, model2, config with { Optimizer = new NadamOptimizer
+        // {
+        //     LearningRate = 0.1f,
+        //     CostFunction = CrossEntropyLoss.Instance,
+        // },
+        // DumpEvaluationAfterBatches = 4,
 
-        });
+        // });
 
         Loaded += (sender, args) =>
         {
-            StatusLabel.Content = "Training...";
-            _ = Task.Run(() => trainer1.Train());
-            _ = Task.Run(() => trainer2.Train());
+            // StatusLabel.Content = "Training...";
+            // _ = Task.Run(() => trainer1.Train());
+            // _ = Task.Run(() => trainer2.Train());
             //serializer.Save(model);
             //StatusLabel.Content = "Done!";
             //Task.Run(trainerTiny.Train);

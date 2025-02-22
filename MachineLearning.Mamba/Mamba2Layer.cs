@@ -156,6 +156,7 @@ public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c
     // both could be a tensor of (T*N*E) but it makes sense to share this transformation across steps so only (N*E)
     [Weights] public Matrix B { get; } = b; // how does the input_t affect the memory h_t
     [Weights] public Matrix C { get; } = c; // how does the memory h_t affect the output_t
+    [Weights] public int D { get; } = 0;
 
     public EmbeddedMamba2Layer(int sequenceLength, int stateDimensions, int embeddingDimensions)
         : this(Vector.Create(sequenceLength), Matrix.Create(stateDimensions, embeddingDimensions), Matrix.Create(stateDimensions, embeddingDimensions)) { }
