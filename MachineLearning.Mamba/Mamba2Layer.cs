@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
@@ -142,18 +143,19 @@ public sealed class Mamba2Layer(int sequenceLength, int stateDimensions) : ILaye
 
 }
 
-public sealed class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILayer
+[Layer]
+public sealed partial class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILayer
 {
     public int SequenceLength /*T*/ => Alpha.Count;
     public int StateDimensions /*N*/ => B.RowCount;
     public int EmbeddingDimensions /*E*/ => B.ColumnCount;
 
     // how much memory to keep from the previous step
-    public Vector Alpha { get; } = alpha;
+    [Weights] public Vector Alpha { get; } = alpha;
 
     // both could be a tensor of (T*N*E) but it makes sense to share this transformation across steps so only (N*E)
-    public Matrix B { get; } = b; // how does the input_t affect the memory h_t
-    public Matrix C { get; } = c; // how does the memory h_t affect the output_t
+    [Weights] public Matrix B { get; } = b; // how does the input_t affect the memory h_t
+    [Weights] public Matrix C { get; } = c; // how does the memory h_t affect the output_t
 
     public EmbeddedMamba2Layer(int sequenceLength, int stateDimensions, int embeddingDimensions)
         : this(Vector.Create(sequenceLength), Matrix.Create(stateDimensions, embeddingDimensions), Matrix.Create(stateDimensions, embeddingDimensions)) { }
@@ -250,7 +252,7 @@ public sealed class EmbeddedMamba2Layer(Vector alpha, Matrix b, Matrix c) : ILay
 
         return default;
     }
-    
+
     public static Result<EmbeddedMamba2Layer> Read(BinaryReader reader)
     {
         var sequenceLength = reader.ReadInt32();
