@@ -6,8 +6,6 @@ namespace MachineLearning.Training.Optimization;
 
 public abstract class Optimizer
 {
-    private readonly Dictionary<Type, Func<ILayer, ILayerOptimizer>> _registry = [];
-
     public required Weight LearningRate { get; set; }
     public required ICostFunction CostFunction { get; init; }
 
@@ -15,26 +13,24 @@ public abstract class Optimizer
     public virtual void OnBatchCompleted() { }
     public virtual void OnEpochCompleted() { }
 
-    protected Optimizer()
-    {
-        RegisterEmpty<TokenOutputLayer>();
-        RegisterEmpty<EncodedEmbeddingLayer>();
-    }
-
+    protected abstract LayerOptimizerRegistry RegistryGetter { get; }
     public ILayerOptimizer CreateLayerOptimizer(ILayer layer)
     {
-        if (_registry.TryGetValue(layer.GetType(), out var factory))
+        if (RegistryGetter.TryGetValue(layer.GetType(), out var factory))
         {
-            return factory(layer);
+            return factory(this, layer);
         }
 
         throw new NotImplementedException($"No known {GetType().Name} for {layer.GetType().Name}");
     }
+}
 
-
-    public void Register<TLayer>(Func<TLayer, ILayerOptimizer> factory) where TLayer : ILayer
-        => _registry.Add(typeof(TLayer), (layer) => factory(Guard.Is<TLayer>(layer)));
+public class LayerOptimizerRegistry : Dictionary<Type, Func<Optimizer, ILayer, ILayerOptimizer>>;
+public sealed class LayerOptimizerRegistry<TOptimizer> : LayerOptimizerRegistry
+{
+    public void Register<TLayer>(Func<TOptimizer, TLayer, ILayerOptimizer> factory) where TLayer : ILayer
+        => Add(typeof(TLayer), (op, layer) => factory(Guard.Is<TOptimizer>(op), Guard.Is<TLayer>(layer)));
 
     public void RegisterEmpty<TLayer>() where TLayer : ILayer
-        => _registry.Add(typeof(TLayer), static (_) => EmptyLayerOptimizer.Instance);
+        => Add(typeof(TLayer), static (_, _) => EmptyLayerOptimizer.Instance);
 }

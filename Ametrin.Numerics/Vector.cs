@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Numerics.Tensors;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Ametrin.Guards;
 
 namespace Ametrin.Numerics;
 
@@ -37,9 +37,9 @@ internal readonly struct VectorSimple(int count, Weight[] storage) : Vector
     public override string ToString() => $"[{string.Join(' ', _storage.Select(d => d.ToString("+0.00;-0.00;+0.00")))}]";
 }
 
-internal readonly struct VectorSlice(Vector _source, int start, int lenght) : Vector
+internal readonly struct VectorSlice(Vector _source, int start, int length) : Vector
 {
-    private readonly int _startIndex = start;
+    private readonly int _startIndex = Guard.GreaterThanOrEqual(start, 0);
     private readonly Vector _source = _source;
 
     public ref Weight this[int index] => ref _source[_startIndex + index];
@@ -48,7 +48,7 @@ internal readonly struct VectorSlice(Vector _source, int start, int lenght) : Ve
 
     public Vector Slice(int index, int count) => new VectorSlice(this, _startIndex + index, count);
 
-    public int Count { get; } = lenght;
+    public int Count { get; } = length;
 
     public Span<Weight> AsSpan() => _source.AsSpan().Slice(_startIndex, Count);
 
@@ -59,7 +59,7 @@ internal readonly struct VectorSlice(Vector _source, int start, int lenght) : Ve
         for (int i = 0; i < data.Length; i++)
         {
             if (i > 0) builder.Append(' ');
-            builder.Append(data[i].ToString("F2"));
+            builder.Append(data[i].ToString("+0.00;-0.00;+0.00"));
         }
         builder.Append(']');
         return builder.ToString();

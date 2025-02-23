@@ -5,8 +5,10 @@ namespace MachineLearning.Training.Optimization.Nadam;
 
 public sealed class NadamOptimizer : AdamOptimizer
 {
-    public NadamOptimizer() : base()
+    public new static LayerOptimizerRegistry<NadamOptimizer> Registry { get; } = [];
+    protected override LayerOptimizerRegistry RegistryGetter => Registry;
+    static NadamOptimizer()
     {
-        Register<FeedForwardLayer>((layer) => new SimpleNadamOptimizer(this, layer));
+        Registry.Register<FeedForwardLayer>((op, layer) => new SimpleNadamOptimizer(op, layer));
     }
 }

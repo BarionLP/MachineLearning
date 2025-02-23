@@ -52,7 +52,15 @@ public static class AdamLayerGenerator
             sb.AppendLine($"\t\t\tthis.SecondMoment{weight.Name} = {weight.Type}.OfSize(layer.{weight.Name});");
         }
 
-        sb.AppendLine("\t\t}");
+        sb.AppendLine($$"""
+                }
+
+                [System.Runtime.CompilerServices.ModuleInitializer]
+                internal static void Register()
+                {
+                    MachineLearning.Training.Optimization.Adam.AdamOptimizer.Registry.Register<{{layer.Name}}>((op, l) => new Adam(op, l));
+                }
+        """);
 
         #region Update
         sb.AppendLine($$"""

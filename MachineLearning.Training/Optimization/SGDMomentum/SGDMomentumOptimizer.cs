@@ -1,18 +1,19 @@
 using MachineLearning.Model.Layer;
-using MachineLearning.Training.Cost;
 
 namespace MachineLearning.Training.Optimization.SGDMomentum;
 
 public sealed class SGDMomentumOptimizer : Optimizer
 {
+    public static LayerOptimizerRegistry<SGDMomentumOptimizer> Registry { get; } = [];
+    protected override LayerOptimizerRegistry RegistryGetter => Registry;
     public required Weight InitialLearningRate { get; init; } = 0.7f;
     public Weight LearningRateEpochMultiplier { get; init; } = 0.94f;
     public Weight Momentum { get; init; } = 0.85f;
     public Weight Regularization { get; init; } = 0.01f;
 
-    public SGDMomentumOptimizer()
+    static SGDMomentumOptimizer()
     {
-        Register<FeedForwardLayer>((layer) => new SimpleSGDMomentumOptimizer(this, layer));
+        Registry.Register<FeedForwardLayer>((op, layer) => new SimpleSGDMomentumOptimizer(op, layer));
     }
 
     public override void Init()
