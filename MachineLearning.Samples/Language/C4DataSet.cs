@@ -26,7 +26,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
     }
 
     public IEnumerable<TrainingData> GetTrainingData()
-        => GetTokenizedLines().Take(BatchSize).ExpandPerToken(tokenizer.TokenizeSingle("\0"), contextSize).ToTrainingData(tokenizer.TokenCount);
+        => GetTokenizedLines().Take(BatchSize).SlidingWindow(tokenizer.TokenizeSingle("\0"), contextSize).ToTrainingDataMatrix(tokenizer.TokenCount, contextSize);
 
     public IEnumerable<int[]> GetTokenizedLines()
         => GetLines().TokenizeSkipInvalid(tokenizer);

@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\MachineLearning.Mamba\MachineLearning.Mamba.csproj" />
     <ProjectReference Include="..\MachineLearning.Serialization\MachineLearning.Serialization.csproj" />
     <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />
     <ProjectReference Include="..\MachineLearning.Model\MachineLearning.Model.csproj" />

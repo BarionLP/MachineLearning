@@ -39,6 +39,7 @@ public static class LMHelper
             SetConsoleTextColor(confidence);
             Console.Write(token);
         } while (!EndTokens.Contains(token) && input.Length < contextSize);
+        Console.Write("Null");
         Console.Write("\u001b[0m"); // reset color
         Console.WriteLine();
 

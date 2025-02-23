@@ -29,27 +29,29 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
         return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
     }
 
-    public long WeightCount => Layers.Sum((Func<Mamba2ScalarLayer, long>)(l => (long)l.WeightCount));
+    public long WeightCount => Layers.Sum(l => l.WeightCount);
     public override string ToString() => $"Mamba 2 (Scalar) ({WeightCount})";
 
     IEnumerable<ILayer> IModel<Vector, Mamba2ScalarLayer.Snapshot>.Layers => Layers;
 }
 
-public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArray<Mamba2VectorLayer> hiddenLayers, UnEmbeddingLayer outputLayer) : IEmbeddedModel<int[], int>
+public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<Mamba2VectorLayer> hiddenLayers, UnEmbeddingLayer outputLayer) : IEmbeddedModel<int[], int>
 {
     public EmbeddingLayer InputLayer { get; } = inputLayer;
     public ImmutableArray<Mamba2VectorLayer> HiddenLayers { get; } = hiddenLayers;
     public UnEmbeddingLayer OutputLayer { get; } = outputLayer;
 
-    public EmbeddedMamba2Model(int layerCount, int tokenCount, int contextSize, int stateDimensions, int embeddingDimensions)
+    public int ContextSize => InputLayer.ContextSize;
+
+    public Mamba2VectorModel(int layerCount, int tokenCount, int contextSize, int stateDimensions, int embeddingDimensions)
         : this(new EmbeddingLayer(tokenCount, contextSize, embeddingDimensions), [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2VectorLayer(contextSize, stateDimensions, embeddingDimensions))], new UnEmbeddingLayer(tokenCount, contextSize, embeddingDimensions)) { }
 
-    public (Vector, int) Process(int[] input)
+    public (Matrix, int) Process(int[] input)
     {
         return OutputLayer.Forward(HiddenLayers.Aggregate(InputLayer.Forward(input, (EmbeddingLayer.Snapshot)LayerSnapshots.Get(InputLayer)), (v, l) => l.Forward(v, (Mamba2VectorLayer.Snapshot)LayerSnapshots.Get(l))), (UnEmbeddingLayer.Snapshot)LayerSnapshots.Get(OutputLayer));
     }
 
-    public (Vector, int) Process(int[] input, ImmutableArray<ILayerSnapshot> snapshots)
+    public (Matrix, int) Process(int[] input, ImmutableArray<ILayerSnapshot> snapshots)
     {
         Debug.Assert(snapshots.Length == HiddenLayers.Length + 2);
         return OutputLayer.Forward(HiddenLayers.Zip(snapshots.Skip(1).Take(HiddenLayers.Length).Cast<Mamba2VectorLayer.Snapshot>()).Aggregate(InputLayer.Forward(input, (EmbeddingLayer.Snapshot)snapshots[0]), (v, l) => l.First.Forward(v, l.Second)), (UnEmbeddingLayer.Snapshot)snapshots[^1]);
@@ -60,7 +62,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
     //     return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
     // }
 
-    public static ErrorState Save(EmbeddedMamba2Model model, BinaryWriter writer)
+    public static ErrorState Save(Mamba2VectorModel model, BinaryWriter writer)
     {
         writer.Write(model.HiddenLayers.Length);
 
@@ -85,7 +87,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
         return default;
     }
 
-    public static Result<EmbeddedMamba2Model> Read(BinaryReader reader)
+    public static Result<Mamba2VectorModel> Read(BinaryReader reader)
     {
         var hiddenLayerCount = reader.ReadInt32();
 
@@ -94,6 +96,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
         {
             return error1;
         }
+
         var hiddenLayers = new Mamba2VectorLayer[hiddenLayerCount];
         foreach (var i in ..hiddenLayerCount)
         {
@@ -111,7 +114,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
             return error3;
         }
 
-        return new EmbeddedMamba2Model(input.OrThrow(), ImmutableCollectionsMarshal.AsImmutableArray(hiddenLayers), output.OrThrow());
+        return new Mamba2VectorModel(input.OrThrow(), ImmutableCollectionsMarshal.AsImmutableArray(hiddenLayers), output.OrThrow());
     }
 
     public long WeightCount => InputLayer.WeightCount + HiddenLayers.Sum(l => l.WeightCount) + OutputLayer.WeightCount;
@@ -121,7 +124,7 @@ public sealed class EmbeddedMamba2Model(EmbeddingLayer inputLayer, ImmutableArra
     (int prediction, float confidence) IEmbeddedModel<int[], int>.Process(int[] input)
     {
         var (weights, result) = Process(input);
-        return (result, weights[result]);
+        return (result, weights.RowSpan(weights.RowCount - 1)[result]);
     }
 
     // IEnumerable<ILayer> IModel<Matrix, EmbeddedMamba2Layer.Snapshot>.Layers => Layers;

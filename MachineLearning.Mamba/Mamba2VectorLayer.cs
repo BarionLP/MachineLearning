@@ -108,8 +108,8 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         }
 
-        snapshot.GradientC.DivideToSelf(SequenceLength);
-        snapshot.GradientB.DivideToSelf(SequenceLength);
+        // snapshot.GradientC.DivideToSelf(SequenceLength);
+        // snapshot.GradientB.DivideToSelf(SequenceLength);
 
         return snapshot.GradientInput;
     }

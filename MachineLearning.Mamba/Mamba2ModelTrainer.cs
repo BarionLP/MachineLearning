@@ -140,17 +140,17 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
     private void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
 }
 
-public sealed class Mamba2VectorModelTrainer : ITrainer<EmbeddedMamba2Model>
+public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
 {
     public TrainingConfig Config { get; }
     public ITrainingSet TrainingSet { get; }
-    public EmbeddedMamba2Model Model { get; }
+    public Mamba2VectorModel Model { get; }
     public Optimizer Optimizer { get; }
     public ILayerOptimizer InputLayerOptimizer { get; }
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer { get; }
 
-    public Mamba2VectorModelTrainer(EmbeddedMamba2Model model, TrainingConfig config, ITrainingSet trainingSet)
+    public Mamba2VectorModelTrainer(Mamba2VectorModel model, TrainingConfig config, ITrainingSet trainingSet)
     {
         Config = config;
         TrainingSet = trainingSet;
@@ -228,14 +228,14 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<EmbeddedMamba2Model>
             }
         }
 
-        void UpdateCounters(TrainingData<int[], int> data, Vector weights, int result)
+        void UpdateCounters(TrainingData<int[], int> data, Matrix weights, int result)
         {
             if (result == data.ExpectedValue)
             {
                 correctCounter++;
             }
             dataCounter++;
-            totalCost += Config.Optimizer.CostFunction.TotalCost(weights, data.ExpectedWeights);
+            totalCost += Config.Optimizer.CostFunction.TotalCost(weights.Storage, data.ExpectedWeights);
         }
 
         Apply(dataCounter);
@@ -249,7 +249,7 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<EmbeddedMamba2Model>
         };
     }
 
-    private (Vector, int) Update(TrainingData<int[], int> data)
+    private (Matrix, int) Update(TrainingData<int[], int> data)
     {
         var inputSnapshot = LayerSnapshots.Get(Model.InputLayer);
         var snapshots = Model.HiddenLayers.Select(LayerSnapshots.Get).Cast<Mamba2VectorLayer.Snapshot>().ToImmutableArray();
@@ -257,7 +257,7 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<EmbeddedMamba2Model>
 
         var (weights, result) = Model.Process(data.InputValue, [inputSnapshot, .. snapshots, outputSnapshot]);
 
-        var gradient = Optimizer.CostFunction.Derivative(weights, data.ExpectedWeights);
+        var gradient = Optimizer.CostFunction.Derivative(weights.Storage, data.ExpectedWeights);
         NumericsDebug.AssertValidNumbers(gradient);
 
         OutputLayerOptimizer.Update(gradient, outputSnapshot);
