@@ -39,7 +39,8 @@ public sealed partial class PerceptronLayer : ILayer<Vector, PerceptronLayer.Sna
 
     public void Backward(Vector outputGradient, Snapshot snapshot, Gradients gradients)
     {
-        VectorHelper.MultiplyToMatrixAddTo(outputGradient, snapshot.LastRawInput, gradients.Weights); // GradientCostWeights.AddInPlaceMultiplied ?
+        VectorHelper.MultiplyToMatrixAddTo(outputGradient, snapshot.LastRawInput, gradients.Weights);
+        gradients.Biases.AddToSelf(outputGradient);
     }
 
     partial class Snapshot

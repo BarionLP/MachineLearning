@@ -57,7 +57,7 @@ public static class MNISTModel
 
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.1f,
+                LearningRate = 0.0046225016f,
                 CostFunction = CrossEntropyLoss.Instance,
             },
 

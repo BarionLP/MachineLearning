@@ -39,6 +39,11 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
                 var data = Guard.Is<TrainingData<TIn, TOut>>(entry);
                 var weights = Update(data, context.Gradients);
 
+                if (Model.OutputLayer.Process(weights).output!.Equals(data.ExpectedValue))
+                {
+                    context.CorrectCount++;
+                }
+
                 context.TotalCount++;
                 context.TotalCost += Config.Optimizer.CostFunction.TotalCost(weights, data.ExpectedWeights);
             }
