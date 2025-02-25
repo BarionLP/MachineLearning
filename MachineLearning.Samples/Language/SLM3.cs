@@ -1,5 +1,7 @@
 using MachineLearning.Data;
 using MachineLearning.Model.Layer;
+using ML.MultiLayerPerceptron;
+using ML.MultiLayerPerceptron.Initialization;
 
 namespace MachineLearning.Samples.Language;
 
@@ -38,7 +40,7 @@ public static class SLM3
             return CreateModel(random);
         });
 
-        var trainer = ModelTrainer.Create(model, config ?? DefaultTrainingConfig(), trainingSet ?? GetTrainingSet());
+        var trainer = new EmbeddedModelTrainer<int[], int>(model, config ?? DefaultTrainingConfig(), trainingSet ?? GetTrainingSet());
         trainer.TrainConsole();
         Serializer.Save(model).Consume(
             () => Console.WriteLine("Model saved!"),

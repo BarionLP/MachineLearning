@@ -1,11 +1,8 @@
 ﻿using MachineLearning.Model.Activation;
-using MachineLearning.Model.Embedding;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
-using System.Collections.Immutable;
-using System.Diagnostics;
 
-namespace MachineLearning.Model;
+namespace ML.MultiLayerPerceptron;
 
 public sealed class ModelBuilder(int inputNodeCount)
 {
@@ -18,7 +15,7 @@ public sealed class ModelBuilder(int inputNodeCount)
         DefaultActivationFunction = activationMethod;
         return this;
     }
-    public ModelBuilder AddLayer(int nodeCount, IInitializer<FeedForwardLayer> initializer, IActivationFunction? activationMethod = null)
+    public ModelBuilder AddLayer(int nodeCount, IInitializer<PerceptronLayer> initializer, IActivationFunction? activationMethod = null)
     {
         Layers.Add(
             new LayerFactory(Layers.Count == 0 ? InputNodeCount : Layers[^1].OutputNodeCount, nodeCount)
@@ -35,14 +32,7 @@ public sealed class ModelBuilder(int inputNodeCount)
         return this;
     }
 
-    public FeedForwardModel Build() => new() { Layers = [.. Layers.Select(l => l.Create())] };
-
-    // public EmbeddedModel<TInput, TOutput> Build<TInput, TOutput>(IEmbedder<TInput, TOutput> embedder) => new() 
-    // { 
-    //     InputLayer = embedder,
-    //     InnerModel = Build(),
-    //     OutputLayer = embedder,
-    // };
+    public MultiLayerPerceptronModel Build() => new() { Layers = [.. Layers.Select(l => l.Create())] };
 }
 
 public static class AdvancedModelBuilder
@@ -68,7 +58,7 @@ public static class AdvancedModelBuilder
             DefaultActivationFunction = activationFunction;
             return this;
         }
-        public HiddenLayerConfig<TInput> AddLayer(int nodeCount, IInitializer<FeedForwardLayer> initializer, IActivationFunction? activationMethod = null) 
+        public HiddenLayerConfig<TInput> AddLayer(int nodeCount, IInitializer<PerceptronLayer> initializer, IActivationFunction? activationMethod = null) 
             => AddLayer(
                 new LayerFactory(LastOutputNodeCount, nodeCount)
                 .SetActivationFunction(activationMethod ?? DefaultActivationFunction).SetInitializer(initializer)

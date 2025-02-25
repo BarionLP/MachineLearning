@@ -1,5 +1,4 @@
-﻿using System.Formats.Tar;
-using MachineLearning.Model.Layer.Snapshot;
+﻿using MachineLearning.Model.Layer.Snapshot;
 
 namespace MachineLearning.Model.Layer;
 
@@ -24,6 +23,7 @@ public interface ILayer
     public long WeightCount { get; }
 
     public ILayerSnapshot CreateSnapshot();
+    public IGradients CreateGradientAccumulator();
 };
 
 public interface ILayer<TIn, TOut, TSnapshot> : ILayer where TSnapshot : ILayerSnapshot;

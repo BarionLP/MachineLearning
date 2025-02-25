@@ -16,150 +16,8 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
     static ModelSerializer()
     {
-        RegisterModel("ffm", 1, SaveFFM, ReadFFM);
-        RegisterModel("etm", 1, SaveETM, ReadETM);
-
-        RegisterLayerReader("simple", 2, ReadFeedForwardLayer);
-        RegisterLayer("ffl", 1, SaveFeedForwardLayer, ReadFeedForwardLayer);
         RegisterLayer("eel", 1, SaveEncodedEmbeddingLayer, ReadEncodedEmbeddingLayer);
         RegisterLayer("tol", 1, SaveTokenOutputLayer, ReadTokenOutputLayer);
-    }
-
-    public static ErrorState SaveFFM(FeedForwardModel model, BinaryWriter writer)
-    {
-        writer.Write(model.Layers.Length);
-        foreach (var layer in model.Layers)
-        {
-            var flag = SaveLayer(layer, writer);
-            if (!OptionsMarshall.IsSuccess(flag))
-            {
-                return flag;
-            }
-        }
-
-        return default;
-    }
-
-    public static Result<FeedForwardModel> ReadFFM(BinaryReader reader)
-    {
-        var layerCount = reader.ReadInt32();
-        var layers = new FeedForwardLayer[layerCount];
-        foreach (var i in ..layerCount)
-        {
-            var result = ReadLayer(reader);
-            if (OptionsMarshall.TryGetError(result, out var error))
-            {
-                return error;
-            }
-            layers[i] = result.Require<FeedForwardLayer>().OrThrow();
-        }
-
-        return new FeedForwardModel
-        {
-            Layers = [.. layers],
-        };
-    }
-
-    public static ErrorState SaveETM(EmbeddedModel<int[], int> model, BinaryWriter writer)
-    {
-        if (model.InputLayer is not EncodedEmbeddingLayer eel)
-        {
-            return new NotImplementedException("EmbeddedModel<int[], int> only supports EncodedEmbeddingLayer rn");
-        }
-
-        var result = SaveEncodedEmbeddingLayer(eel, writer);
-        if (!OptionsMarshall.IsSuccess(result))
-        {
-            return result;
-        }
-
-        result = SaveFFM(model.InnerModel, writer);
-        if (!OptionsMarshall.IsSuccess(result))
-        {
-            return result;
-        }
-
-        if (model.OutputLayer is not TokenOutputLayer tol)
-        {
-            return new NotImplementedException("EmbeddedModel<int[], int> only supports TokenOutputLayer rn");
-        }
-
-        result = SaveTokenOutputLayer(tol, writer);
-        if (!OptionsMarshall.IsSuccess(result))
-        {
-            return result;
-        }
-
-        return default;
-    }
-
-    public static Result<EmbeddedModel<int[], int>> ReadETM(BinaryReader reader)
-    {
-        var input = ReadEncodedEmbeddingLayer(reader);
-        if (OptionsMarshall.TryGetError(input, out var error))
-        {
-            return error;
-        }
-
-        var inner = ReadFFM(reader);
-        if (OptionsMarshall.TryGetError(inner, out error))
-        {
-            return error;
-        }
-
-        var output = ReadTokenOutputLayer(reader);
-        if (OptionsMarshall.TryGetError(output, out error))
-        {
-            return error;
-        }
-
-        return new EmbeddedModel<int[], int>
-        {
-            InputLayer = input.OrThrow(),
-            InnerModel = inner.OrThrow(),
-            OutputLayer = output.OrThrow(),
-        };
-    }
-
-    public static ErrorState SaveFeedForwardLayer(FeedForwardLayer layer, BinaryWriter writer)
-    {
-        writer.Write(layer.InputNodeCount);
-        writer.Write(layer.OutputNodeCount);
-        ActivationFunctionSerializer.WriteV3(writer, layer.ActivationFunction);
-
-
-        // encode weights & biases
-        foreach (var outputIndex in ..layer.OutputNodeCount)
-        {
-            writer.Write(layer.Biases[outputIndex]);
-            foreach (var inputIndex in ..layer.InputNodeCount)
-            {
-                writer.Write(layer.Weights[outputIndex, inputIndex]);
-            }
-        }
-
-        return null;
-    }
-
-    public static Result<FeedForwardLayer> ReadFeedForwardLayer(BinaryReader reader)
-    {
-        var inputNodeCount = reader.ReadInt32();
-        var outputNodeCount = reader.ReadInt32();
-        var activationMethod = ActivationFunctionSerializer.ReadV3(reader);
-        var layerBuilder = new LayerFactory(inputNodeCount, outputNodeCount).SetActivationFunction(activationMethod);
-        var layer = layerBuilder.Create();
-
-        // decode weights & biases
-        foreach (var outputIndex in ..outputNodeCount)
-        {
-            layer.Biases[outputIndex] = reader.ReadSingle();
-            foreach (var inputIndex in ..inputNodeCount)
-            {
-                layer.Weights[outputIndex, inputIndex] = reader.ReadSingle();
-            }
-        }
-
-        return layer;
     }
 
     public static ErrorState SaveEncodedEmbeddingLayer(EncodedEmbeddingLayer layer, BinaryWriter writer)
@@ -223,6 +81,16 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
     public ErrorState Save(IModel model)
     {
+        using var stream = fileInfo.Create();
+        using var writer = new BinaryWriter(stream);
+        writer.Write(FILE_EXTENSION);
+        writer.Write(FORMAT_VERSION);
+
+        return SaveModel(model, writer);
+    }
+
+    public static ErrorState SaveModel(IModel model, BinaryWriter writer)
+    {
         if (!ModelSerializers.TryGetValue(model.GetType(), out var data))
         {
             return new NotImplementedException($"Saving {model.GetType()} is not implemented");
@@ -230,10 +98,6 @@ public sealed class ModelSerializer(FileInfo fileInfo)
 
         var (key, modelVersion, serializer) = data;
 
-        using var stream = fileInfo.Create();
-        using var writer = new BinaryWriter(stream);
-        writer.Write(FILE_EXTENSION);
-        writer.Write(FORMAT_VERSION);
         writer.Write(key);
         writer.Write(modelVersion);
 
@@ -260,12 +124,12 @@ public sealed class ModelSerializer(FileInfo fileInfo)
         var formatVersion = reader.ReadUInt32();
         return formatVersion switch
         {
-            2 => LoadV2(reader),
+            2 => ReadModel(reader),
             _ => new NotImplementedException($".gmw version {formatVersion} is unsupported"),
         };
     }
 
-    private static Result<IModel> LoadV2(BinaryReader reader)
+    public static Result<IModel> ReadModel(BinaryReader reader)
     {
         var modelKey = reader.ReadString();
         var modelVersion = reader.ReadUInt32();

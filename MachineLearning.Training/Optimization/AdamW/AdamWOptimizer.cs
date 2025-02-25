@@ -13,6 +13,6 @@ public sealed class AdamWOptimizer : AdamOptimizer
     
     static AdamWOptimizer()
     {
-        Registry.Register<FeedForwardLayer>((op, layer) => new SimpleAdamWOptimizer(op, layer));
+        // Registry.Register<FeedForwardLayer>((op, layer) => new SimpleAdamWOptimizer(op, layer));
     }
 }

@@ -3,13 +3,13 @@ using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training.Cost;
 
-namespace MachineLearning.Training.Optimization;
+namespace ML.MultiLayerPerceptron;
 
 public static class LayerBackPropagation
 {
     public static Vector ComputeHiddenLayerErrors(ILayer layer, ILayer nextLayer, Vector nextErrors, ILayerSnapshot snapshot) => (layer, nextLayer) switch
     {
-        (FeedForwardLayer simpleLayer, FeedForwardLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, Guard.Is<LayerSnapshots.Simple>(snapshot)),
+        (PerceptronLayer simpleLayer, PerceptronLayer simpleNextLayer) => ComputeHiddenLayerErrors(simpleLayer, simpleNextLayer, nextErrors, Guard.Is<PerceptronLayer.Snapshot>(snapshot)),
         //(TrainedEmbeddingLayer stringLayer, FeedForwardLayer simpleNextLayer) => ComputeHiddenLayerErrors(stringLayer, simpleNextLayer, nextErrors, LayerSnapshots.Is<LayerSnapshots.Embedding>(snapshot)),
         // (IEmbedder<string, char>, FeedForwardLayer) => nextErrors,
         // (IEmbedder<double[], int>, FeedForwardLayer) => nextErrors,
@@ -17,7 +17,7 @@ public static class LayerBackPropagation
     };
 
 
-    public static Vector ComputeHiddenLayerErrors(FeedForwardLayer layer, FeedForwardLayer nextLayer, Vector nextErrors, LayerSnapshots.Simple snapshot)
+    public static Vector ComputeHiddenLayerErrors(PerceptronLayer layer, PerceptronLayer nextLayer, Vector nextErrors, PerceptronLayer.Snapshot snapshot)
     {
         var activationDerivatives = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);
         var weightedGradient = nextErrors.Multiply(nextLayer.Weights);
@@ -31,7 +31,7 @@ public static class LayerBackPropagation
     //    return nextErrors.Multiply(nextLayer.Weights);
     //}
 
-    public static Vector ComputeOutputLayerErrors(FeedForwardLayer layer, ICostFunction costFunction, Vector expected, LayerSnapshots.Simple snapshot)
+    public static Vector ComputeOutputLayerErrors(PerceptronLayer layer, ICostFunction costFunction, Vector expected, PerceptronLayer.Snapshot snapshot)
     {
         var costGradient = costFunction.Derivative(snapshot.LastActivatedWeights, expected);
         var activationGradient = layer.ActivationFunction.Derivative(snapshot.LastWeightedInput);

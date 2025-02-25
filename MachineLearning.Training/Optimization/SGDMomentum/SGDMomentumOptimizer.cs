@@ -13,7 +13,7 @@ public sealed class SGDMomentumOptimizer : Optimizer
 
     static SGDMomentumOptimizer()
     {
-        Registry.Register<FeedForwardLayer>((op, layer) => new SimpleSGDMomentumOptimizer(op, layer));
+        // Registry.Register<FeedForwardLayer>((op, layer) => new SimpleSGDMomentumOptimizer(op, layer));
     }
 
     public override void Init()

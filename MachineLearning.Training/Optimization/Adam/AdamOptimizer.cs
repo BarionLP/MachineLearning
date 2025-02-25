@@ -15,7 +15,7 @@ public class AdamOptimizer : Optimizer
 
     static AdamOptimizer()
     {
-        Registry.Register<FeedForwardLayer>((op, layer) => new SimpleAdamOptimizer(op, layer));
+        // Registry.Register<FeedForwardLayer>((op, layer) => new SimpleAdamOptimizer(op, layer));
     }
 
     public override void OnBatchCompleted()

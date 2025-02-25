@@ -23,11 +23,10 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
         return Layers.Zip(snapshots).Aggregate(input, (v, l) => l.First.Forward(v, l.Second));
     }
 
-    public Vector Backward(Vector outputGradient, ImmutableArray<Mamba2ScalarLayer.Snapshot> snapshots)
-    {
-
-        return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
-    }
+    // public Vector Backward(Vector outputGradient, ImmutableArray<Mamba2ScalarLayer.Snapshot> snapshots)
+    // {
+    //     return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
+    // }
 
     public long WeightCount => Layers.Sum(l => l.WeightCount);
     public override string ToString() => $"Mamba 2 (Scalar) ({WeightCount})";

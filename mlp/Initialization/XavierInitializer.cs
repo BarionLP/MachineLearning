@@ -1,16 +1,17 @@
 using MachineLearning.Model.Initialization;
+using MachineLearning.Model.Layer.Initialization;
 
-namespace MachineLearning.Model.Layer.Initialization;
+namespace ML.MultiLayerPerceptron.Initialization;
 
 /// <summary>
 /// suited for sigmoid, tanh and softmax activations
 /// </summary>
-public sealed class XavierInitializer(Random? random = null) : IInitializer<FeedForwardLayer>
+public sealed class XavierInitializer(Random? random = null) : IInitializer<PerceptronLayer>
 {
     public static XavierInitializer Instance { get; } = new();
     public Random Random { get; } = random ?? Random.Shared;
 
-    public void Initialize(FeedForwardLayer layer)
+    public void Initialize(PerceptronLayer layer)
     {
         var inputCount = layer.Weights.ColumnCount;
         var outputCount = layer.Biases.Count;
