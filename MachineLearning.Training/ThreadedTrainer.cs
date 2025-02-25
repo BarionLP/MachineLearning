@@ -44,7 +44,7 @@ public sealed class TrainingContext
     {
         TotalCount += other.TotalCount;
         CorrectCount += other.CorrectCount;
-        TotalCount += other.TotalCount;
+        TotalCost += other.TotalCost;
 
         foreach (var (g, o) in Gradients.Zip(other.Gradients))
         {

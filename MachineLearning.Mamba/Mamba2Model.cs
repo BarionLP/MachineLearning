@@ -56,6 +56,14 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
         return OutputLayer.Forward(HiddenLayers.Zip(snapshots.Skip(1).Take(HiddenLayers.Length).Cast<Mamba2VectorLayer.Snapshot>()).Aggregate(InputLayer.Forward(input, (EmbeddingLayer.Snapshot)snapshots[0]), (v, l) => l.First.Forward(v, l.Second)), (UnEmbeddingLayer.Snapshot)snapshots[^1]);
     }
 
+    public void Initialize(Random? random = null)
+    {
+        new EmbeddingLayer.Initializer(random).Initialize(InputLayer);
+        new UnEmbeddingLayer.Initializer(random).Initialize(OutputLayer);
+        var initer = new Mamba2VectorLayer.Initializer(random);
+        HiddenLayers.Consume(initer.Initialize);
+    }
+
     // public Vector Backward(Matrix outputGradient, ImmutableArray<EmbeddedMamba2Layer.Snapshot> snapshots)
     // {
     //     return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
