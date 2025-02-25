@@ -7,7 +7,7 @@ using MachineLearning.Training.Attributes;
 
 namespace ML.MultiLayerPerceptron;
 
-[GeneratedLayer, GenerateOptimizers]
+[GeneratedLayer, GenerateOptimizers, LayerSerializer("pl", 1)]
 public sealed partial class PerceptronLayer : ILayer<Vector, PerceptronLayer.Snapshot>
 {
     public int InputNodeCount => Weights.ColumnCount;

@@ -13,6 +13,8 @@ public static class MNISTModel
     public static IEmbeddingLayer<double[]> Embedder => MNISTEmbedder.Instance;
     public static IUnembeddingLayer<int> UnEmbedder => MNISTUnEmbedder.Instance;
 
+    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("mnist"));
+
     public static ModelDefinition CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);

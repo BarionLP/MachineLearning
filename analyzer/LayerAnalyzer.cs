@@ -140,7 +140,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         if (layer!.GetAttributes().FirstOrDefault(a => IsLayerSerializerAttribute(a.AttributeClass!)) is AttributeData ad)
         {
-            sb.Insert(0, "using static MachineLearning.Serialization.ModelSerializationHelper;\n");
+            sb.Insert(0, "using MachineLearning.Serialization;\n");
             sb.AppendLine($$"""
                 public static partial class Serializer
                 {
@@ -150,16 +150,16 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
                         MachineLearning.Serialization.ModelSerializer.RegisterLayer("{{ad.ConstructorArguments[0].Value}}", {{ad.ConstructorArguments[1].Value}}, Save, Read);
                     }
 
-                    public static ErrorState Save({{layer.Name}} layer, BinaryWriter writer)
+                    public static ErrorState Save({{layer.Name}} layer, System.IO.BinaryWriter writer)
                     {
-                        {{string.Join("\n\t\t\t", parameter.Select(w => $"writer.Write(layer.{w.Name});"))}}
-                        {{string.Join("\n\t\t\t", weights.Select(w => $"Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
+                        {{string.Join("\n\t\t\t", parameter.Select(w => w.Type is { Name: "IActivationFunction" } ? $"ActivationFunctionSerializer.Write(writer, layer.{w.Name});" : $"writer.Write(layer.{w.Name});"))}}
+                        {{string.Join("\n\t\t\t", weights.Select(w => $"ModelSerializationHelper.Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
                         return default;
                     }
 
-                    public static Result<{{layer.Name}}> Read(BinaryReader reader)
+                    public static Result<{{layer.Name}}> Read(System.IO.BinaryReader reader)
                     {
-                        return new {{layer.Name}}({{string.Join(", ", [.. parameter.Select(w => $"reader.Read{w.Type.Name}()"), .. weights.Select(w => $"Read{w.Type.Name}(reader)")])}});
+                        return new {{layer.Name}}({{string.Join(", ", [.. parameter.Select(w => w.Type is { Name: "IActivationFunction" } ? $"ActivationFunctionSerializer.Read(reader)" : $"reader.Read{w.Type.Name}()"), .. weights.Select(w => $"ModelSerializationHelper.Read{w.Type.Name}(reader)")])}});
                     }
                 }
             """);
