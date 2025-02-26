@@ -1,5 +1,4 @@
-using System.Collections.Immutable;
-using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using MachineLearning.Model;
 using MachineLearning.Model.Layer;
@@ -23,11 +22,10 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
         return Layers.Zip(snapshots).Aggregate(input, (v, l) => l.First.Forward(v, l.Second));
     }
 
-    public Vector Backward(Vector outputGradient, ImmutableArray<Mamba2ScalarLayer.Snapshot> snapshots)
-    {
-
-        return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
-    }
+    // public Vector Backward(Vector outputGradient, ImmutableArray<Mamba2ScalarLayer.Snapshot> snapshots)
+    // {
+    //     return Layers.Reverse().Zip(snapshots.Reverse()).Aggregate(outputGradient, (g, l) => l.First.BackwardPass(l.Second, g));
+    // }
 
     public long WeightCount => Layers.Sum(l => l.WeightCount);
     public override string ToString() => $"Mamba 2 (Scalar) ({WeightCount})";
@@ -55,6 +53,14 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
     {
         Debug.Assert(snapshots.Length == HiddenLayers.Length + 2);
         return OutputLayer.Forward(HiddenLayers.Zip(snapshots.Skip(1).Take(HiddenLayers.Length).Cast<Mamba2VectorLayer.Snapshot>()).Aggregate(InputLayer.Forward(input, (EmbeddingLayer.Snapshot)snapshots[0]), (v, l) => l.First.Forward(v, l.Second)), (UnEmbeddingLayer.Snapshot)snapshots[^1]);
+    }
+
+    public void Initialize(Random? random = null)
+    {
+        new EmbeddingLayer.Initializer(random).Initialize(InputLayer);
+        new UnEmbeddingLayer.Initializer(random).Initialize(OutputLayer);
+        var initer = new Mamba2VectorLayer.Initializer(random);
+        HiddenLayers.Consume(initer.Initialize);
     }
 
     // public Vector Backward(Matrix outputGradient, ImmutableArray<EmbeddedMamba2Layer.Snapshot> snapshots)

@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Ametrin.Guards;
 using MachineLearning.Data;
 using MachineLearning.Data.Entry;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Training;
-using MachineLearning.Training.Cost;
 using MachineLearning.Training.Evaluation;
 using MachineLearning.Training.Optimization;
 
@@ -28,103 +28,50 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
         LayerOptimizers = [.. Model.Layers.Select(Optimizer.CreateLayerOptimizer)];
     }
 
-    public void Train(CancellationToken? token = null)
-    {
-        Optimizer.Init();
-        FullReset();
-        var cachedEvaluation = DataSetEvaluationResult.ZERO;
-        foreach (var (epochIndex, epoch) in TrainerHelper.GetEpochs(TrainingSet, Config.EpochCount).Index())
-        {
-            foreach (var (batchIndex, batch) in epoch.Index())
-            {
-                cachedEvaluation += TrainAndEvaluate(batch.Cast<TrainingData<Vector, Vector>>());
-                if (Config.DumpBatchEvaluation && batchIndex % Config.DumpEvaluationAfterBatches == 0 || batchIndex + 1 == epoch.BatchCount && Config.DumpEpochEvaluation)
-                {
-                    Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
-                    cachedEvaluation = DataSetEvaluationResult.ZERO;
-                }
-                Optimizer.OnBatchCompleted();
-
-                if (token?.IsCancellationRequested is true)
-                {
-                    Optimizer.OnEpochCompleted();
-                    return;
-                }
-
-                TrainingEvaluationContext GetContext() => new()
-                {
-                    CurrentBatch = batchIndex + 1,
-                    MaxBatch = epoch.BatchCount,
-                    CurrentEpoch = epochIndex + 1,
-                    MaxEpoch = Config.EpochCount,
-                    LearnRate = Config.Optimizer.LearningRate,
-                };
-            }
-
-            Optimizer.OnEpochCompleted();
-        }
-    }
-
-    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData<Vector, Vector>> trainingBatch)
+    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData> trainingBatch)
     {
         var timeStamp = Stopwatch.GetTimestamp();
-        GradientCostReset();
-        int correctCounter = 0;
-        double totalCost = 0;
-        var dataCounter = 0;
 
-        if (Config.MultiThread)
-        {
-            var _lock = new Lock();
-            Parallel.ForEach(trainingBatch, (data) =>
+        var context = ThreadedTrainer.Train(
+            trainingBatch,
+            () => [.. Model.Layers.Select(l => l.CreateGradientAccumulator())],
+            Config.MultiThread ? -1 : 1,
+            (entry, context) =>
             {
-                var weights = Update(data);
+                var data = Guard.Is<TrainingData<Vector, Vector>>(entry);
+                var weights = Update(data, context.Gradients);
 
-                lock (_lock)
-                {
-                    UpdateCounters(data, weights);
-                }
-            });
-        }
-        else
-        {
-            foreach (var data in trainingBatch)
-            {
-                var weights = Update(data);
-                UpdateCounters(data, weights);
+                context.TotalCount++;
+                context.TotalCost += Config.Optimizer.CostFunction.TotalCost(weights, data.ExpectedWeights);
             }
-        }
+        );
 
-        void UpdateCounters(TrainingData<Vector, Vector> data, Vector weights)
-        {
-            dataCounter++;
-            totalCost += Config.Optimizer.CostFunction.TotalCost(weights, data.ExpectedWeights);
-        }
-
-        Apply(dataCounter);
+        Apply(context.Gradients);
 
         return new()
         {
-            TotalCount = dataCounter,
-            CorrectCount = correctCounter,
-            TotalCost = totalCost,
+            TotalCount = context.TotalCount,
+            CorrectCount = context.CorrectCount,
+            TotalCost = context.TotalCost,
             TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };
     }
 
-    private Vector Update(TrainingData<Vector, Vector> data)
+    private Vector Update(TrainingData<Vector, Vector> data, ImmutableArray<IGradients> gradients)
     {
+        Debug.Assert(gradients.Length == Model.Layers.Length);
+
         var snapshots = Model.Layers.Select(LayerSnapshots.Get).Cast<Mamba2ScalarLayer.Snapshot>().ToImmutableArray();
         var result = Model.Process(data.InputValue, snapshots);
 
-        var gradient = Optimizer.CostFunction.Derivative(result, data.ExpectedWeights);
-        NumericsDebug.AssertValidNumbers(gradient);
+        var outGradient = Optimizer.CostFunction.Derivative(result, data.ExpectedWeights);
+        NumericsDebug.AssertValidNumbers(outGradient);
 
         for (int layerIndex = LayerOptimizers.Length - 1; layerIndex >= 0; layerIndex--)
         {
-            LayerOptimizers[layerIndex].Update(gradient, snapshots[layerIndex]);
-            gradient = snapshots[layerIndex].GradientInput;
-            NumericsDebug.AssertValidNumbers(gradient);
+            LayerOptimizers[layerIndex].Update(outGradient, snapshots[layerIndex], gradients[layerIndex]);
+            outGradient = snapshots[layerIndex].GradientInput;
+            NumericsDebug.AssertValidNumbers(outGradient);
         }
 
         foreach (var (layer, snapshot) in Model.Layers.Zip(snapshots))
@@ -135,9 +82,8 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
         return result;
     }
 
-    private void Apply(int dataCounter) => LayerOptimizers.Consume(layer => layer.Apply(dataCounter));
-    private void GradientCostReset() => LayerOptimizers.Consume(layer => layer.GradientCostReset());
-    private void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
+    private void Apply(ImmutableArray<IGradients> gradients) => LayerOptimizers.Zip(gradients).Consume(p => p.First.Apply(p.Second));
+    public void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
 }
 
 public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
@@ -161,96 +107,42 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
         OutputLayerOptimizer = Optimizer.CreateLayerOptimizer(Model.OutputLayer);
     }
 
-    public void Train(CancellationToken? token = null)
-    {
-        Optimizer.Init();
-        FullReset();
-        var cachedEvaluation = DataSetEvaluationResult.ZERO;
-        foreach (var (epochIndex, epoch) in TrainerHelper.GetEpochs(TrainingSet, Config.EpochCount).Index())
-        {
-            foreach (var (batchIndex, batch) in epoch.Index())
-            {
-                cachedEvaluation += TrainAndEvaluate(batch.Cast<TrainingData<int[], int>>());
-                if (Config.DumpBatchEvaluation && batchIndex % Config.DumpEvaluationAfterBatches == 0 || batchIndex + 1 == epoch.BatchCount && Config.DumpEpochEvaluation)
-                {
-                    Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
-                    cachedEvaluation = DataSetEvaluationResult.ZERO;
-                }
-                Optimizer.OnBatchCompleted();
-
-                if (token?.IsCancellationRequested is true)
-                {
-                    Optimizer.OnEpochCompleted();
-                    return;
-                }
-
-                TrainingEvaluationContext GetContext() => new()
-                {
-                    CurrentBatch = batchIndex + 1,
-                    MaxBatch = epoch.BatchCount,
-                    CurrentEpoch = epochIndex + 1,
-                    MaxEpoch = Config.EpochCount,
-                    LearnRate = Config.Optimizer.LearningRate,
-                };
-            }
-
-            Optimizer.OnEpochCompleted();
-        }
-    }
-
-    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData<int[], int>> trainingBatch)
+    public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData> trainingBatch)
     {
         var timeStamp = Stopwatch.GetTimestamp();
-        GradientCostReset();
-        int correctCounter = 0;
-        double totalCost = 0;
-        var dataCounter = 0;
 
-        if (Config.MultiThread)
-        {
-            var _lock = new Lock();
-            Parallel.ForEach(trainingBatch, (data) =>
+        var context = ThreadedTrainer.Train(
+            trainingBatch,
+            () => [Model.InputLayer.CreateGradientAccumulator(), .. Model.HiddenLayers.Select(l => l.CreateGradientAccumulator()), Model.OutputLayer.CreateGradientAccumulator()],
+            Config.MultiThread ? -1 : 1,
+            (entry, context) =>
             {
-                var (weights, result) = Update(data);
+                var data = Guard.Is<TrainingData<int[], int>>(entry);
+                var (weights, result) = Update(data, context.Gradients);
 
-                lock (_lock)
+                if (result == data.ExpectedValue)
                 {
-                    UpdateCounters(data, weights, result);
+                    context.CorrectCount++;
                 }
-            });
-        }
-        else
-        {
-            foreach (var data in trainingBatch)
-            {
-                var (weights, result) = Update(data);
-                UpdateCounters(data, weights, result);
+                context.TotalCount++;
+                context.TotalCost += Config.Optimizer.CostFunction.TotalCost(weights.Storage, data.ExpectedWeights);
             }
-        }
+        );
 
-        void UpdateCounters(TrainingData<int[], int> data, Matrix weights, int result)
-        {
-            if (result == data.ExpectedValue)
-            {
-                correctCounter++;
-            }
-            dataCounter++;
-            totalCost += Config.Optimizer.CostFunction.TotalCost(weights.Storage, data.ExpectedWeights);
-        }
-
-        Apply(dataCounter);
+        Apply(context.Gradients);
 
         return new()
         {
-            TotalCount = dataCounter,
-            CorrectCount = correctCounter,
-            TotalCost = totalCost,
+            TotalCount = context.TotalCount,
+            CorrectCount = context.CorrectCount,
+            TotalCost = context.TotalCost,
             TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };
     }
 
-    private (Matrix, int) Update(TrainingData<int[], int> data)
+    private (Matrix, int) Update(TrainingData<int[], int> data, ImmutableArray<IGradients> gradients)
     {
+        Debug.Assert(gradients.Length == Model.HiddenLayers.Length + 2);
         var inputSnapshot = LayerSnapshots.Get(Model.InputLayer);
         var snapshots = Model.HiddenLayers.Select(LayerSnapshots.Get).Cast<Mamba2VectorLayer.Snapshot>().ToImmutableArray();
         var outputSnapshot = (UnEmbeddingLayer.Snapshot)LayerSnapshots.Get(Model.OutputLayer);
@@ -260,17 +152,17 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
         var gradient = Optimizer.CostFunction.Derivative(weights.Storage, data.ExpectedWeights);
         NumericsDebug.AssertValidNumbers(gradient);
 
-        OutputLayerOptimizer.Update(gradient, outputSnapshot);
+        OutputLayerOptimizer.Update(gradient, outputSnapshot, gradients[^1]);
         gradient = outputSnapshot.InputGradient.Storage;
 
         for (int layerIndex = LayerOptimizers.Length - 1; layerIndex >= 0; layerIndex--)
         {
-            LayerOptimizers[layerIndex].Update(gradient, snapshots[layerIndex]);
+            LayerOptimizers[layerIndex].Update(gradient, snapshots[layerIndex], gradients[layerIndex + 1]);
             gradient = snapshots[layerIndex].GradientInput.Storage;
             NumericsDebug.AssertValidNumbers(gradient);
         }
 
-        InputLayerOptimizer.Update(gradient, inputSnapshot);
+        InputLayerOptimizer.Update(gradient, inputSnapshot, gradients[0]);
 
         LayerSnapshots.Return(Model.InputLayer, inputSnapshot);
         LayerSnapshots.Return(Model.OutputLayer, outputSnapshot);
@@ -282,19 +174,14 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
         return (weights, result);
     }
 
-    private void Apply(int dataCounter)
+    private void Apply(ImmutableArray<IGradients> gradients)
     {
-        InputLayerOptimizer.Apply(dataCounter);
-        LayerOptimizers.Consume(layer => layer.Apply(dataCounter));
-        OutputLayerOptimizer.Apply(dataCounter);
+        InputLayerOptimizer.Apply(gradients[0]);
+        LayerOptimizers.Zip(gradients.Skip(1).Take(LayerOptimizers.Length)).Consume(p => p.First.Apply(p.Second));
+        OutputLayerOptimizer.Apply(gradients[^1]);
     }
-    private void GradientCostReset()
-    {
-        InputLayerOptimizer.GradientCostReset();
-        LayerOptimizers.Consume(layer => layer.GradientCostReset());
-        OutputLayerOptimizer.GradientCostReset();
-    }
-    private void FullReset()
+
+    public void FullReset()
     {
         InputLayerOptimizer.FullReset();
         LayerOptimizers.Consume(layer => layer.FullReset());

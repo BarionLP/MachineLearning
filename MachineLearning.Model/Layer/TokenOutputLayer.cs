@@ -39,4 +39,5 @@ public sealed class TokenOutputLayer(int tokenCount, bool weightedRandom, Random
     }
 
     public ILayerSnapshot CreateSnapshot() => LayerSnapshots.Empty;
+    public IGradients CreateGradientAccumulator() => IGradients.Empty;
 }

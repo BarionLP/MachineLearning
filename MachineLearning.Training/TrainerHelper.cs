@@ -1,4 +1,5 @@
 ﻿using MachineLearning.Data;
+using MachineLearning.Training.Evaluation;
 using System.Text;
 
 namespace MachineLearning.Training;
@@ -31,6 +32,43 @@ public static class TrainerHelper
         trainer.Train(cts.Token);
         cts.Cancel();
         Console.WriteLine("Training Done!");
+    }
+
+    public static void Train<TModel>(this ITrainer<TModel> trainer, CancellationToken? token = null)
+    {
+        trainer.Config.Optimizer.Init();
+        trainer.FullReset();
+        var cachedEvaluation = DataSetEvaluationResult.ZERO;
+        foreach (var (epochIndex, epoch) in GetEpochs(trainer.TrainingSet, trainer.Config.EpochCount).Index())
+        {
+            foreach (var (batchIndex, batch) in epoch.Index())
+            {
+                cachedEvaluation += trainer.TrainAndEvaluate(batch);
+                if (trainer.Config.DumpBatchEvaluation && batchIndex % trainer.Config.DumpEvaluationAfterBatches == 0 || batchIndex + 1 == epoch.BatchCount && trainer.Config.DumpEpochEvaluation)
+                {
+                    trainer.Config.EvaluationCallback!.Invoke(new DataSetEvaluation { Context = GetContext(), Result = cachedEvaluation });
+                    cachedEvaluation = DataSetEvaluationResult.ZERO;
+                }
+                trainer.Config.Optimizer.OnBatchCompleted();
+
+                if (token?.IsCancellationRequested is true)
+                {
+                    trainer.Config.Optimizer.OnEpochCompleted();
+                    return;
+                }
+
+                TrainingEvaluationContext GetContext() => new()
+                {
+                    CurrentBatch = batchIndex + 1,
+                    MaxBatch = epoch.BatchCount,
+                    CurrentEpoch = epochIndex + 1,
+                    MaxEpoch = trainer.Config.EpochCount,
+                    LearnRate = trainer.Config.Optimizer.LearningRate,
+                };
+            }
+
+            trainer.Config.Optimizer.OnEpochCompleted();
+        }
     }
 
     public static IEnumerable<Epoch> GetEpochs(ITrainingSet trainingSet, int epochCount)

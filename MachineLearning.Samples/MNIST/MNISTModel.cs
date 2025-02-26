@@ -1,103 +1,109 @@
-﻿// using MachineLearning.Data;
-// using MachineLearning.Data.Noise;
-// using MachineLearning.Data.Source;
-// using ModelDefinition = MachineLearning.Model.EmbeddedModel<double[], int>;
+﻿using MachineLearning.Data;
+using MachineLearning.Data.Noise;
+using MachineLearning.Data.Source;
+using MachineLearning.Model.Layer;
+using ML.MultiLayerPerceptron;
+using ML.MultiLayerPerceptron.Initialization;
+using ModelDefinition = ML.MultiLayerPerceptron.EmbeddedModel<double[], int>;
 
-// namespace MachineLearning.Samples.MNIST;
+namespace MachineLearning.Samples.MNIST;
 
-// public static class MNISTModel
-// {
-//     public static IEmbedder<double[], int> Embedder => MNISTEmbedder.Instance;
+public static class MNISTModel
+{
+    public static IEmbeddingLayer<double[]> Embedder => MNISTEmbedder.Instance;
+    public static IUnembeddingLayer<int> UnEmbedder => MNISTUnEmbedder.Instance;
 
-//     public static ModelDefinition CreateModel(Random? random = null)
-//     {
-//         var initializer = new HeInitializer(random);
+    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("mnist"));
 
-//         var network = new ModelBuilder(784)
-//                 .DefaultActivation(LeakyReLUActivation.Instance)
-//                 .AddLayer(256, initializer)
-//                 .AddLayer(128, initializer)
-//                 .AddLayer(10, new XavierInitializer(random), SoftMaxActivation.Instance)
-//                 .Build(Embedder);
+    public static ModelDefinition CreateModel(Random? random = null)
+    {
+        var initializer = new HeInitializer(random);
 
-//         return network;
-//     }
+        var network = AdvancedModelBuilder.Create(Embedder)
+                .DefaultActivation(LeakyReLUActivation.Instance)
+                .AddLayer(256, initializer)
+                .AddLayer(128, initializer)
+                .AddLayer(10, new XavierInitializer(random), SoftMaxActivation.Instance)
+                .AddOutputLayer(UnEmbedder);
 
-//     public static ITrainingSet GetTrainingSet(Random? random = null)
-//     {
-//         var dataSource = new MNISTDataSource(AssetManager.MNISTArchive);
+        return network;
+    }
 
-//         return new MNISTDataSet(dataSource.TrainingSet)
-//         {
-//             BatchCount = 128,
-//             Noise = new ImageInputNoise
-//             {
-//                 Size = ImageDataEntry.SIZE,
-//                 NoiseStrength = 0.35,
-//                 NoiseProbability = 0.75,
-//                 MaxShift = 2,
-//                 MaxAngle = 30,
-//                 MinScale = 0.8,
-//                 MaxScale = 1.2,
-//                 Random = random ?? Random.Shared,
-//             },
-//             Random = random ?? Random.Shared,
-//         };
-//     }
+    public static ITrainingSet GetTrainingSet(Random? random = null)
+    {
+        var dataSource = new MNISTDataSource(AssetManager.MNISTArchive);
 
-//     public static TrainingConfig DefaultTrainingConfig(Random? random = null)
-//     {
-//         return new TrainingConfig()
-//         {
-//             EpochCount = 8,
+        return new MNISTDataSet(dataSource.TrainingSet)
+        {
+            BatchCount = 128,
+            Noise = new ImageInputNoise
+            {
+                Size = ImageDataEntry.SIZE,
+                NoiseStrength = 0.35,
+                NoiseProbability = 0.75,
+                MaxShift = 2,
+                MaxAngle = 30,
+                MinScale = 0.8,
+                MaxScale = 1.2,
+                Random = random ?? Random.Shared,
+            },
+            Random = random ?? Random.Shared,
+        };
+    }
 
-//             Optimizer = new AdamOptimizer
-//             {
-//                 LearningRate = 0.1f,
-//                 CostFunction = CrossEntropyLoss.Instance,
-//             },
+    public static TrainingConfig DefaultTrainingConfig(Random? random = null)
+    {
+        return new TrainingConfig()
+        {
+            EpochCount = 8,
 
-//             DumpEvaluationAfterBatches = 8,
-//             EvaluationCallback = evaluation => Console.WriteLine(evaluation.Dump()),
+            Optimizer = new AdamOptimizer
+            {
+                LearningRate = 0.0046225016f,
+                CostFunction = CrossEntropyLoss.Instance,
+            },
 
-//             RandomSource = random ?? Random.Shared,
+            DumpEvaluationAfterBatches = 8,
+            EvaluationCallback = evaluation => Console.WriteLine(evaluation.Dump()),
 
-//             MultiThread = false,
-//         };
-//     }
+            RandomSource = random ?? Random.Shared,
 
-//     public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig? config = null, Random? random = null)
-//     {
-//         model ??= CreateModel(random);
-//         var trainer = ModelTrainer.Create(model, config ?? DefaultTrainingConfig(random), GetTrainingSet());
+            MultiThread = false,
+        };
+    }
 
-//         trainer.TrainConsole();
+    public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig? config = null, Random? random = null)
+    {
+        model ??= CreateModel(random);
+        var trainer = new EmbeddedModelTrainer<double[], int>(model, config ?? DefaultTrainingConfig(random), GetTrainingSet());
 
-//         var images = new ImageDataSource(AssetManager.CustomDigits);
-//         Benchmark(model, images);
+        trainer.TrainConsole();
 
-//         return model;
-//     }
+        var images = new ImageDataSource(AssetManager.CustomDigits);
+        Benchmark(model, images);
 
-//     public static void Benchmark(ModelDefinition model, ImageDataSource dataSource)
-//     {
-//         var correctCounter = 0;
-//         var counter = 0;
-//         var previousColor = Console.ForegroundColor;
-//         foreach (var image in dataSource.DataSet)
-//         {
-//             var (prediction, confidence) = model.Process(image.Image);
+        return model;
+    }
 
-//             if (prediction == image.Digit)
-//             {
-//                 correctCounter++;
-//             }
+    public static void Benchmark(ModelDefinition model, ImageDataSource dataSource)
+    {
+        var correctCounter = 0;
+        var counter = 0;
+        var previousColor = Console.ForegroundColor;
+        foreach (var image in dataSource.DataSet)
+        {
+            var (prediction, confidence) = model.Process(image.Image);
 
-//             Console.ForegroundColor = prediction == image.Digit ? ConsoleColor.Green : ConsoleColor.Red;
-//             Console.WriteLine($"Predicted: {prediction} ({confidence:P})\tActual: {image.Digit}");
-//             counter++;
-//         }
-//         Console.ForegroundColor = previousColor;
-//         Console.WriteLine($"Correct: {(double) correctCounter / counter:P0}");
-//     }
-// }
+            if (prediction == image.Digit)
+            {
+                correctCounter++;
+            }
+
+            Console.ForegroundColor = prediction == image.Digit ? ConsoleColor.Green : ConsoleColor.Red;
+            Console.WriteLine($"Predicted: {prediction} ({confidence:P})\tActual: {image.Digit}");
+            counter++;
+        }
+        Console.ForegroundColor = previousColor;
+        Console.WriteLine($"Correct: {(double)correctCounter / counter:P0}");
+    }
+}

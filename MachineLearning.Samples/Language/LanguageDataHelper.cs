@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Diagnostics;
 using System.Text;
 using MachineLearning.Data;
 
@@ -44,12 +45,8 @@ public static class LanguageDataHelper
         }
     }
 
-    public static IEnumerable<TrainingData> ToTrainingDataAll(this IEnumerable<DataEntry<int[], int>> source, int tokenCount, int contextSize)
-    {
-        return source.Select(d => (d.Input, d.Expected)).ToTrainingDataMatrix(tokenCount, contextSize);
-    }
 
-    public static IEnumerable<TrainingData> ToTrainingDataMatrix(this IEnumerable<(int[] Input, int Expected)> source, int tokenCount, int contextSize)
+    public static IEnumerable<TrainingData> ToTrainingDataMatrix(this IEnumerable<(int[] Input, int Expected)> source, int tokenCount, int contextSize, int? fillerToken)
     {
         var cache = Enumerable.Range(0, tokenCount).Select(i =>
         {
@@ -63,15 +60,26 @@ public static class LanguageDataHelper
         TrainingData MapData((int[] Input, int Expected) e)
         {
             var expected = Matrix.Create(contextSize, tokenCount);
+            var inputStartIndex = Math.Max(0, e.Input.Length - contextSize + 1);
 
-            foreach (var i in Math.Max(0, e.Input.Length - contextSize + 1)..e.Input.Length)
+            if (fillerToken.HasValue && inputStartIndex == 0)
+            {
+                var embedding = cache[fillerToken.Value];
+                foreach (var i in ..(contextSize - e.Input.Length - 1))
+                {
+                    embedding.CopyTo(expected.RowRef(i));
+                }
+            }
+
+
+            foreach (var i in inputStartIndex..e.Input.Length)
             {
                 cache[e.Input[i]].CopyTo(expected.RowRef(contextSize - e.Input.Length + i - 1));
             }
 
             cache[e.Expected].CopyTo(expected.RowRef(contextSize - 1));
 
-            return new TrainingData<int[], int>(e.Input, e.Expected, expected.Storage);
+            return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
         }
     }
 

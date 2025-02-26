@@ -9,6 +9,6 @@ public sealed class NadamOptimizer : AdamOptimizer
     protected override LayerOptimizerRegistry RegistryGetter => Registry;
     static NadamOptimizer()
     {
-        Registry.Register<FeedForwardLayer>((op, layer) => new SimpleNadamOptimizer(op, layer));
+        // Registry.Register<FeedForwardLayer>((op, layer) => new SimpleNadamOptimizer(op, layer));
     }
 }

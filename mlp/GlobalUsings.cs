@@ -1,10 +1,10 @@
 global using Ametrin.Numerics;
-global using Ametrin.Utils;
 global using Ametrin.Optional;
-global using System.Diagnostics;
+global using Ametrin.Utils;
+global using Weight = float;
 global using System.Collections.Generic;
-global using System.Collections.Immutable;
 global using System.Collections.Frozen;
+global using System.Collections.Immutable;
+global using System.Diagnostics;
 global using System.Linq;
 global using System;
-global using Weight = float;

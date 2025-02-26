@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
+using Ametrin.Guards;
 
 namespace MachineLearning.Model.Layer.Snapshot;
+
+public interface IGradients
+{
+    public static IGradients Empty { get; } = new EmptyGradients();
+    public void Add(IGradients other);
+}
+
+file sealed record EmptyGradients : IGradients
+{
+    public void Add(IGradients other)
+    {
+        Guard.Is<EmptyGradients>(other);
+    }
+}
 
 public interface ILayerSnapshot;
 

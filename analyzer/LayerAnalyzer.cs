@@ -76,7 +76,6 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
     {
         var (layer, compilation) = pair;
 
-
         if (layer is null) return;
 
         var ilayer = GetGenericILayer(layer);
@@ -85,12 +84,14 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         var tin = ilayer.TypeArguments[0];
         var tout = ilayer.TypeArguments[1];
+        var tsnap = ilayer.TypeArguments[2];
 
         var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
         var parameter = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsParameterAttribute(a.AttributeClass!)));
 
         var sb = new StringBuilder();
         sb.AppendLine($$"""
+        using Ametrin.Guards;
         using MachineLearning.Model.Layer.Snapshot;
 
         namespace {{layer.ContainingNamespace}};
@@ -103,6 +104,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
             }
 
             public ILayerSnapshot CreateSnapshot() => new Snapshot(this);
+            public IGradients CreateGradientAccumulator() => new Gradients(this);
 
             public long WeightCount => {{string.Join(" + ", weights.Select(p => IsVector(p.Type) ? $"{p.Name}.Count" : $"{p.Name}.FlatCount"))}};
 
@@ -112,18 +114,33 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
                 // public {{tin.Name}} Input { get; } = {{tin.Name}}.Create(T, E);
                 // public {{tin.Name}} GradientInput { get; } = {{tin.Name}}.Create(T, E);
                 // public {{tout.Name}} Output { get; } = {{tout.Name}}.Create(T, E);
+            }
+        
+        """);
+
+        sb.AppendLine($"\tpublic sealed partial class Gradients({layer.Name} layer) : IGradients\n\t{{");
+
+        foreach (var weight in weights)
+        {
+            sb.AppendLine($"\t\tpublic {weight.Type} {weight.Name} {{ get; }} = {weight.Type}.OfSize(layer.{weight.Name});");
+        }
+
+        sb.AppendLine($$"""
+                public void Add(IGradients other)
+                {
+                    var o = Guard.Is<Gradients>(other);
         """);
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\tpublic {weight.Type} Gradient{weight.Name} {{ get; }} = {weight.Type}.OfSize(layer.{weight.Name});");
+            sb.AppendLine($"\t\t\t{weight.Name}.AddToSelf(o.{weight.Name});");
         }
 
-        sb.AppendLine("\t}");
+        sb.AppendLine("\t\t}\n\t}");
 
         if (layer!.GetAttributes().FirstOrDefault(a => IsLayerSerializerAttribute(a.AttributeClass!)) is AttributeData ad)
         {
-            sb.Insert(0, "using static MachineLearning.Serialization.ModelSerializationHelper;\n");
+            sb.Insert(0, "using MachineLearning.Serialization;\n");
             sb.AppendLine($$"""
                 public static partial class Serializer
                 {
@@ -133,16 +150,16 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
                         MachineLearning.Serialization.ModelSerializer.RegisterLayer("{{ad.ConstructorArguments[0].Value}}", {{ad.ConstructorArguments[1].Value}}, Save, Read);
                     }
 
-                    public static ErrorState Save({{layer.Name}} layer, BinaryWriter writer)
+                    public static ErrorState Save({{layer.Name}} layer, System.IO.BinaryWriter writer)
                     {
-                        {{string.Join("\n\t\t\t", parameter.Select(w => $"writer.Write(layer.{w.Name});"))}}
-                        {{string.Join("\n\t\t\t", weights.Select(w => $"Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
+                        {{string.Join("\n\t\t\t", parameter.Select(w => w.Type is { Name: "IActivationFunction" } ? $"ActivationFunctionSerializer.Write(writer, layer.{w.Name});" : $"writer.Write(layer.{w.Name});"))}}
+                        {{string.Join("\n\t\t\t", weights.Select(w => $"ModelSerializationHelper.Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
                         return default;
                     }
 
-                    public static Result<{{layer.Name}}> Read(BinaryReader reader)
+                    public static Result<{{layer.Name}}> Read(System.IO.BinaryReader reader)
                     {
-                        return new {{layer.Name}}({{string.Join(", ", [.. parameter.Select(w => $"reader.Read{w.Type.Name}()"), .. weights.Select(w => $"Read{w.Type.Name}(reader)")])}});
+                        return new {{layer.Name}}({{string.Join(", ", [.. parameter.Select(w => w.Type is { Name: "IActivationFunction" } ? $"ActivationFunctionSerializer.Read(reader)" : $"reader.Read{w.Type.Name}()"), .. weights.Select(w => $"ModelSerializationHelper.Read{w.Type.Name}(reader)")])}});
                     }
                 }
             """);
@@ -152,7 +169,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         if (layer.GetAttributes().FirstOrDefault(a => IsGenerateOptimizersAttribute(a.AttributeClass!)) is AttributeData attributeData)
         {
-            AdamLayerGenerator.GenerateAdam(context, compilation, new(layer, tin, tout, weights), attributeData);
+            AdamLayerGenerator.GenerateAdam(context, compilation, new(layer, tin, tout, tsnap, weights), attributeData);
         }
 
         context.AddSource($"{layer.Name}.g.cs", sb.ToString());

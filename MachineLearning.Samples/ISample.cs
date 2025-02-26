@@ -1,4 +1,5 @@
 ﻿using MachineLearning.Data;
+using ML.MultiLayerPerceptron;
 
 namespace MachineLearning.Samples;
 

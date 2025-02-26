@@ -6,9 +6,11 @@ namespace MachineLearning.Samples;
 
 public class SimpleTokenPrediction
 {
+    public const int CONTEXT_SIZE = 10;
+    public static CharTokenizer Tokenizer { get; } = new("0123456789");
     public static Mamba2VectorModel CreateModel(Random? random = null)
     {
-        var model = new Mamba2VectorModel(layerCount: 4, tokenCount: 10, contextSize: 10, stateDimensions: 8, embeddingDimensions: 4);
+        var model = new Mamba2VectorModel(layerCount: 5, Tokenizer.TokenCount, CONTEXT_SIZE, stateDimensions: 12, embeddingDimensions: 16);
 
         new EmbeddingLayer.Initializer(random).Initialize(model.InputLayer);
         new UnEmbeddingLayer.Initializer(random).Initialize(model.OutputLayer);
@@ -24,19 +26,19 @@ public class SimpleTokenPrediction
         MultiThread = false,
         EvaluationCallback = r => Console.WriteLine(r.Dump()),
         DumpEvaluationAfterBatches = 1,
-        RandomSource = new Random(42),
+        RandomSource = random ?? Random.Shared,
         Optimizer = new AdamOptimizer
         {
-            LearningRate = 0.025f,
+            LearningRate = 0.015f,
             CostFunction = CrossEntropyFromSoftmaxLoss.Instance,
-        }
+        },
     };
 
     public static ITrainingSet GetTrainingSet(Random? random = null)
     {
-        var tokens = "0123456789".Select(c => c - '0');
+        var tokens = Tokenizer.Tokenize("0123456789");
 
-        var trainingsData = ((int[])[.. tokens, .. tokens]).SlidingWindow(null, 10).Where(d => d.Input.Length == 10).ToTrainingDataMatrix(tokenCount: 10, contextSize: 10);
+        var trainingsData = ((int[])[.. tokens, .. tokens]).SlidingWindow(null, CONTEXT_SIZE).ToTrainingDataMatrix(Tokenizer.TokenCount, CONTEXT_SIZE, null);
         return new PredefinedTrainingSet(trainingsData)
         {
             BatchCount = 1

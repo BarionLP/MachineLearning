@@ -7,19 +7,19 @@ namespace MachineLearning.Visual;
 
 public static class ModelVisualizer
 {
-    public static void Visualize(FeedForwardModel model, DirectoryInfo path)
-    {
-        path.CreateIfNotExists();
-        var count = 0;
+    // public static void Visualize(FeedForwardModel model, DirectoryInfo path)
+    // {
+    //     path.CreateIfNotExists();
+    //     var count = 0;
 
-        foreach(var layer in model.Layers)
-        {
-            count++;
-            var map = GenerateHeatmap(layer.Weights);
+    //     foreach(var layer in model.Layers)
+    //     {
+    //         count++;
+    //         var map = GenerateHeatmap(layer.Weights);
 
-            map?.Save(path.File($"layer_{count}.png").FullName, ImageFormat.Png);
-        }
-    }
+    //         map?.Save(path.File($"layer_{count}.png").FullName, ImageFormat.Png);
+    //     }
+    // }
 
     public static Bitmap GenerateHeatmap(Matrix matrix)
     {
@@ -63,11 +63,11 @@ public static class ModelAnalyzer
                 //    Console.WriteLine($"Embedding Layer: Av: {em.EmbeddingMatrix.Sum() / em.EmbeddingMatrix.FlatCount:F4}; Max: {em.EmbeddingMatrix.Max():F4}; Min: {em.EmbeddingMatrix.Min():F4}");
                 //    break;
 
-                case FeedForwardLayer sl:
-                    Console.WriteLine($"Simple Layer:");
-                    Console.WriteLine($"\tWeights: Av: {sl.Weights.Sum()/sl.Weights.FlatCount:F4}; Max: {sl.Weights.Max():F4}; Min: {sl.Weights.Min():F4}");
-                    Console.WriteLine($"\tBiases: Av: {sl.Biases.Sum()/sl.Biases.Count:F4}; Max: {sl.Biases.Max():F4}; Min: {sl.Biases.Min():F4}");
-                    break;
+                // case FeedForwardLayer sl:
+                //     Console.WriteLine($"Simple Layer:");
+                //     Console.WriteLine($"\tWeights: Av: {sl.Weights.Sum()/sl.Weights.FlatCount:F4}; Max: {sl.Weights.Max():F4}; Min: {sl.Weights.Min():F4}");
+                //     Console.WriteLine($"\tBiases: Av: {sl.Biases.Sum()/sl.Biases.Count:F4}; Max: {sl.Biases.Max():F4}; Min: {sl.Biases.Min():F4}");
+                //     break;
             }
         }
     }

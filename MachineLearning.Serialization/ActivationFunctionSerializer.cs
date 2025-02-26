@@ -4,30 +4,26 @@ namespace MachineLearning.Serialization;
 
 public static class ActivationFunctionSerializer
 {
-    private static readonly Dictionary<string, IActivationFunction> _legacyRegistry = [];
-    private static readonly Dictionary<Type, string> _registry = [];
-    private static readonly Dictionary<string, Func<BinaryReader, IActivationFunction>> _factory = [];
-    private static readonly Dictionary<Type, (string key, uint version)> _registryV3 = [];
-    private static readonly Dictionary<(string key, uint version), Func<BinaryReader, IActivationFunction>> _factoryV3 = [];
+    private static readonly Dictionary<Type, string> _registryV2 = [];
+    private static readonly Dictionary<string, Func<BinaryReader, IActivationFunction>> _factoryV2 = [];
+    private static readonly Dictionary<Type, (string key, uint version)> _registry = [];
+    private static readonly Dictionary<(string key, uint version), Func<BinaryReader, IActivationFunction>> _factory = [];
 
     public static void RegisterV2<T>(string key, Func<BinaryReader, IActivationFunction> factory) where T : IActivationFunction
     {
-        _registry.Add(typeof(T), key);
-        _factory.Add(key, factory);
+        _registryV2.Add(typeof(T), key);
+        _factoryV2.Add(key, factory);
     }
     
     public static void Register<T>(string key, uint version, Func<BinaryReader, IActivationFunction> factory) where T : IActivationFunction
     {
-        _registryV3.Add(typeof(T), (key, version));
-        _factoryV3.Add((key, version), factory);
+        _registry.Add(typeof(T), (key, version));
+        _factory.Add((key, version), factory);
     }
 
-    public static void RegisterV1(string key, IActivationFunction instance) => _legacyRegistry.Add(key, instance);
-
-    public static IActivationFunction ReadV1(BinaryReader reader) => _legacyRegistry[reader.ReadString()];
-    public static void WriteV3(BinaryWriter writer, IActivationFunction data)
+    public static void Write(BinaryWriter writer, IActivationFunction data)
     {
-        var (key, version) = _registryV3[data.GetType()];
+        var (key, version) = _registry[data.GetType()];
         writer.Write(key);
         writer.Write(version);
 
@@ -50,8 +46,8 @@ public static class ActivationFunctionSerializer
         }
     }
 
-    public static IActivationFunction ReadV2(BinaryReader reader) => _factory[reader.ReadString()](reader);
-    public static IActivationFunction ReadV3(BinaryReader reader) => _factoryV3[(reader.ReadString(), reader.ReadUInt32())](reader);
+    public static IActivationFunction ReadV2(BinaryReader reader) => _factoryV2[reader.ReadString()](reader);
+    public static IActivationFunction Read(BinaryReader reader) => _factory[(reader.ReadString(), reader.ReadUInt32())](reader);
 
     static ActivationFunctionSerializer()
     {
@@ -70,11 +66,5 @@ public static class ActivationFunctionSerializer
         RegisterV2<ReLUActivation>("relu", reader => ReLUActivation.Instance);
         RegisterV2<LeakyReLUActivation>("leakyrelu", reader => new LeakyReLUActivation((float) reader.ReadDouble()));
         RegisterV2<TanhActivation>("tanh", reader => TanhActivation.Instance);
-
-        RegisterV1("sigmoid", SigmoidActivation.Instance);
-        RegisterV1("softmax", SoftMaxActivation.Instance);
-        RegisterV1("relu", ReLUActivation.Instance);
-        RegisterV1("leakyrelu", LeakyReLUActivation.Instance);
-        RegisterV1("tanh", TanhActivation.Instance);
     }
 }
