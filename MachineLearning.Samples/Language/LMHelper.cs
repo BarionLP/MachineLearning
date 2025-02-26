@@ -7,6 +7,7 @@ public static class LMHelper
     private static readonly HashSet<string> EndTokens = ["\0"];
     public static void StartChat(IEmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
     {
+        var fillerToken = tokenizer.TokenizeSingle("\0");
         string input;
         do
         {
@@ -17,11 +18,11 @@ public static class LMHelper
             }
             Console.SetCursorPosition(0, Console.CursorTop - 1);
             Console.Write(input);
-            Generate([.. tokenizer.Tokenize(input)], model, contextSize, tokenizer);
+            Generate([.. tokenizer.Tokenize(input.PadLeft(contextSize, '\0'))], model, contextSize, tokenizer, fillerToken);
         } while (true);
     }
 
-    public static void Generate(int[] input, IEmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer)
+    public static void Generate(int[] input, IEmbeddedModel<int[], int> model, int contextSize, ITokenizer<string> tokenizer, int fillerToken)
     {
         if (input.Contains(-1))
         {
@@ -36,11 +37,11 @@ public static class LMHelper
         {
             (prediction, confidence) = model.Process(input);
             token = tokenizer.GetToken(prediction);
-            input = [.. input, prediction];
+            input = input[0] == fillerToken ? [.. input[1..], prediction] : [.. input, prediction];
             SetConsoleTextColor(confidence);
             Console.Write(token);
         } while (!EndTokens.Contains(token) && input.Length < contextSize);
-        Console.Write("Null");
+        Console.Write("End");
         Console.Write("\u001b[0m"); // reset color
         Console.WriteLine();
 

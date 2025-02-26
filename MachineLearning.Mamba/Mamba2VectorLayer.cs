@@ -1,9 +1,7 @@
-using System.Diagnostics;
 using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
-using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Serialization;
 using MachineLearning.Training.Attributes;
 

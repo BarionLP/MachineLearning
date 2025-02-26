@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using MachineLearning.Model.Activation;
 using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;

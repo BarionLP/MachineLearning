@@ -1,5 +1,4 @@
 ﻿using System.Numerics.Tensors;
-using Ametrin.Guards;
 using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
@@ -29,7 +28,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
 
     public Matrix Forward(int[] input, Snapshot snapshot)
     {
-        // Debug.Assert(input.Length == ContextSize);
+        Debug.Assert(input.Length == ContextSize);
         snapshot.Input = input;
 
         foreach (var i in ..input.Length)
