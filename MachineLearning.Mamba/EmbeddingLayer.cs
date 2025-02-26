@@ -1,4 +1,4 @@
-using System.Numerics.Tensors;
+﻿using System.Numerics.Tensors;
 using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
@@ -28,12 +28,13 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
 
     public Matrix Forward(int[] input, Snapshot snapshot)
     {
-        Debug.Assert(input.Length == ContextSize);
+        Debug.Assert(input.Length <= ContextSize);
         snapshot.Input = input;
+        snapshot.Output = Matrix.Create(input.Length, EmbeddingSize);
 
         foreach (var i in ..input.Length)
         {
-            GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(ContextSize - input.Length + i));
+            GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(i));
         }
 
         return snapshot.Output;
@@ -63,7 +64,8 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
     partial class Snapshot
     {
         public int[] Input { get; set; } = [];
-        public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        // public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Matrix Output { get; set; }
     }
 
     partial class Gradients

@@ -10,7 +10,7 @@ namespace MachineLearning.Mamba;
 [GeneratedLayer, LayerSerializer("vmam2", 2), GenerateOptimizers]
 public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer.Snapshot>
 {
-    public int SequenceLength /*T*/ => Alpha.Count;
+    public int MaxSequenceLength /*T*/ => Alpha.Count;
     public int StateDimensions /*N*/ => B.RowCount;
     public int EmbeddingDimensions /*E*/ => B.ColumnCount;
 
@@ -26,13 +26,16 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
     public Matrix Forward(Matrix input, Snapshot snapshot)
     {
-        Debug.Assert(input.RowCount == SequenceLength);
+        Debug.Assert(input.RowCount <= MaxSequenceLength);
         Debug.Assert(input.ColumnCount == EmbeddingDimensions);
 
-        input.CopyTo(snapshot.Input);
+        snapshot.SequenceLength = input.RowCount;
+
+        snapshot.Input = input;
+        snapshot.Output = Matrix.OfSize(input);
         snapshot.Memory.ResetZero();
 
-        for (int t = 0; t < SequenceLength; t++)
+        for (int t = 0; t < input.RowCount; t++)
         {
             // h = alpha_t * h + B * x_t
             var h = snapshot.Memory.RowRef(t);
@@ -46,6 +49,8 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
             // y_t = C^T * h
             C.MultiplyTransposedTo(h, snapshot.Output.RowRef(t));
         }
+
+        NumericsDebug.AssertValidNumbers(snapshot.Output);
 
         return snapshot.Output;
     }
@@ -61,13 +66,14 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
     public Matrix Backward(Matrix outputGradient, Snapshot snapshot, Gradients gradients)
     {
-        Debug.Assert(outputGradient.RowCount == SequenceLength);
+        Debug.Assert(outputGradient.RowCount <= MaxSequenceLength);
         Debug.Assert(outputGradient.ColumnCount == EmbeddingDimensions);
 
-        snapshot.GradientInput.ResetZero();
+        // snapshot.GradientInput.ResetZero();
+        snapshot.GradientInput = Matrix.OfSize(outputGradient);
         snapshot.GradientMemory.ResetZero();
 
-        for (int t = SequenceLength - 1; t >= 0; t--)
+        for (int t = outputGradient.RowCount - 1; t >= 0; t--)
         {
             var outputGradient_t = outputGradient.RowRef(t);
 
@@ -112,12 +118,16 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
     public partial class Snapshot
     {
-        public Matrix Input { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
-        public Matrix GradientInput { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
-        public Matrix Output { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
+        public int SequenceLength { get; set; }
+        // public Matrix Input { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
+        public Matrix Input { get; set; }
+        // public Matrix GradientInput { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
+        public Matrix GradientInput { get; set; }
+        // public Matrix Output { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
+        public Matrix Output { get; set; }
 
-        public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions); // one row per timestep
-        public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
+        public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions); // one row per timestep
+        public Matrix GradientMemory { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<Mamba2VectorLayer>

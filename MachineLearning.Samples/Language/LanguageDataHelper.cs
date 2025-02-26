@@ -59,27 +59,29 @@ public static class LanguageDataHelper
 
         TrainingData MapData((int[] Input, int Expected) e)
         {
-            var expected = Matrix.Create(contextSize, tokenCount);
-            var inputStartIndex = Math.Max(0, e.Input.Length - contextSize + 1);
+            var length = int.Min(e.Input.Length, contextSize);
+            var expected = Matrix.Create(length, tokenCount);
+            var inputStartIndex = Math.Max(1, e.Input.Length - contextSize + 1);
 
-            if (fillerToken.HasValue && inputStartIndex == 0)
-            {
-                var embedding = cache[fillerToken.Value];
-                foreach (var i in ..(contextSize - e.Input.Length - 1))
-                {
-                    embedding.CopyTo(expected.RowRef(i));
-                }
-            }
+            // if (fillerToken.HasValue && inputStartIndex == 0)
+            // {
+            //     var embedding = cache[fillerToken.Value];
+            //     foreach (var i in ..(contextSize - e.Input.Length - 1))
+            //     {
+            //         embedding.CopyTo(expected.RowRef(i));
+            //     }
+            // }
 
 
             foreach (var i in inputStartIndex..e.Input.Length)
             {
-                cache[e.Input[i]].CopyTo(expected.RowRef(contextSize - e.Input.Length + i - 1));
+                cache[e.Input[i]].CopyTo(expected.RowRef(i-inputStartIndex));
             }
 
-            cache[e.Expected].CopyTo(expected.RowRef(contextSize - 1));
+            cache[e.Expected].CopyTo(expected.RowRef(length - 1));
 
-            return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
+            // return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
+            return new TrainingData<int[], int>(e.Input, e.Expected, expected.Storage);
         }
     }
 

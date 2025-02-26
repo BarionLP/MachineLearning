@@ -23,10 +23,12 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
     // TODO: incorporate all token predictions in the gradient
     public (Matrix, int) Forward(Matrix input, Snapshot snapshot)
     {
-        Debug.Assert(input.RowCount == ContextSize);
+        Debug.Assert(input.RowCount <= ContextSize);
         Debug.Assert(input.ColumnCount == EmbeddingSize);
 
-        input.CopyTo(snapshot.Input);
+        // input.CopyTo(snapshot.Input);
+        snapshot.Input = input;
+        snapshot.Output = Matrix.Create(input.RowCount, TokenCount);
 
         foreach (var i in ..input.RowCount)
         {
@@ -41,6 +43,8 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
     {
         Debug.Assert(outputGradients.ColumnCount == TokenCount);
         Debug.Assert(outputGradients.RowCount == snapshot.Input.RowCount);
+
+        snapshot.InputGradient = Matrix.OfSize(snapshot.Input);
 
         // this would be neccecary without CrossEntropyFromSoftmaxLoss (not sure if it is correct)
         // var tmp = Vector.Create(outputGradient.Count);
@@ -63,11 +67,14 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
 
     partial class Snapshot
     {
-        public Matrix Input { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        // public Matrix Input { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Matrix Input { get; set; }
         public Vector WeightedInput { get; } = Vector.Create(layer.TokenCount);
-        public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
+        // public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
+        public Matrix Output { get; set; }
 
-        public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        // public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Matrix InputGradient { get; set; }
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<UnEmbeddingLayer>

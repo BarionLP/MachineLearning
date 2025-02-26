@@ -16,9 +16,9 @@ public static class LMHelper
             {
                 return;
             }
-            Console.SetCursorPosition(0, Console.CursorTop - 1);
+            //Console.SetCursorPosition(0, Console.CursorTop - 1);
             Console.Write(input);
-            Generate([.. tokenizer.Tokenize(input.PadLeft(contextSize, '\0'))], model, contextSize, tokenizer, fillerToken);
+            Generate([.. tokenizer.Tokenize(input)], model, contextSize, tokenizer, fillerToken);
         } while (true);
     }
 
