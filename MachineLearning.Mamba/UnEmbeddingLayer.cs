@@ -76,7 +76,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
 
         public void Initialize(UnEmbeddingLayer layer)
         {
-            var limit = float.Sqrt(6 / (layer.TokenCount + layer.EmbeddingSize));
+            var limit = Weight.Sqrt(6 / (Weight)(layer.TokenCount + layer.EmbeddingSize));
             layer.UnEmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0, limit));
         }
     }

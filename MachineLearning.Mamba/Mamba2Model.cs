@@ -58,9 +58,9 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
     public void Initialize(Random? random = null)
     {
         new EmbeddingLayer.Initializer(random).Initialize(InputLayer);
-        new UnEmbeddingLayer.Initializer(random).Initialize(OutputLayer);
         var initer = new Mamba2VectorLayer.Initializer(random);
         HiddenLayers.Consume(initer.Initialize);
+        new UnEmbeddingLayer.Initializer(random).Initialize(OutputLayer);
     }
 
     // public Vector Backward(Matrix outputGradient, ImmutableArray<EmbeddedMamba2Layer.Snapshot> snapshots)

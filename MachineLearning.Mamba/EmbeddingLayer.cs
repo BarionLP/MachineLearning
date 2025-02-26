@@ -77,7 +77,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
 
         public void Initialize(EmbeddingLayer layer)
         {
-            var limit = float.Sqrt(6 / (layer.TokenCount + layer.EmbeddingSize));
+            var limit = Weight.Sqrt(6 / (Weight)(layer.TokenCount + layer.EmbeddingSize));
             layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0, limit));
         }
     }

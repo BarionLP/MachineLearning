@@ -126,7 +126,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         public void Initialize(Mamba2VectorLayer layer)
         {
-            var scale = 6 / Weight.Sqrt(layer.StateDimensions + layer.EmbeddingDimensions);
+            var scale = Weight.Sqrt(6 / ((Weight)layer.StateDimensions + layer.EmbeddingDimensions));
 
             // affects how much memory the layer can keep from the previous step
             // optimally [0.9,1.0] must be [0,1] to prevent vanishing/exploding gradients
