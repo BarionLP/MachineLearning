@@ -1,4 +1,4 @@
-﻿using System.Numerics.Tensors;
+using System.Numerics.Tensors;
 using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
@@ -77,91 +77,8 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
 
         public void Initialize(EmbeddingLayer layer)
         {
-            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0, 0.03f));
+            var limit = float.Sqrt(6 / (layer.TokenCount + layer.EmbeddingSize));
+            layer.EmbeddingMatrix.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0, limit));
         }
     }
 }
-
-
-// public sealed class EmbeddingLayerAdam : ILayerOptimizer<EmbeddingLayer, EmbeddingLayer.Snapshot>
-// {
-//     public EmbeddingLayer Layer { get; }
-//     public AdamOptimizer Optimizer { get; }
-
-//     public readonly Matrix Gradient;
-//     public readonly Matrix FirstMoment;
-//     public readonly Matrix SecondMoment;
-
-
-//     public EmbeddingLayerAdam(AdamOptimizer optimizer, EmbeddingLayer layer)
-//     {
-//         Optimizer = optimizer;
-//         Layer = layer;
-
-//         FirstMoment = Matrix.OfSize(Layer.EmbeddingMatrix);
-//         SecondMoment = Matrix.OfSize(Layer.EmbeddingMatrix);
-//     }
-
-//     private readonly Lock _lock = new();
-//     public void Update(Vector nodeValues, EmbeddingLayer.Snapshot snapshot, IGradients gradients)
-//     {
-//         var g = Guard.Is<EmbeddingLayer.Gradients>(gradients);
-//         var outputGradient = Matrix.Of(Layer.ContextSize, Layer.EmbeddingSize, nodeValues);
-//         lock (_lock)
-//         {
-//             foreach (var i in ..snapshot.Input.Length)
-//             {
-//                 var token = snapshot.Input[i];
-//                 var embeddingGradient = Gradient.RowSpan(token);
-//                 TensorPrimitives.Add(embeddingGradient, outputGradient.RowSpan(i), embeddingGradient);
-//                 GradientCounts[token]++;
-//             }
-//         }
-//     }
-
-//     public void Apply(int dataCounter)
-//     {
-//         for (int tokenIndex = 0; tokenIndex < Layer.TokenCount; tokenIndex++)
-//         {
-//             var count = GradientCounts[tokenIndex];
-//             if (count > 0)
-//             {
-//                 var gradientCosts = Gradient.RowRef(tokenIndex);
-//                 gradientCosts.DivideToSelf(count);
-
-//                 var firstMoment = FirstMoment.RowRef(tokenIndex);
-//                 var secondMoment = SecondMoment.RowRef(tokenIndex);
-//                 (firstMoment, gradientCosts).MapToFirst(FirstMomentEstimate);
-//                 (secondMoment, gradientCosts).MapToFirst(SecondMomentEstimate);
-//                 Layer.EmbeddingMatrix.RowRef(tokenIndex).SubtractToSelf((firstMoment, secondMoment).Map(WeightReduction));
-//             }
-//         }
-//         NumericsDebug.AssertValidNumbers(Gradient);
-
-//         Weight WeightReduction(Weight firstMoment, Weight secondMoment)
-//         {
-//             var mHat = firstMoment / (1 - MathF.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
-//             var vHat = secondMoment / (1 - MathF.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
-//             return Optimizer.LearningRate * mHat / (MathF.Sqrt(vHat) + Optimizer.Epsilon);
-//         }
-
-//         Weight FirstMomentEstimate(Weight lastMoment, Weight gradient)
-//             => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
-
-//         Weight SecondMomentEstimate(Weight lastMoment, Weight gradient)
-//             => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
-//     }
-
-//     public void GradientCostReset()
-//     {
-//         Gradient.ResetZero();
-//         GradientCounts.ResetZero();
-//     }
-
-//     public void FullReset()
-//     {
-//         GradientCostReset();
-//         FirstMoment.ResetZero();
-//         SecondMoment.ResetZero();
-//     }
-// }

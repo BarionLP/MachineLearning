@@ -126,14 +126,14 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         public void Initialize(Mamba2VectorLayer layer)
         {
-            var scale = 1 / Weight.Sqrt(layer.StateDimensions);
+            var scale = 6 / Weight.Sqrt(layer.StateDimensions + layer.EmbeddingDimensions);
 
             // affects how much memory the layer can keep from the previous step
             // optimally [0.9,1.0] must be [0,1] to prevent vanishing/exploding gradients
             layer.Alpha.Fill(0.9f);
 
-            layer.B.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0f, scale));
-            layer.C.MapToSelf(_ => InitializationHelper.RandomInNormalDistribution(Random, 0f, scale));
+            layer.B.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+            layer.C.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
         }
     }
 
