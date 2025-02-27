@@ -44,7 +44,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         var propertySymbol = (IPropertySymbol)context.Symbol;
         if (propertySymbol.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)))
         {
-            if (!(IsVector(propertySymbol.Type!) || IsMatrix(propertySymbol.Type!)))
+            if (!IsTensorlike(propertySymbol.Type!))
             {
                 context.ReportDiagnostic(Diagnostic.Create(WeightsMustBeTensors, propertySymbol.Locations[0], propertySymbol.Type));
             }
