@@ -17,12 +17,12 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
     // how much memory to keep from the previous step
     [Weights] public Vector Alpha { get; }
 
-    // both could be a tensor (T*N*E) but it makes sense to share this transformation across steps so only (N*E)
-    [Weights] public Matrix B { get; } // how does the input_t affect the memory h_t
-    [Weights] public Matrix C { get; } // how does the memory h_t affect the output_t
+    // both could be a tensor (N*E*T) but it makes sense to share this transformation across steps so only (N*E)
+    [Weights] public Tensor B { get; } // how does the input_t affect the memory h_t
+    [Weights] public Tensor C { get; } // how does the memory h_t affect the output_t
 
     public Mamba2VectorLayer(int sequenceLength, int stateDimensions, int embeddingDimensions)
-        : this(Vector.Create(sequenceLength), Matrix.Create(stateDimensions, embeddingDimensions), Matrix.Create(stateDimensions, embeddingDimensions)) { }
+        : this(Vector.Create(sequenceLength), Tensor.Create(stateDimensions, embeddingDimensions, sequenceLength), Tensor.Create(stateDimensions, embeddingDimensions, sequenceLength)) { }
 
     public Matrix Forward(Matrix input, Snapshot snapshot)
     {
@@ -41,10 +41,10 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
                 snapshot.Memory.RowRef(t - 1).MultiplyTo(Alpha[t], h);
             }
 
-            B.MultiplyAddTo(input.RowRef(t), h); // h += B * x_t
+            B.LayerRef(t).MultiplyAddTo(input.RowRef(t), h); // h += B * x_t
 
             // y_t = C^T * h
-            C.MultiplyTransposedTo(h, snapshot.Output.RowRef(t));
+            C.LayerRef(t).MultiplyTransposedTo(h, snapshot.Output.RowRef(t));
         }
 
         return snapshot.Output;
@@ -74,8 +74,8 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
             // output[t] = C^T * H[t]
             // => dC += H[t] * dY
             // => dH[t] += C * dY
-            VectorHelper.MultiplyToMatrixAddTo(snapshot.Memory.RowRef(t), outputGradient_t, gradients.C);
-            C.MultiplyAddTo(outputGradient_t, snapshot.GradientMemory.RowRef(t));
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.Memory.RowRef(t), outputGradient_t, gradients.C.LayerRef(t));
+            C.LayerRef(t).MultiplyAddTo(outputGradient_t, snapshot.GradientMemory.RowRef(t));
 
             // h[t] = alpha[t] * h[t-1] + B * input[t]
             // => wrt alpha[t] = (h[t-1] dot dH[t])
@@ -98,10 +98,8 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
             // derivative wrt B[t] and input[t]
             // dB[t] = input[t] * dH[t]
-            VectorHelper.MultiplyToMatrixAddTo(snapshot.GradientMemory.RowRef(t), snapshot.Input.RowRef(t), gradients.B);
-
-            B.MultiplyTransposedTo(snapshot.GradientMemory.RowRef(t), snapshot.GradientInput.RowRef(t));
-
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.GradientMemory.RowRef(t), snapshot.Input.RowRef(t), gradients.B.LayerRef(t));
+            B.LayerRef(t).MultiplyTransposedTo(snapshot.GradientMemory.RowRef(t), snapshot.GradientInput.RowRef(t));
         }
 
         // snapshot.GradientC.DivideToSelf(SequenceLength);
@@ -136,5 +134,4 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
             layer.C.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
         }
     }
-
 }

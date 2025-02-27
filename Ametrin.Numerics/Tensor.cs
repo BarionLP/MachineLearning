@@ -10,7 +10,7 @@ public interface Tensor
     public int FlatCount { get; }
     public ref Weight this[int row, int column, int layer] { get; }
     public ref Weight this[nuint flatIndex] { get; }
-    internal Vector Storage { get; }
+    public Vector Storage { get; }
 
     public Span<Weight> AsSpan();
     //public Vector RowRef(int rowIndex);
@@ -61,6 +61,27 @@ public readonly struct TensorFlat(int rowCount, int columnCount, int layerCount,
 
 public static class TensorHelper
 {
+
+    public static void MapToSelf(this Tensor tensor, Func<Weight, Weight> map) => MapTo(tensor, map, tensor);
+    public static Tensor Map(this Tensor tensor, Func<Weight, Weight> map)
+    {
+        var destination = Tensor.OfSize(tensor);
+        tensor.MapTo(map, destination);
+        return destination;
+    }
+    public static void MapTo(this Tensor tensor, Func<Weight, Weight> map, Tensor destination)
+    {
+        NumericsDebug.AssertSameDimensions(tensor, destination);
+        SpanOperations.MapTo(tensor.AsSpan(), destination.AsSpan(), map);
+    }
+    public static Tensor Map(this (Tensor a, Tensor b) tensors, Func<Weight, Weight, Weight> map)
+    {
+        var destination = Tensor.OfSize(tensors.a);
+        SpanOperations.MapTo(tensors.a.AsSpan(), tensors.b.AsSpan(), destination.AsSpan(), map);
+        return destination;
+    }
+    public static void MapToFirst(this (Tensor a, Tensor b) tensors, Func<Weight, Weight, Weight> map)
+        => SpanOperations.MapTo(tensors.a.AsSpan(), tensors.b.AsSpan(), tensors.a.AsSpan(), map);
     public static void AddToSelf(this Tensor left, Tensor right)
     {
         NumericsDebug.AssertSameDimensions(left, right);
@@ -96,6 +117,23 @@ public static class TensorHelper
     {
         NumericsDebug.AssertSameDimensions(left, right, destination);
         PointwiseMultiplyUnsafe(left, right, destination);
+    }
+
+    public static void SubtractToSelf(this Tensor left, Tensor right)
+    {
+        SubtractTo(left, right, left);
+    }
+    public static Tensor Subtract(this Tensor left, Tensor right)
+    {
+        var destination = Tensor.OfSize(left);
+        SubtractTo(left, right, destination);
+        return destination;
+    }
+
+    public static void SubtractTo(this Tensor left, Tensor right, Tensor destination)
+    {
+        NumericsDebug.AssertSameDimensions(left, right, destination);
+        TensorPrimitives.Subtract(left.AsSpan(), right.AsSpan(), destination.AsSpan());
     }
     private static void PointwiseMultiplyUnsafe(Tensor left, Tensor right, Tensor destination) => TensorPrimitives.Multiply(left.AsSpan(), right.AsSpan(), destination.AsSpan());
 

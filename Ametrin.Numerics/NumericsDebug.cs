@@ -81,6 +81,12 @@ public static class NumericsDebug
     }
 
     [Conditional("DEBUG"), StackTraceHidden]
+    public static void AssertValidNumbers(Tensor tensor)
+    {
+        AssertValidNumbers(tensor.AsSpan(), "Matrix contains invalid numbers");
+    }
+
+    [Conditional("DEBUG"), StackTraceHidden]
     public static void AssertValidNumbers(ReadOnlySpan<Weight> span, string message = "Span contains invalid numbers")
     {
         Debug.Assert(!span.ContainsAny([Weight.NaN, Weight.NegativeInfinity, Weight.PositiveInfinity]), message);

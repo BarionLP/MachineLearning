@@ -86,7 +86,7 @@ internal readonly struct TensorLayerReference(int layerIndex, Tensor tensor) : M
 
     public int RowCount => _tensor.RowCount;
     public int ColumnCount => _tensor.ColumnCount;
-    public int FlatCount => RowCount * FlatCount;
+    public int FlatCount => RowCount * ColumnCount;
 
 
     public ref Weight this[int row, int column] => ref AsSpan()[row * ColumnCount + column];
