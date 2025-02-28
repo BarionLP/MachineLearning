@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../Packages/Ametrin.Utils"
+		},
+		{
+			"path": "../../Packages/Ametrin.Numerics"
 		}
 	],
 	"settings": {},
