@@ -20,4 +20,6 @@ public static class Helper
     public static bool IsLayerSerializerAttribute(ITypeSymbol symbol) => symbol is { Name: "LayerSerializerAttribute", ContainingAssembly.Name: "MachineLearning.Serialization" };
     public static bool IsVector(ITypeSymbol symbol) => symbol is { Name: "Vector", ContainingAssembly.Name: "Ametrin.Numerics" };
     public static bool IsMatrix(ITypeSymbol symbol) => symbol is { Name: "Matrix", ContainingAssembly.Name: "Ametrin.Numerics" };
+    public static bool IsTensor(ITypeSymbol symbol) => symbol is { Name: "Tensor", ContainingAssembly.Name: "Ametrin.Numerics" };
+    public static bool IsTensorlike(ITypeSymbol symbol) => symbol is { Name: "Vector" or "Matrix" or "Tensor", ContainingAssembly.Name: "Ametrin.Numerics" };
 }
