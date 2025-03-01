@@ -16,7 +16,10 @@ public static class LMHelper
             {
                 return;
             }
-            Console.SetCursorPosition(0, Console.CursorTop - 1);
+            if (!Console.IsOutputRedirected)
+            {
+                Console.SetCursorPosition(0, Console.CursorTop - 1);            
+            }
             Console.Write(input);
             Generate([.. tokenizer.Tokenize(input.PadLeft(contextSize, '\0'))], model, contextSize, tokenizer, fillerToken);
         } while (true);
@@ -40,7 +43,7 @@ public static class LMHelper
             input = input[0] == fillerToken ? [.. input[1..], prediction] : [.. input, prediction];
             SetConsoleTextColor(confidence);
             Console.Write(token);
-        } while (!EndTokens.Contains(token) && input.Length < contextSize);
+        } while (!EndTokens.Contains(token) && input.Length <= contextSize);
         Console.Write("End");
         Console.Write("\u001b[0m"); // reset color
         Console.WriteLine();
