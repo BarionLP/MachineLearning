@@ -64,6 +64,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
     {
         public int[] Input { get; set; } = [];
         public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Vector GetInputGradient() => throw new NotImplementedException();
     }
 
     partial class Gradients

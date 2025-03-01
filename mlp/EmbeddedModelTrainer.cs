@@ -23,7 +23,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
         TrainingSet = trainingSet;
         Model = model;
         Optimizer = config.Optimizer;
-        LayerOptimizers = Model.InnerModel.Layers.Select(Optimizer.CreateLayerOptimizer).ToImmutableArray();
+        LayerOptimizers = [.. Model.InnerModel.Layers.Select(Optimizer.CreateLayerOptimizer)];
     }
 
     public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData> trainingBatch)

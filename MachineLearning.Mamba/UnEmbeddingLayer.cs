@@ -55,7 +55,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         foreach (var i in ..outputGradients.RowCount)
         {
             VectorHelper.MultiplyToMatrixAddTo(outputGradients.RowRef(i), snapshot.Input.RowRef(i), gradients.UnEmbeddingMatrix);
-            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.InputGradient.RowRef(i));
+            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.GradientInput.RowRef(i));
         }
 
         // gradients.UnEmbeddingMatrix.DivideToSelf(outputGradients.RowCount);
@@ -67,7 +67,9 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         public Vector WeightedInput { get; } = Vector.Create(layer.TokenCount);
         public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
 
-        public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Matrix GradientInput { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Vector GetInputGradient() => GradientInput.Storage;
+
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<UnEmbeddingLayer>

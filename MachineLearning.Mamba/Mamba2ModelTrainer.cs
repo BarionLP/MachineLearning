@@ -142,9 +142,9 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
 
     private (Matrix, int) Update(TrainingData<int[], int> data, ImmutableArray<IGradients> gradients)
     {
-        Debug.Assert(gradients.Length == Model.HiddenLayers.Length + 2);
+        Debug.Assert(gradients.Length == Model.MambaLayers.Length + Model.NormLayers.Length + 2);
         var inputSnapshot = LayerSnapshots.Get(Model.InputLayer);
-        var snapshots = Model.HiddenLayers.Select(LayerSnapshots.Get).Cast<Mamba2VectorLayer.Snapshot>().ToImmutableArray();
+        var snapshots = Model.HiddenLayers.Select(LayerSnapshots.Get).ToImmutableArray();
         var outputSnapshot = (UnEmbeddingLayer.Snapshot)LayerSnapshots.Get(Model.OutputLayer);
 
         var (weights, result) = Model.Process(data.InputValue, [inputSnapshot, .. snapshots, outputSnapshot]);
@@ -153,12 +153,12 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
         NumericsDebug.AssertValidNumbers(gradient);
 
         OutputLayerOptimizer.Update(gradient, outputSnapshot, gradients[^1]);
-        gradient = outputSnapshot.InputGradient.Storage;
+        gradient = outputSnapshot.GradientInput.Storage;
 
         for (int layerIndex = LayerOptimizers.Length - 1; layerIndex >= 0; layerIndex--)
         {
             LayerOptimizers[layerIndex].Update(gradient, snapshots[layerIndex], gradients[layerIndex + 1]);
-            gradient = snapshots[layerIndex].GradientInput.Storage;
+            gradient = snapshots[layerIndex].GetInputGradient();
             NumericsDebug.AssertValidNumbers(gradient);
         }
 

@@ -104,6 +104,7 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
 
         public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
         public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
+        public Vector GetInputGradient() => GradientInput;
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<Mamba2ScalarLayer>

@@ -11,11 +11,7 @@ public class SimpleTokenPrediction
     public static Mamba2VectorModel CreateModel(Random? random = null)
     {
         var model = new Mamba2VectorModel(layerCount: 5, Tokenizer.TokenCount, CONTEXT_SIZE, stateDimensions: 12, embeddingDimensions: 16);
-
-        new EmbeddingLayer.Initializer(random).Initialize(model.InputLayer);
-        new UnEmbeddingLayer.Initializer(random).Initialize(model.OutputLayer);
-        var initer = new Mamba2VectorLayer.Initializer(random);
-        model.HiddenLayers.Consume(initer.Initialize);
+        model.Initialize(random);
 
         return model;
     }

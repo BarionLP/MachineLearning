@@ -48,6 +48,7 @@ public sealed partial class PerceptronLayer : ILayer<Vector, PerceptronLayer.Sna
         public Vector LastRawInput { get; } = Vector.Create(layer.InputNodeCount);
         public Vector LastWeightedInput { get; } = Vector.Create(layer.OutputNodeCount);
         public Vector LastActivatedWeights { get; } = Vector.Create(layer.OutputNodeCount);
+        public Vector GetInputGradient() => throw new NotImplementedException();
     }
 
     public static Result<PerceptronLayer> ReadLegacy(BinaryReader reader)

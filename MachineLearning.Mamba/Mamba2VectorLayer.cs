@@ -104,9 +104,6 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         }
 
-        // snapshot.GradientC.DivideToSelf(SequenceLength);
-        // snapshot.GradientB.DivideToSelf(SequenceLength);
-
         return snapshot.GradientInput;
     }
 
@@ -118,6 +115,8 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions); // one row per timestep
         public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
+
+        public Vector GetInputGradient() => GradientInput.Storage; 
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<Mamba2VectorLayer>

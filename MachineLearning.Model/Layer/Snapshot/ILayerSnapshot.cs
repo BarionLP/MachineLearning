@@ -17,7 +17,10 @@ file sealed record EmptyGradients : IGradients
     }
 }
 
-public interface ILayerSnapshot;
+public interface ILayerSnapshot
+{
+    public Vector GetInputGradient();
+}
 
 public static class LayerSnapshots
 {
@@ -70,13 +73,8 @@ public static class LayerSnapshots
         }
     }
 
-    public sealed class Simple(int inputNodes, int outputNodes) : ILayerSnapshot
+    internal sealed class EmptySnapshot : ILayerSnapshot
     {
-        public readonly Vector LastRawInput = Vector.Create(inputNodes);
-        public readonly Vector LastWeightedInput = Vector.Create(outputNodes);
-        public readonly Vector LastActivatedWeights = Vector.Create(outputNodes);
-        public readonly Matrix WeightGradients = Matrix.Create(outputNodes, inputNodes);
+        public Vector GetInputGradient() => throw new NotImplementedException();
     }
-
-    internal sealed class EmptySnapshot : ILayerSnapshot;
 }
