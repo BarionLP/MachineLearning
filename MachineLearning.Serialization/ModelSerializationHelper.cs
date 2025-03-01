@@ -60,7 +60,7 @@ public static class ModelSerializationHelper
     #region Raw
     public static Tensor ReadTensorRaw(int rowCount, int columnCount, int layerCount, BinaryReader reader)
     {
-        return Tensor.Of(rowCount, columnCount, layerCount, ReadVectorRaw(rowCount * columnCount, reader));
+        return Tensor.Of(rowCount, columnCount, layerCount, ReadVectorRaw(rowCount * columnCount * layerCount, reader));
     }
     public static Matrix ReadMatrixRaw(int rowCount, int columnCount, BinaryReader reader)
     {
