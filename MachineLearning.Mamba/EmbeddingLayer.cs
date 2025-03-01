@@ -28,7 +28,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
 
     public Matrix Forward(int[] input, Snapshot snapshot)
     {
-        Debug.Assert(input.Length == ContextSize);
+        Debug.Assert(input.Length <= ContextSize);
         snapshot.Input = input;
 
         foreach (var i in ..input.Length)

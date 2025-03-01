@@ -70,7 +70,9 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
         foreach (var i in ..NormLayers.Length)
         {
             values = MambaLayers[i].Forward(values, (Mamba2VectorLayer.Snapshot)snapshots[i * 2 + 1]);
+            NumericsDebug.AssertValidNumbers(values);
             values = NormLayers[i].Forward(values, (RMSNormLayer.Snapshot)snapshots[i * 2 + 2]);
+            NumericsDebug.AssertValidNumbers(values);
         }
 
         values = MambaLayers[^1].Forward(values, (Mamba2VectorLayer.Snapshot)snapshots[^2]);
