@@ -26,13 +26,14 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
     public Matrix Forward(Matrix input, Snapshot snapshot)
     {
-        Debug.Assert(input.RowCount == SequenceLength);
+        Debug.Assert(input.RowCount <= SequenceLength);
         Debug.Assert(input.ColumnCount == EmbeddingDimensions);
 
         input.CopyTo(snapshot.Input);
+        snapshot.Output = snapshot.OutputS.Rows(..input.RowCount);
         snapshot.Memory.ResetZero();
 
-        for (int t = 0; t < SequenceLength; t++)
+        for (int t = 0; t < input.RowCount; t++)
         {
             // h = alpha_t * h + B * x_t
             var h = snapshot.Memory.RowRef(t);
@@ -61,13 +62,14 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
     public Matrix Backward(Matrix outputGradient, Snapshot snapshot, Gradients gradients)
     {
-        Debug.Assert(outputGradient.RowCount == SequenceLength);
+        Debug.Assert(outputGradient.RowCount <= SequenceLength);
         Debug.Assert(outputGradient.ColumnCount == EmbeddingDimensions);
 
-        snapshot.GradientInput.ResetZero();
+        snapshot.GradientInputS.ResetZero();
+        snapshot.GradientInput = snapshot.GradientInputS.Rows(..outputGradient.RowCount);
         snapshot.GradientMemory.ResetZero();
 
-        for (int t = SequenceLength - 1; t >= 0; t--)
+        for (int t = outputGradient.RowCount - 1; t >= 0; t--)
         {
             var outputGradient_t = outputGradient.RowRef(t);
 
@@ -111,8 +113,8 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
     public partial class Snapshot
     {
         public Matrix Input { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
-        public Matrix GradientInput { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
-        public Matrix Output { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
+        public Matrix GradientInputS { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
+        public Matrix OutputS { get; } = Matrix.Create(layer.SequenceLength, layer.EmbeddingDimensions);
 
         public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions); // one row per timestep
         public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);

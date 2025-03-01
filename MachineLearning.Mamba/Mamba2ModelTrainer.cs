@@ -149,11 +149,11 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
 
         var (weights, result) = Model.Process(data.InputValue, [inputSnapshot, .. snapshots, outputSnapshot]);
 
-        var gradient = Optimizer.CostFunction.Derivative(weights.Storage, data.ExpectedWeights);
+        var gradient = Optimizer.CostFunction.Derivative(weights.Storage, data.ExpectedWeights.Slice(0, weights.Storage.Count));
         NumericsDebug.AssertValidNumbers(gradient);
 
         OutputLayerOptimizer.Update(gradient, outputSnapshot, gradients[^1]);
-        gradient = outputSnapshot.InputGradient.Storage;
+        gradient = outputSnapshot.GradientInput.Storage;
 
         for (int layerIndex = LayerOptimizers.Length - 1; layerIndex >= 0; layerIndex--)
         {

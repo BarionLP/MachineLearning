@@ -12,11 +12,6 @@ public static class AdamLayerGenerator
 
         var (layer, input, output, snapshot, weights) = data;
 
-        if (adamConfig.NamedArguments.FirstOrDefault(p => p is { Key: "OutputGradientType", Value.Kind: TypedConstantKind.Type }) is { Key: not null } pair)
-        {
-            output = compilation.GetTypeByMetadataName(pair.Value.Value!.ToString())!;
-        }
-
         sb.AppendLine($$"""
         using Ametrin.Guards;
 

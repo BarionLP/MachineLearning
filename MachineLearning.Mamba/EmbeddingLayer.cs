@@ -28,12 +28,13 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
 
     public Matrix Forward(int[] input, Snapshot snapshot)
     {
-        Debug.Assert(input.Length == ContextSize);
+        Debug.Assert(input.Length <= ContextSize);
         snapshot.Input = input;
+        snapshot.Output = snapshot.OutputS.Rows(..input.Length);
 
         foreach (var i in ..input.Length)
         {
-            GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(ContextSize - input.Length + i));
+            GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(i));
         }
 
         return snapshot.Output;
@@ -56,21 +57,14 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
             var token = snapshot.Input[i];
             var embeddingGradient = gradients.EmbeddingMatrix.RowSpan(token);
             TensorPrimitives.Add(embeddingGradient, outputGradients.RowSpan(i), embeddingGradient);
-            gradients.Counts[token]++;
         }
     }
 
     partial class Snapshot
     {
         public int[] Input { get; set; } = [];
-        public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Matrix OutputS { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
     }
-
-    partial class Gradients
-    {
-        public Vector Counts { get; } = Vector.Create(layer.TokenCount);
-    }
-
     public sealed class Initializer(Random? random = null) : IInitializer<EmbeddingLayer>
     {
         public Random Random { get; } = random ?? Random.Shared;

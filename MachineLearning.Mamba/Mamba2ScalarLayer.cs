@@ -99,8 +99,7 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
     partial class Snapshot
     {
         public Vector Input { get; } = Vector.Create(layer.SequenceLength);
-        public Vector GradientInput { get; } = Vector.Create(layer.SequenceLength);
-        public Vector Output { get; } = Vector.Create(layer.SequenceLength);
+        // public Vector Output { get; } = Vector.Create(layer.SequenceLength);
 
         public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
         public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);

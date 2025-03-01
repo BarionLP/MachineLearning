@@ -77,6 +77,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         var (layer, compilation) = pair;
 
         if (layer is null) return;
+        var attribute = layer.GetAttributes().First(a => IsGeneratedLayerAttribute(a.AttributeClass!));
 
         var ilayer = GetGenericILayer(layer);
 
@@ -85,6 +86,11 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         var tin = ilayer.TypeArguments[0];
         var tout = ilayer.TypeArguments[1];
         var tsnap = ilayer.TypeArguments[2];
+
+        if (attribute.NamedArguments.FirstOrDefault(p => p is { Key: "OutputGradientType", Value.Kind: TypedConstantKind.Type }) is { Key: not null } p)
+        {
+            tout = compilation.GetTypeByMetadataName(p.Value.Value!.ToString())!;
+        }
 
         var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
         var parameter = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsParameterAttribute(a.AttributeClass!)));
@@ -112,8 +118,8 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
             {
                 // TODO: 
                 // public {{tin.Name}} Input { get; } = {{tin.Name}}.Create(T, E);
-                // public {{tin.Name}} GradientInput { get; } = {{tin.Name}}.Create(T, E);
-                // public {{tout.Name}} Output { get; } = {{tout.Name}}.Create(T, E);
+                public {{tin}} GradientInput { get; set; }
+                public {{tout}} Output { get; set; }
             }
         
         """);

@@ -8,7 +8,7 @@ using MachineLearning.Training.Attributes;
 
 namespace MachineLearning.Mamba;
 
-[GeneratedLayer, LayerSerializer("unemb", 2), GenerateOptimizers(OutputGradientType = typeof(Matrix))]
+[GeneratedLayer(OutputGradientType = typeof(Matrix)), LayerSerializer("unemb", 2), GenerateOptimizers]
 public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnEmbeddingLayer.Snapshot>
 {
     [Parameter] public int ContextSize { get; }
@@ -23,10 +23,11 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
     // TODO: incorporate all token predictions in the gradient
     public (Matrix, int) Forward(Matrix input, Snapshot snapshot)
     {
-        Debug.Assert(input.RowCount == ContextSize);
+        Debug.Assert(input.RowCount <= ContextSize);
         Debug.Assert(input.ColumnCount == EmbeddingSize);
 
         input.CopyTo(snapshot.Input);
+        snapshot.Output = snapshot.OutputS.Rows(..input.RowCount);
 
         foreach (var i in ..input.RowCount)
         {
@@ -40,7 +41,9 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
     public void Backward(Matrix outputGradients, Snapshot snapshot, Gradients gradients)
     {
         Debug.Assert(outputGradients.ColumnCount == TokenCount);
-        Debug.Assert(outputGradients.RowCount == snapshot.Input.RowCount);
+        Debug.Assert(outputGradients.RowCount <= snapshot.Input.RowCount);
+
+        snapshot.GradientInput = snapshot.GradientInputS.Rows(..outputGradients.RowCount); 
 
         // this would be neccecary without CrossEntropyFromSoftmaxLoss (not sure if it is correct)
         // var tmp = Vector.Create(outputGradient.Count);
@@ -55,19 +58,17 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         foreach (var i in ..outputGradients.RowCount)
         {
             VectorHelper.MultiplyToMatrixAddTo(outputGradients.RowRef(i), snapshot.Input.RowRef(i), gradients.UnEmbeddingMatrix);
-            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.InputGradient.RowRef(i));
+            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.GradientInput.RowRef(i));
         }
-
-        // gradients.UnEmbeddingMatrix.DivideToSelf(outputGradients.RowCount);
     }
 
     partial class Snapshot
     {
         public Matrix Input { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
         public Vector WeightedInput { get; } = Vector.Create(layer.TokenCount);
-        public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
+        public Matrix OutputS { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
 
-        public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Matrix GradientInputS { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<UnEmbeddingLayer>
