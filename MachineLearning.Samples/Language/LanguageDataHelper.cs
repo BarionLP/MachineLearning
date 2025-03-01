@@ -94,7 +94,7 @@ public static class LanguageDataHelper
             int[] tokens;
             try
             {
-                tokens = tokenizer.Tokenize(sentence).ToArray();
+                tokens = [.. tokenizer.Tokenize(sentence)];
             }
             catch (Exception)
             {
