@@ -6,4 +6,6 @@ public interface ITokenizer<TData>
     public IEnumerable<int> Tokenize(TData data);
     public int TokenizeSingle(TData data);
     public TData GetToken(int data);
+    public string Decode(IEnumerable<int> tokens);
+
 }
