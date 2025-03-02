@@ -78,6 +78,8 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         if (layer is null) return;
 
+        var attribute = layer.GetAttributes().First(a => IsGeneratedLayerAttribute(a.AttributeClass!));
+
         var ilayer = GetGenericILayer(layer);
 
         if (ilayer is null) return;
@@ -85,6 +87,12 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         var tin = ilayer.TypeArguments[0];
         var tout = ilayer.TypeArguments[1];
         var tsnap = ilayer.TypeArguments[2];
+
+
+        if (attribute.NamedArguments.FirstOrDefault(p => p is { Key: "OutputGradientType", Value.Kind: TypedConstantKind.Type }) is { Key: not null } p)
+        {
+            tout = compilation.GetTypeByMetadataName(p.Value.Value!.ToString())!;
+        }
 
         var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
         var parameter = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsParameterAttribute(a.AttributeClass!)));
