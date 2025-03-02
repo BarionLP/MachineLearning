@@ -23,7 +23,7 @@ public class SimpleTokenPrediction
     public static TrainingConfig DefaultTrainingConfig(Random? random = null) => new()
     {
         EpochCount = 100,
-        MultiThread = false,
+        Threading = ThreadingMode.Single,
         EvaluationCallback = r => Console.WriteLine(r.Dump()),
         DumpEvaluationAfterBatches = 1,
         RandomSource = random ?? Random.Shared,

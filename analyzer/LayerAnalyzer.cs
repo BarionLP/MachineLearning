@@ -77,6 +77,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         var (layer, compilation) = pair;
 
         if (layer is null) return;
+
         var attribute = layer.GetAttributes().First(a => IsGeneratedLayerAttribute(a.AttributeClass!));
 
         var ilayer = GetGenericILayer(layer);

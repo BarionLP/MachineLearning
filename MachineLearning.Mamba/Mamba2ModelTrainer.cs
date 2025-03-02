@@ -35,7 +35,7 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
         var context = ThreadedTrainer.Train(
             trainingBatch,
             () => [.. Model.Layers.Select(l => l.CreateGradientAccumulator())],
-            Config.MultiThread ? -1 : 1,
+            Config.Threading,
             (entry, context) =>
             {
                 var data = Guard.Is<TrainingData<Vector, Vector>>(entry);
@@ -114,7 +114,7 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
         var context = ThreadedTrainer.Train(
             trainingBatch,
             () => [Model.InputLayer.CreateGradientAccumulator(), .. Model.HiddenLayers.Select(l => l.CreateGradientAccumulator()), Model.OutputLayer.CreateGradientAccumulator()],
-            Config.MultiThread ? -1 : 1,
+            Config.Threading,
             (entry, context) =>
             {
                 var data = Guard.Is<TrainingData<int[], int>>(entry);

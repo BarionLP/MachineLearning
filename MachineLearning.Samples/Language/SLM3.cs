@@ -17,7 +17,7 @@ public static class SLM3
     public const string SYMBOLS = "\0 ?!\"#$%&'()*+,-./0123456789:;=?_abcdefghijklmnopqrstuvwxyz|ßäöü€";
     public const int CONTEXT_SIZE = 128 + 64;
     public static StringTokenizer Tokenizer { get; } = new(WORD_TOKENS, SYMBOLS, [("“", "\""), ("”", "\""), ("\n", " "), ("–", "-"), ("—", "-"), ("’", "'"), ("it’s", "it's"), ("don’t", "don't"), ("can’t", "can't")]);
-    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3.gmw"));
+    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3"));
     public static EmbeddedModel<int[], int> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);

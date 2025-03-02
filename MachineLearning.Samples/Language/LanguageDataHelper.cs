@@ -71,14 +71,13 @@ public static class LanguageDataHelper
                 }
             }
 
-
             foreach (var i in inputStartIndex..e.Input.Length)
             {
                 cache[e.Input[i]].CopyTo(expected.RowRef(fillerToken.HasValue ? contextSize - e.Input.Length + i - 1 : i - 1));
             }
 
             cache[e.Expected].CopyTo(expected.RowRef(expected.RowCount - 1));
-
+            
             return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
         }
     }

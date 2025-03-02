@@ -67,8 +67,6 @@ public static class MNISTModel
             EvaluationCallback = evaluation => Console.WriteLine(evaluation.Dump()),
 
             RandomSource = random ?? Random.Shared,
-
-            MultiThread = false,
         };
     }
 

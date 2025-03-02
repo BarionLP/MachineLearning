@@ -38,6 +38,7 @@ public static class ModelSerializationHelper
         int layerCount = reader.ReadInt32();
         return ReadTensorRaw(rowCount, columnCount, layerCount, reader);
     }
+
     public static Matrix ReadMatrix(BinaryReader reader)
     {
         int rowCount = reader.ReadInt32();
