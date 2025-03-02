@@ -8,7 +8,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
 {
     public int BatchCount { get; } = int.MaxValue;
     public required int BatchSize { get; init; }
-    public int CurrentFile => nextFile-1;
+    public int CurrentFile => nextFile - 1;
     public int CurrentLinesRead => currentFile?.LinesRead ?? 0;
     private int nextFile = initalFile;
     private C4FileReader? currentFile;
@@ -17,16 +17,38 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
     private readonly int contextSize = contextSize;
     private Task<FileInfo> downloadTask = Download(initalFile);
 
+
     public IEnumerable<Batch> GetBatches()
     {
         while (true)
         {
-            yield return new Batch(GetTrainingData());
+            yield return new Batch(GetTrainingData().Take(BatchSize));
         }
     }
 
+    private IEnumerator<TrainingData>? dataEnumerator;
     public IEnumerable<TrainingData> GetTrainingData()
-        => GetTokenizedLines().Take(BatchSize).SlidingWindow(tokenizer.TokenizeSingle("\0"), contextSize).ToTrainingDataMatrix(tokenizer.TokenCount, contextSize, tokenizer.TokenizeSingle("\0"));
+    {
+        while (true)
+        {
+            while (dataEnumerator is null)
+            {
+                try
+                {
+                    dataEnumerator = tokenizer.Tokenize(NextLine()).ToArray().SlidingWindow(tokenizer.TokenizeSingle("\0"), contextSize).ToTrainingDataMatrix(tokenizer.TokenCount, contextSize, tokenizer.TokenizeSingle("\0")).GetEnumerator();
+                }
+                catch (Exception) { /* Console.WriteLine(e.Message); */ }
+            }
+
+            while (dataEnumerator.MoveNext())
+            {
+                yield return dataEnumerator.Current;
+            }
+            dataEnumerator = null;
+        }
+    }
+
+
 
     public IEnumerable<int[]> GetTokenizedLines()
         => GetLines().TokenizeSkipInvalid(tokenizer);
@@ -35,7 +57,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
     {
         while (true)
         {
-            string? line = null;
+            string? line;
             try
             {
                 line = NextLine();
@@ -51,7 +73,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
 
     private string NextLine()
     {
-    lable:
+    label:
         if (currentFile?.ReadLine() is string line)
         {
             return line;
@@ -70,7 +92,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
         currentFile = new C4FileReader(downloadTask.Result);
         nextFile++;
         downloadTask = Download(nextFile);
-        goto lable;
+        goto label;
     }
 
     public void Dispose()
@@ -108,11 +130,11 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
 
         public string? ReadLine()
         {
-            start:
+        start:
             if (reader.ReadLine() is string line)
             {
                 var doc = JsonDocument.Parse(line);
-                if(doc.RootElement.TryGetProperty("text", out var text) && text.GetString() is string textString)
+                if (doc.RootElement.TryGetProperty("text", out var text) && text.GetString() is string textString)
                 {
                     LinesRead++;
                     return textString;

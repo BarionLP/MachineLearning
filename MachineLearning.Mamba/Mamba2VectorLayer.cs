@@ -144,6 +144,24 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
             layer.B.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
             layer.C.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+            // foreach (var i in ..layer.B.RowCount)
+            // {
+            //     var row = layer.B.RowRef(i);
+            //     var mag = row.Magnitude();
+            //     Console.Write(mag);
+            //     Console.Write(" -> ");
+            //     row.DivideToSelf(mag / 0.3f);
+            //     Console.WriteLine(row.Magnitude());
+            // }
+            // foreach (var i in ..layer.C.RowCount)
+            // {
+            //     var row = layer.C.RowRef(i);
+            //     var mag = row.Magnitude();
+            //     Console.Write(mag);
+            //     Console.Write(" -> ");
+            //     row.DivideToSelf(mag / 0.3f);
+            //     Console.WriteLine(row.Magnitude());
+            // }
         }
     }
 
