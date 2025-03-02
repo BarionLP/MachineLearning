@@ -8,7 +8,7 @@ using MachineLearning.Training.Attributes;
 
 namespace MachineLearning.Mamba;
 
-[GeneratedLayer, LayerSerializer("unemb", 2), GenerateOptimizers(OutputGradientType = typeof(Matrix))]
+[GeneratedLayer(OutputGradientType = typeof(Matrix)), LayerSerializer("unemb", 2), GenerateOptimizers]
 public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnEmbeddingLayer.Snapshot>
 {
     [Parameter] public int ContextSize { get; }
@@ -73,7 +73,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         // public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
         public Matrix Output { get; set; }
 
-        // public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        // public Matrix GradientInput { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
         public Matrix GradientInput { get; set; }
     }
 

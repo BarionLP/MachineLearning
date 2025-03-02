@@ -33,7 +33,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
         var context = ThreadedTrainer.Train(
             trainingBatch,
             () => [Model.InputLayer.CreateGradientAccumulator(), .. Model.InnerModel.Layers.Select(l => l.CreateGradientAccumulator()), Model.OutputLayer.CreateGradientAccumulator()],
-            Config.MultiThread ? -1 : 1,
+            Config.Threading,
             (entry, context) =>
             {
                 var data = Guard.Is<TrainingData<TIn, TOut>>(entry);

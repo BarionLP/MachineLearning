@@ -23,7 +23,7 @@ public sealed class StringTokenizer : ITokenizer<string>
         this.altTokens = altTokens.Select(t => new KeyValuePair<string, int>(t.alt, TokenizeSingle(t.original))).ToFrozenDictionary(StringComparer.InvariantCultureIgnoreCase);
 
         Debug.Assert(textToToken.Count == tokenToText.Count);
-        Debug.Assert(this.altTokens.All(p => tokenToText.ContainsKey(p.Value)));
+        Debug.Assert(this.altTokens.All(p => tokenToText.ContainsKey(p.Value) || p.Value < fallbackTokens.Length));
     }
 
     public string GetToken(int index)

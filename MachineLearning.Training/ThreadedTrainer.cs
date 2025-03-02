@@ -7,31 +7,39 @@ namespace MachineLearning.Training;
 
 public sealed class ThreadedTrainer
 {
-    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, Func<ImmutableArray<IGradients>> gradientGetter, int threads, Action<TrainingData, TrainingContext> action)
+    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, Func<ImmutableArray<IGradients>> gradientGetter, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
     {
-        var contexts = new ConcurrentQueue<TrainingContext>();
-        var options = new ParallelOptions { MaxDegreeOfParallelism = threads };
-        var result = Parallel.ForEach(trainingSet, options, () => new TrainingContext { Gradients = gradientGetter() }, (item, state, context) =>
+        using var contexts = new ThreadLocal<TrainingContext>(() => new TrainingContext { Gradients = gradientGetter() }, trackAllValues: true);
+        var options = new ParallelOptions
         {
-            action(item, context);
-            return context;
-        }, contexts.Enqueue);
+            MaxDegreeOfParallelism = threading switch
+            {
+                ThreadingMode.Single => 1,
+                ThreadingMode.Half => Environment.ProcessorCount / 2,
+                ThreadingMode.Full => -1,
+                _ => throw new UnreachableException()
+            },
+        };
+        var partitioner = Partitioner.Create(trainingSet);
+        var result = Parallel.ForEach(partitioner, options, (item, state) =>
+        {
+            action(item, contexts.Value!);
+        });
 
         Debug.Assert(result.IsCompleted);
-        Debug.Assert(!contexts.IsEmpty);
 
-        if (contexts.TryDequeue(out var context))
+        var context = contexts.Values[0];
+
+        foreach (var other in contexts.Values.Skip(1))
         {
-            while (contexts.TryDequeue(out var other))
-            {
-                context.Add(other);
-            }
-            return context;
+            context.Add(other);
         }
 
-        return new() { Gradients = gradientGetter() };
+        return context;
     }
 }
+
+public enum ThreadingMode { Single, Half, Full }
 
 public sealed class TrainingContext
 {
