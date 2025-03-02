@@ -30,14 +30,13 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
     {
         Debug.Assert(input.Length <= ContextSize);
         snapshot.Input = input;
-        snapshot.Output = Matrix.Create(input.Length, EmbeddingSize);
 
         foreach (var i in ..input.Length)
         {
             GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(i));
         }
 
-        return snapshot.Output;
+        return snapshot.Output.Rows(..input.Length);
     }
 
     private Span<Weight> GetEmbedding(int index)
@@ -64,8 +63,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
     partial class Snapshot
     {
         public int[] Input { get; set; } = [];
-        // public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
-        public Matrix Output { get; set; }
+        public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
     }
 
     partial class Gradients

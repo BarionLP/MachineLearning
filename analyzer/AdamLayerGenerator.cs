@@ -65,7 +65,7 @@ public static class AdamLayerGenerator
                 {
                     var g = Guard.Is<{{layer.Name}}.Gradients>(gradients);
                     var s = Guard.Is<{{snapshot}}>(snapshot);
-                    Layer.Backward({{(IsVector(output) ? "costGradient" : $"{output}.OfSize(s.Output, costGradient)")}}, s, g);
+                    Layer.Backward({{(IsVector(output) ? "costGradient" : $"{output}.Of(costGradient.Count / s.Output.ColumnCount, s.Output.ColumnCount, costGradient)")}}, s, g);
 
         """);
 

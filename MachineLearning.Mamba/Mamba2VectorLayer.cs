@@ -29,10 +29,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
         Debug.Assert(input.RowCount <= MaxSequenceLength);
         Debug.Assert(input.ColumnCount == EmbeddingDimensions);
 
-        snapshot.SequenceLength = input.RowCount;
-
         snapshot.Input = input;
-        snapshot.Output = Matrix.OfSize(input);
         snapshot.Memory.ResetZero();
 
         for (int t = 0; t < input.RowCount; t++)
@@ -52,7 +49,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         NumericsDebug.AssertValidNumbers(snapshot.Output);
 
-        return snapshot.Output;
+        return snapshot.Output.Rows(..snapshot.SequenceLength);
     }
 
     private Vector Zero
@@ -69,11 +66,10 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
         Debug.Assert(outputGradient.RowCount <= MaxSequenceLength);
         Debug.Assert(outputGradient.ColumnCount == EmbeddingDimensions);
 
-        // snapshot.GradientInput.ResetZero();
-        snapshot.GradientInput = Matrix.OfSize(outputGradient);
+        snapshot.GradientInput.ResetZero();
         snapshot.GradientMemory.ResetZero();
 
-        for (int t = outputGradient.RowCount - 1; t >= 0; t--)
+        for (int t = snapshot.SequenceLength - 1; t >= 0; t--)
         {
             var outputGradient_t = outputGradient.RowRef(t);
 
@@ -113,18 +109,15 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
         // snapshot.GradientC.DivideToSelf(SequenceLength);
         // snapshot.GradientB.DivideToSelf(SequenceLength);
 
-        return snapshot.GradientInput;
+        return snapshot.GradientInput.Rows(..snapshot.SequenceLength);
     }
 
     public partial class Snapshot
     {
-        public int SequenceLength { get; set; }
-        // public Matrix Input { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
+        public int SequenceLength => Input.RowCount;
         public Matrix Input { get; set; }
-        // public Matrix GradientInput { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
-        public Matrix GradientInput { get; set; }
-        // public Matrix Output { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
-        public Matrix Output { get; set; }
+        public Matrix GradientInput { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
+        public Matrix Output { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
 
         public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions); // one row per timestep
         public Matrix GradientMemory { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
