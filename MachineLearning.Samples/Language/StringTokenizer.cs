@@ -1,24 +1,29 @@
-﻿using MachineLearning.Data;
-using System.Buffers;
+﻿using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Diagnostics;
+using MachineLearning.Data;
 
 namespace MachineLearning.Samples.Language;
 
 public sealed class StringTokenizer : ITokenizer<string>
 {
-    private readonly FrozenDictionary<string, int> tokens;
-    private readonly FrozenDictionary<int, string> tokens2;
+    private readonly FrozenDictionary<string, int> textToToken;
+    private readonly FrozenDictionary<int, string> tokenToText;
     private readonly string fallbackTokens;
     private readonly FrozenDictionary<string, int> altTokens;
 
-    public int TokenCount => fallbackTokens.Length + tokens.Count;
+    public int TokenCount => fallbackTokens.Length + textToToken.Count;
 
-    public StringTokenizer(HashSet<string> tokens, string fallbackTokens, IEnumerable<(string alt, string origninal)> altTokens)
+    public StringTokenizer(HashSet<string> tokens, string fallbackTokens, IEnumerable<(string alt, string original)> altTokens)
     {
         this.fallbackTokens = fallbackTokens;
-        this.tokens = tokens.Select((token, i) => new KeyValuePair<string, int>(token, fallbackTokens.Length + i)).ToFrozenDictionary(StringComparer.InvariantCultureIgnoreCase);
-        this.tokens2 = tokens.Select((token, i) => new KeyValuePair<int, string>(fallbackTokens.Length + i, token)).ToFrozenDictionary();
-        this.altTokens = altTokens.Select(t => new KeyValuePair<string, int>(t.alt, TokenizeSingle(t.origninal))).ToFrozenDictionary(StringComparer.InvariantCultureIgnoreCase);
+        this.textToToken = tokens.Select((token, i) => new KeyValuePair<string, int>(token, fallbackTokens.Length + i)).ToFrozenDictionary(StringComparer.InvariantCultureIgnoreCase);
+        this.tokenToText = tokens.Select((token, i) => new KeyValuePair<int, string>(fallbackTokens.Length + i, token)).ToFrozenDictionary();
+        this.altTokens = altTokens.Select(t => new KeyValuePair<string, int>(t.alt, TokenizeSingle(t.original))).ToFrozenDictionary(StringComparer.InvariantCultureIgnoreCase);
+
+        Debug.Assert(textToToken.Count == tokenToText.Count);
+        Debug.Assert(this.altTokens.All(p => tokenToText.ContainsKey(p.Value)));
     }
 
     public string GetToken(int index)
@@ -27,16 +32,17 @@ public sealed class StringTokenizer : ITokenizer<string>
         {
             return fallbackTokens[index].ToString();
         }
-        return tokens2[index];
+        return tokenToText[index];
     }
 
     public string Decode(IEnumerable<int> tokens) => string.Join("", tokens.Select(GetToken));
 
     private static readonly SearchValues<char> wordEndSymbols = SearchValues.Create(" .,:?!;");
+    public static ConcurrentDictionary<char, int> UnknownTokens { get; } = new();
     public IEnumerable<int> Tokenize(string data)
     {
-        var alternate = tokens.GetAlternateLookup<ReadOnlySpan<char>>();
-        var alternate2 = altTokens.GetAlternateLookup<ReadOnlySpan<char>>();
+        var tokenLookup = textToToken.GetAlternateLookup<ReadOnlySpan<char>>();
+        var altTokenLookup = altTokens.GetAlternateLookup<ReadOnlySpan<char>>();
         var index = 0;
         while (index < data.Length)
         {
@@ -50,7 +56,7 @@ public sealed class StringTokenizer : ITokenizer<string>
                     word = word[..wordLength];
                 }
 
-                if (alternate.TryGetValue(word, out var tokenIdx) || alternate2.TryGetValue(word, out tokenIdx))
+                if (tokenLookup.TryGetValue(word, out var tokenIdx) || altTokenLookup.TryGetValue(word, out tokenIdx))
                 {
                     index += word.Length;
                     yield return tokenIdx;
@@ -61,8 +67,9 @@ public sealed class StringTokenizer : ITokenizer<string>
             var fallback = fallbackTokens.IndexOf(char.ToLower(span[0]));
             if (fallback < 0)
             {
-                if (!alternate2.TryGetValue(span[..1], out fallback))
+                if (!altTokenLookup.TryGetValue(span[..1], out fallback))
                 {
+                    UnknownTokens.AddOrUpdate(span[0], 1, static (_, v) => v + 1);
                     throw new InvalidOperationException($"Unknown token '{span[0]}'");
                 }
             }
@@ -74,7 +81,7 @@ public sealed class StringTokenizer : ITokenizer<string>
 
     public int TokenizeSingle(string data)
     {
-        if (tokens.TryGetValue(data, out var tokenIdx) || altTokens?.TryGetValue(data, out tokenIdx) is true)
+        if (textToToken.TryGetValue(data, out var tokenIdx) || altTokens?.TryGetValue(data, out tokenIdx) is true)
         {
             return tokenIdx;
         }
