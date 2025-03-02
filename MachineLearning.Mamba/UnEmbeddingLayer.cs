@@ -44,7 +44,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         Debug.Assert(outputGradients.ColumnCount == TokenCount);
         Debug.Assert(outputGradients.RowCount == snapshot.Input.RowCount);
 
-        snapshot.InputGradient = Matrix.OfSize(snapshot.Input);
+        snapshot.GradientInput = Matrix.OfSize(snapshot.Input);
 
         // this would be neccecary without CrossEntropyFromSoftmaxLoss (not sure if it is correct)
         // var tmp = Vector.Create(outputGradient.Count);
@@ -59,7 +59,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         foreach (var i in ..outputGradients.RowCount)
         {
             VectorHelper.MultiplyToMatrixAddTo(outputGradients.RowRef(i), snapshot.Input.RowRef(i), gradients.UnEmbeddingMatrix);
-            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.InputGradient.RowRef(i));
+            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.GradientInput.RowRef(i));
         }
 
         // gradients.UnEmbeddingMatrix.DivideToSelf(outputGradients.RowCount);
@@ -74,7 +74,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         public Matrix Output { get; set; }
 
         // public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
-        public Matrix InputGradient { get; set; }
+        public Matrix GradientInput { get; set; }
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<UnEmbeddingLayer>
