@@ -1,15 +1,8 @@
-﻿using System.Globalization;
+﻿using MachineLearning.Mamba;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows;
-using MachineLearning.Model;
-using MachineLearning.Model.Layer;
-using MachineLearning.Samples;
-using MachineLearning.Samples.MNIST;
-using MachineLearning.Serialization;
-using MachineLearning.Training.Cost;
-using MachineLearning.Training.Optimization.Adam;
-using MachineLearning.Training.Optimization.Nadam;
-using MachineLearning.Training.Optimization.SGDMomentum;
-using SkiaSharp;
+using System.Windows.Controls;
 
 namespace MachineLearning.Training.GUI;
 
@@ -20,6 +13,7 @@ public partial class MainWindow : Window
 {
     public TrainingProgressTracker ProgressTracker { get; } = new();
 
+    public ObservableCollection<TabItem> LayerViews { get; } = [];
 
     public MainWindow()
     {
@@ -28,37 +22,16 @@ public partial class MainWindow : Window
 
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-        //var serializer = new ModelSerializer(AssetManager.GetModelFile("mnist.nnw"));
-        var model1 = MNISTModel.CreateModel(new Random(42));
-        var model2 = MNISTModel.CreateModel(new Random(42));
-        //var model = serializer.Load(MNISTEmbedder.Instance).ReduceOrThrow();
-        var config = MNISTModel.DefaultTrainingConfig();
+        var model = new Mamba2VectorModel(6, 51, 64, 128, 32);
+        model.Initialize();
 
-        // var trainer1 = ProgressTracker.CreateLinkedTrainer("Adam Optimizer", SKColors.Blue, model1, config with { Optimizer = new AdamOptimizer
-        // {
-        //     LearningRate = 0.1f,
-        //     CostFunction = CrossEntropyLoss.Instance,
-        // },
-        // DumpEvaluationAfterBatches = 4,
-        // });
-        
-        // var trainer2 = ProgressTracker.CreateLinkedTrainer("Nadam Optimizer", SKColors.Red, model2, config with { Optimizer = new NadamOptimizer
-        // {
-        //     LearningRate = 0.1f,
-        //     CostFunction = CrossEntropyLoss.Instance,
-        // },
-        // DumpEvaluationAfterBatches = 4,
 
-        // });
-
-        Loaded += (sender, args) =>
+        foreach(var (i, layer) in model.HiddenLayers.Index())
         {
-            // StatusLabel.Content = "Training...";
-            // _ = Task.Run(() => trainer1.Train());
-            // _ = Task.Run(() => trainer2.Train());
-            //serializer.Save(model);
-            //StatusLabel.Content = "Done!";
-            //Task.Run(trainerTiny.Train);
-        };
+            LayerViews.Add(new TabItem { Header = $"Layer {i}", Content = new LayerView([layer.C]) });
+        }
+
+
+        LayerViews.Consume(v => (v.Content as LayerView)?.Update());
     }
 }

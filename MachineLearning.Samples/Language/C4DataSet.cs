@@ -48,8 +48,6 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
         }
     }
 
-
-
     public IEnumerable<int[]> GetTokenizedLines()
         => GetLines().TokenizeSkipInvalid(tokenizer);
 
