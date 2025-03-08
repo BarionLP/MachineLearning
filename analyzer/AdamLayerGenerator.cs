@@ -88,14 +88,24 @@ public static class AdamLayerGenerator
                     {
                         throw new Exception();
                     }
+                    {{WeightType}} max;
         """);
 
         foreach (var weight in weights)
         {
-            sb.AppendLine();
-            sb.AppendLine($"\t\t\t(FirstMoment{weight.Name}, gradient.{weight.Name}).MapToFirst(FirstMomentEstimate);");
-            sb.AppendLine($"\t\t\t(SecondMoment{weight.Name}, gradient.{weight.Name}).MapToFirst(SecondMomentEstimate);");
-            sb.AppendLine($"\t\t\tLayer.{weight.Name}.SubtractToSelf((FirstMoment{weight.Name}, SecondMoment{weight.Name}).Map(WeightReduction));");
+            sb.AppendLine($$"""
+
+                    max = Weight.Abs(gradient.{{weight.Name}}.MaxMagnitude());
+                    if(max > 100_000)
+                    {
+                        gradient.{{weight.Name}}.DivideToSelf(max/100_000);
+                    }
+                    (FirstMoment{{weight.Name}}, gradient.{{weight.Name}}).MapToFirst(FirstMomentEstimate);
+                    NumericsDebug.AssertValidNumbers(FirstMoment{{weight.Name}});
+                    (SecondMoment{{weight.Name}}, gradient.{{weight.Name}}).MapToFirst(SecondMomentEstimate);
+                    NumericsDebug.AssertValidNumbers(SecondMoment{{weight.Name}});
+                    Layer.{{weight.Name}}.SubtractToSelf((FirstMoment{{weight.Name}}, SecondMoment{{weight.Name}}).Map(WeightReduction));
+        """);
         }
 
         sb.AppendLine($$"""
