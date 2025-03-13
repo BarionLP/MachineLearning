@@ -16,6 +16,7 @@ public sealed class ThreadedTrainer
             {
                 ThreadingMode.Single => 1,
                 ThreadingMode.Half => Environment.ProcessorCount / 2,
+                ThreadingMode.AlmostFull => Environment.ProcessorCount > 1 ? Environment.ProcessorCount - 1 : 1,
                 ThreadingMode.Full => -1,
                 _ => throw new UnreachableException()
             },
@@ -39,7 +40,7 @@ public sealed class ThreadedTrainer
     }
 }
 
-public enum ThreadingMode { Single, Half, Full }
+public enum ThreadingMode { Single, Half, Full, AlmostFull }
 
 public sealed class TrainingContext
 {

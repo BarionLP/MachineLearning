@@ -1,3 +1,4 @@
+using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Samples.MNIST;
 using MachineLearning.Training;
 using MachineLearning.Training.Cost;
@@ -12,9 +13,7 @@ public sealed class MNISTTest
     [Test]
     public async Task TrainMNIST()
     {
-        var random = new Random(69);
-
-        var model = MNISTModel.CreateModel(random);
+        var model = MNISTModel.CreateModel(new Random(69));
         DataSetEvaluation? evaluation = null;
 
         var config = new TrainingConfig()
@@ -33,9 +32,9 @@ public sealed class MNISTTest
                 evaluation = data;
                 //Console.WriteLine(data.Dump());
             },
-            RandomSource = random,
+            RandomSource = new Random(69),
         };
-        var trainingSet = MNISTModel.GetTrainingSet(random);
+        var trainingSet = MNISTModel.GetTrainingSet(new Random(69));
 
         await Assert.That(model.InnerModel.WeightCount).IsEqualTo(235146);
 
@@ -43,6 +42,11 @@ public sealed class MNISTTest
         trainer.Train();
 
         await Assert.That(evaluation).IsNotNull();
-        await Assert.That(evaluation!.Result.AverageCost).IsBetween(0.7, 0.8);
+        await Assert.That(evaluation!.Result.AverageCost).IsBetween(0.76, 0.79);
+
+        // LayerSnapshots.Validate();
+
+        LayerSnapshots.Clear();
     }
+
 }
