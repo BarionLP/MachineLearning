@@ -21,7 +21,7 @@ public static class SLM3
     public static EmbeddedModel<int[], int> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
-        return AdvancedModelBuilder
+        return EmbeddedModelBuilder
             .Create(new EncodedEmbeddingLayer(Tokenizer.TokenCount, CONTEXT_SIZE))
                 .DefaultActivation(LeakyReLUActivation.Instance)
                 .AddLayer(1024 * 2, initializer)

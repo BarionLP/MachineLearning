@@ -18,6 +18,7 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
     public Optimizer Optimizer { get; }
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[^1];
+    public TrainingContextPool TrainingContextPool { get; }
 
     public Mamba2ModelTrainer(Mamba2Model model, TrainingConfig config, ITrainingSet trainingSet)
     {
@@ -26,6 +27,7 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
         Model = model;
         Optimizer = config.Optimizer;
         LayerOptimizers = [.. Model.Layers.Select(Optimizer.CreateLayerOptimizer)];
+        TrainingContextPool = new(() => [.. Model.Layers.Select(l => l.CreateGradientAccumulator())]);
     }
 
     public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData> trainingBatch)
@@ -34,7 +36,7 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
 
         var context = ThreadedTrainer.Train(
             trainingBatch,
-            () => [.. Model.Layers.Select(l => l.CreateGradientAccumulator())],
+            TrainingContextPool,
             Config.Threading,
             (entry, context) =>
             {
@@ -48,13 +50,16 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
 
         Apply(context.Gradients);
 
-        return new()
+        var evalutaion = new DataSetEvaluationResult()
         {
             TotalCount = context.TotalCount,
             CorrectCount = context.CorrectCount,
             TotalCost = context.TotalCost,
             TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };
+
+        TrainingContextPool.Return(context);
+        return evalutaion;
     }
 
     private Vector Update(TrainingData<Vector, Vector> data, ImmutableArray<IGradients> gradients)
@@ -95,6 +100,8 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
     public ILayerOptimizer InputLayerOptimizer { get; }
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer { get; }
+    public TrainingContextPool TrainingContextPool { get; }
+
 
     public Mamba2VectorModelTrainer(Mamba2VectorModel model, TrainingConfig config, ITrainingSet trainingSet)
     {
@@ -105,6 +112,7 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
         InputLayerOptimizer = Optimizer.CreateLayerOptimizer(Model.InputLayer);
         LayerOptimizers = [.. Model.HiddenLayers.Select(Optimizer.CreateLayerOptimizer)];
         OutputLayerOptimizer = Optimizer.CreateLayerOptimizer(Model.OutputLayer);
+        TrainingContextPool = new(() => [Model.InputLayer.CreateGradientAccumulator(), .. Model.HiddenLayers.Select(l => l.CreateGradientAccumulator()), Model.OutputLayer.CreateGradientAccumulator()]);
     }
 
     public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData> trainingBatch)
@@ -113,7 +121,7 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
 
         var context = ThreadedTrainer.Train(
             trainingBatch,
-            () => [Model.InputLayer.CreateGradientAccumulator(), .. Model.HiddenLayers.Select(l => l.CreateGradientAccumulator()), Model.OutputLayer.CreateGradientAccumulator()],
+            TrainingContextPool,
             Config.Threading,
             (entry, context) =>
             {
@@ -131,13 +139,17 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
 
         Apply(context.Gradients);
 
-        return new()
+
+        var evalutaion = new DataSetEvaluationResult()
         {
             TotalCount = context.TotalCount,
             CorrectCount = context.CorrectCount,
             TotalCost = context.TotalCost,
             TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };
+
+        TrainingContextPool.Return(context);
+        return evalutaion;
     }
 
     private (Matrix, int) Update(TrainingData<int[], int> data, ImmutableArray<IGradients> gradients)

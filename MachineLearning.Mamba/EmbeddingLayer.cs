@@ -65,6 +65,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
         public int[] Input { get; set; } = [];
         public Matrix OutputS { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
     }
+
     public sealed class Initializer(Random? random = null) : IInitializer<EmbeddingLayer>
     {
         public Random Random { get; } = random ?? Random.Shared;
