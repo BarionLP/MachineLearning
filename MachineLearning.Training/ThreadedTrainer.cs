@@ -60,4 +60,16 @@ public sealed class TrainingContext
             g.Add(o);
         }
     }
+
+    public void Reset()
+    {
+        TotalCount = 0;
+        CorrectCount = 0;
+        TotalCost = 0;
+
+        foreach (var gradient in Gradients)
+        {
+            gradient.Reset();
+        }
+    }
 }

@@ -20,7 +20,6 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
     public UnEmbeddingLayer(int tokenCount, int contextSize, int embeddingSize)
         : this(contextSize, Matrix.Create(tokenCount, embeddingSize)) { }
 
-    // TODO: incorporate all token predictions in the gradient
     public (Matrix, int) Forward(Matrix input, Snapshot snapshot)
     {
         Debug.Assert(input.RowCount == ContextSize);
