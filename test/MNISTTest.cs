@@ -30,7 +30,6 @@ public sealed class MNISTTest
             EvaluationCallback = data =>
             {
                 evaluation = data;
-                //Console.WriteLine(data.Dump());
             },
             RandomSource = new Random(69),
         };

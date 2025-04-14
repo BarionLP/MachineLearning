@@ -7,9 +7,9 @@ namespace MachineLearning.Training;
 
 public sealed class ThreadedTrainer
 {
-    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, Func<ImmutableArray<IGradients>> gradientGetter, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
+    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, TrainingContextPool contextPool, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
     {
-        using var contexts = new ThreadLocal<TrainingContext>(() => new TrainingContext { Gradients = gradientGetter() }, trackAllValues: true);
+        using var contexts = new ThreadLocal<TrainingContext>(contextPool.Rent, trackAllValues: true);
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = threading switch
@@ -34,6 +34,7 @@ public sealed class ThreadedTrainer
         foreach (var other in contexts.Values.Skip(1))
         {
             context.Add(other);
+            contextPool.Return(other);
         }
 
         return context;
@@ -71,5 +72,32 @@ public sealed class TrainingContext
         {
             gradient.Reset();
         }
+    }
+}
+
+public sealed class TrainingContextPool(Func<ImmutableArray<IGradients>> gradientGetter)
+{
+    private readonly ConcurrentBag<TrainingContext> cache = [];
+    public int UnusedItems => cache.Count;
+
+    public TrainingContext Rent()
+    {
+        if (cache.TryTake(out var context))
+        {
+            return context;
+        }
+
+        return new TrainingContext { Gradients = gradientGetter() };
+    }
+
+    public void Return(TrainingContext context)
+    {
+        context.Reset();
+        cache.Add(context);
+    }
+
+    public void Clear()
+    {
+        cache.Clear();
     }
 }
