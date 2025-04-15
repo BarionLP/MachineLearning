@@ -1,4 +1,4 @@
-using System.Numerics.Tensors;
+﻿using System.Numerics.Tensors;
 using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
@@ -28,15 +28,15 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
 
     public Matrix Forward(int[] input, Snapshot snapshot)
     {
-        Debug.Assert(input.Length == ContextSize);
+        Debug.Assert(input.Length <= ContextSize);
         snapshot.Input = input;
 
         foreach (var i in ..input.Length)
         {
-            GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(ContextSize - input.Length + i));
+            GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(i));
         }
 
-        return snapshot.Output;
+        return snapshot.Output.Rows(..input.Length);
     }
 
     private Span<Weight> GetEmbedding(int index)

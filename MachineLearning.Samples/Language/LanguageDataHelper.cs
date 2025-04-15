@@ -59,7 +59,8 @@ public static class LanguageDataHelper
 
         TrainingData MapData((int[] Input, int Expected) e)
         {
-            var expected = Matrix.Create(fillerToken.HasValue ? contextSize : e.Input.Length, tokenCount);
+            var length = fillerToken.HasValue ? contextSize : int.Min(e.Input.Length, contextSize);
+            var expected = Matrix.Create(length, tokenCount);
             var inputStartIndex = Math.Max(1, e.Input.Length - contextSize + 1);
 
             if (fillerToken.HasValue && inputStartIndex == 0)
@@ -73,11 +74,11 @@ public static class LanguageDataHelper
 
             foreach (var i in inputStartIndex..e.Input.Length)
             {
-                cache[e.Input[i]].CopyTo(expected.RowRef(fillerToken.HasValue ? contextSize - e.Input.Length + i - 1 : i - 1));
+                cache[e.Input[i]].CopyTo(expected.RowRef(fillerToken.HasValue ? contextSize - e.Input.Length + i - 1 : i - inputStartIndex));
             }
 
-            cache[e.Expected].CopyTo(expected.RowRef(expected.RowCount - 1));
-            
+            cache[e.Expected].CopyTo(expected.RowRef(length - 1));
+
             return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
         }
     }
