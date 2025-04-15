@@ -35,7 +35,7 @@ public sealed class ModelBuilder(int inputNodeCount)
     public MultiLayerPerceptronModel Build() => new() { Layers = [.. Layers.Select(l => l.Create())] };
 }
 
-public static class AdvancedModelBuilder
+public static class EmbeddedModelBuilder
 {
     public static HiddenLayerConfig<TInput> Create<TLayer, TInput>(TLayer layer, IInitializer<TLayer> initializer) where TLayer : IEmbeddingLayer<TInput>
     {

@@ -7,15 +7,16 @@ namespace MachineLearning.Training;
 
 public sealed class ThreadedTrainer
 {
-    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, Func<ImmutableArray<IGradients>> gradientGetter, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
+    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, TrainingContextPool contextPool, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
     {
-        using var contexts = new ThreadLocal<TrainingContext>(() => new TrainingContext { Gradients = gradientGetter() }, trackAllValues: true);
+        using var contexts = new ThreadLocal<TrainingContext>(contextPool.Rent, trackAllValues: true);
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = threading switch
             {
                 ThreadingMode.Single => 1,
                 ThreadingMode.Half => Environment.ProcessorCount / 2,
+                ThreadingMode.AlmostFull => Environment.ProcessorCount > 1 ? Environment.ProcessorCount - 1 : 1,
                 ThreadingMode.Full => -1,
                 _ => throw new UnreachableException()
             },
@@ -33,13 +34,14 @@ public sealed class ThreadedTrainer
         foreach (var other in contexts.Values.Skip(1))
         {
             context.Add(other);
+            contextPool.Return(other);
         }
 
         return context;
     }
 }
 
-public enum ThreadingMode { Single, Half, Full }
+public enum ThreadingMode { Single, Half, Full, AlmostFull }
 
 public sealed class TrainingContext
 {
@@ -58,5 +60,44 @@ public sealed class TrainingContext
         {
             g.Add(o);
         }
+    }
+
+    public void Reset()
+    {
+        TotalCount = 0;
+        CorrectCount = 0;
+        TotalCost = 0;
+
+        foreach (var gradient in Gradients)
+        {
+            gradient.Reset();
+        }
+    }
+}
+
+public sealed class TrainingContextPool(Func<ImmutableArray<IGradients>> gradientGetter)
+{
+    private readonly ConcurrentBag<TrainingContext> cache = [];
+    public int UnusedItems => cache.Count;
+
+    public TrainingContext Rent()
+    {
+        if (cache.TryTake(out var context))
+        {
+            return context;
+        }
+
+        return new TrainingContext { Gradients = gradientGetter() };
+    }
+
+    public void Return(TrainingContext context)
+    {
+        context.Reset();
+        cache.Add(context);
+    }
+
+    public void Clear()
+    {
+        cache.Clear();
     }
 }

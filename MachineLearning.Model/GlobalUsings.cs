@@ -1,6 +1,11 @@
 ﻿global using Ametrin.Numerics;
 global using Ametrin.Optional;
+global using Ametrin.Guards;
 global using Ametrin.Utils;
+global using System;
+global using System.Collections.Generic;
+global using System.Collections.Frozen;
+global using System.Collections.Immutable;
 global using Weight = float;
 global using SimdVector = System.Numerics.Vector<float>;
 global using SimdVectorHelper = System.Numerics.Vector;

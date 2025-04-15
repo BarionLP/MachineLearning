@@ -56,7 +56,6 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
             var token = snapshot.Input[i];
             var embeddingGradient = gradients.EmbeddingMatrix.RowSpan(token);
             TensorPrimitives.Add(embeddingGradient, outputGradients.RowSpan(i), embeddingGradient);
-            gradients.Counts[token]++;
         }
     }
 
@@ -64,11 +63,6 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
     {
         public int[] Input { get; set; } = [];
         public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
-    }
-
-    partial class Gradients
-    {
-        public Vector Counts { get; } = Vector.Create(layer.TokenCount);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<EmbeddingLayer>

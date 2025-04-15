@@ -19,7 +19,7 @@ public static class MNISTModel
     {
         var initializer = new HeInitializer(random);
 
-        var network = AdvancedModelBuilder.Create(Embedder)
+        var network = EmbeddedModelBuilder.Create(Embedder)
                 .DefaultActivation(LeakyReLUActivation.Instance)
                 .AddLayer(256, initializer)
                 .AddLayer(128, initializer)

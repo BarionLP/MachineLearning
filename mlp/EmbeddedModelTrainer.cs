@@ -16,6 +16,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
     public Optimizer Optimizer { get; }
     public ImmutableArray<ILayerOptimizer> LayerOptimizers { get; }
     public ILayerOptimizer OutputLayerOptimizer => LayerOptimizers[^1];
+    public TrainingContextPool TrainingContextPool { get; }
 
     public EmbeddedModelTrainer(EmbeddedModel<TIn, TOut> model, TrainingConfig config, ITrainingSet trainingSet)
     {
@@ -23,7 +24,8 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
         TrainingSet = trainingSet;
         Model = model;
         Optimizer = config.Optimizer;
-        LayerOptimizers = Model.InnerModel.Layers.Select(Optimizer.CreateLayerOptimizer).ToImmutableArray();
+        LayerOptimizers = [.. Model.InnerModel.Layers.Select(Optimizer.CreateLayerOptimizer)];
+        TrainingContextPool = new(() => [Model.InputLayer.CreateGradientAccumulator(), .. Model.InnerModel.Layers.Select(l => l.CreateGradientAccumulator()), Model.OutputLayer.CreateGradientAccumulator()]);
     }
 
     public DataSetEvaluationResult TrainAndEvaluate(IEnumerable<TrainingData> trainingBatch)
@@ -32,7 +34,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
 
         var context = ThreadedTrainer.Train(
             trainingBatch,
-            () => [Model.InputLayer.CreateGradientAccumulator(), .. Model.InnerModel.Layers.Select(l => l.CreateGradientAccumulator()), Model.OutputLayer.CreateGradientAccumulator()],
+            TrainingContextPool,
             Config.Threading,
             (entry, context) =>
             {
@@ -51,13 +53,17 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
 
         Apply(context.Gradients);
 
-        return new()
+        var evaluation = new DataSetEvaluationResult()
         {
             TotalCount = context.TotalCount,
             CorrectCount = context.CorrectCount,
             TotalCost = context.TotalCost,
             TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };
+
+        TrainingContextPool.Return(context);
+
+        return evaluation;
     }
 
     private Vector Update(TrainingData<TIn, TOut> data, ImmutableArray<IGradients> gradients)
@@ -81,7 +87,7 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
             hiddenLayer.Update(nodeValues, snapshots[hiddenLayerIndex], gradients[hiddenLayerIndex + 1]);
         }
 
-        //TODO: verify zip performance
+        // TODO: verify zip performance
         foreach (var (layer, snapshot) in Model.InnerModel.Layers.Zip(snapshots))
         {
             LayerSnapshots.Return(layer, snapshot);

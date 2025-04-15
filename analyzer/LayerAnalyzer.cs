@@ -144,6 +144,18 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
             sb.AppendLine($"\t\t\t{weight.Name}.AddToSelf(o.{weight.Name});");
         }
 
+        sb.AppendLine("\t\t}");
+
+        sb.AppendLine($$"""
+                public void Reset()
+                {
+        """);
+
+        foreach (var weight in weights)
+        {
+            sb.AppendLine($"\t\t\t{weight.Name}.ResetZero();");
+        }
+
         sb.AppendLine("\t\t}\n\t}");
 
         if (layer!.GetAttributes().FirstOrDefault(a => IsLayerSerializerAttribute(a.AttributeClass!)) is AttributeData ad)
