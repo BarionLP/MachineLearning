@@ -7,9 +7,9 @@ namespace MachineLearning.Training;
 
 public sealed class ThreadedTrainer
 {
-    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, TrainingContextPool contextPool, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
+    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, ModelCachePool contextPool, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
     {
-        using var contexts = new ThreadLocal<TrainingContext>(contextPool.Rent, trackAllValues: true);
+        using var contexts = new ThreadLocal<TrainingContext>(() => new() { Gradients = contextPool.RentGradients() }, trackAllValues: true);
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = threading switch
@@ -17,7 +17,7 @@ public sealed class ThreadedTrainer
                 ThreadingMode.Single => 1,
                 ThreadingMode.Half => Environment.ProcessorCount / 2,
                 ThreadingMode.AlmostFull => Environment.ProcessorCount > 1 ? Environment.ProcessorCount - 1 : 1,
-                ThreadingMode.Full => -1,
+                ThreadingMode.Full => Environment.ProcessorCount, // setting MaxDegreeOfParallelism explicitly prevents too many presceduled tasks
                 _ => throw new UnreachableException()
             },
         };
@@ -34,7 +34,7 @@ public sealed class ThreadedTrainer
         foreach (var other in contexts.Values.Skip(1))
         {
             context.Add(other);
-            contextPool.Return(other);
+            contextPool.Return(other.Gradients);
         }
 
         return context;
@@ -72,32 +72,5 @@ public sealed class TrainingContext
         {
             gradient.Reset();
         }
-    }
-}
-
-public sealed class TrainingContextPool(Func<ImmutableArray<IGradients>> gradientGetter)
-{
-    private readonly ConcurrentBag<TrainingContext> cache = [];
-    public int UnusedItems => cache.Count;
-
-    public TrainingContext Rent()
-    {
-        if (cache.TryTake(out var context))
-        {
-            return context;
-        }
-
-        return new TrainingContext { Gradients = gradientGetter() };
-    }
-
-    public void Return(TrainingContext context)
-    {
-        context.Reset();
-        cache.Add(context);
-    }
-
-    public void Clear()
-    {
-        cache.Clear();
     }
 }

@@ -61,7 +61,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
     partial class Snapshot
     {
         public int SequenceLength => Input.RowCount;
-        public Matrix Input { get; set; }
+        public Matrix Input { get; set; } = null!;
         public Vector WeightedInput { get; } = Vector.Create(layer.TokenCount);
         public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
 

@@ -1,4 +1,3 @@
-using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Samples.MNIST;
 using MachineLearning.Training;
 using MachineLearning.Training.Cost;
@@ -43,9 +42,7 @@ public sealed class MNISTTest
         await Assert.That(evaluation).IsNotNull();
         await Assert.That(evaluation!.Result.AverageCost).IsBetween(0.76, 0.79);
 
-        // LayerSnapshots.Validate();
-
-        LayerSnapshots.Clear();
+        trainer.CachePool.Clear();
     }
 
 }

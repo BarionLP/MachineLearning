@@ -112,7 +112,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
     public partial class Snapshot
     {
         public int SequenceLength => Input.RowCount;
-        public Matrix Input { get; set; }
+        public Matrix Input { get; set; } = null!;
         public Matrix GradientInput { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
         public Matrix Output { get; } = Matrix.Create(layer.MaxSequenceLength, layer.EmbeddingDimensions);
 
