@@ -32,7 +32,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
         snapshot.Input = input;
         snapshot.Memory.ResetZero();
 
-        for (int t = 0; t < input.RowCount; t++)
+        for (int t = 0; t < snapshot.SequenceLength; t++)
         {
             // h = alpha_t * h + B * x_t
             var h = snapshot.Memory.RowRef(t);
@@ -106,9 +106,6 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         }
 
-        // snapshot.GradientC.DivideToSelf(SequenceLength);
-        // snapshot.GradientB.DivideToSelf(SequenceLength);
-
         return snapshot.GradientInput.Rows(..snapshot.SequenceLength);
     }
 
@@ -137,24 +134,6 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
             layer.B.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
             layer.C.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
-            // foreach (var i in ..layer.B.RowCount)
-            // {
-            //     var row = layer.B.RowRef(i);
-            //     var mag = row.Magnitude();
-            //     Console.Write(mag);
-            //     Console.Write(" -> ");
-            //     row.DivideToSelf(mag / 0.3f);
-            //     Console.WriteLine(row.Magnitude());
-            // }
-            // foreach (var i in ..layer.C.RowCount)
-            // {
-            //     var row = layer.C.RowRef(i);
-            //     var mag = row.Magnitude();
-            //     Console.Write(mag);
-            //     Console.Write(" -> ");
-            //     row.DivideToSelf(mag / 0.3f);
-            //     Console.WriteLine(row.Magnitude());
-            // }
         }
     }
 

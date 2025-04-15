@@ -8,7 +8,7 @@ namespace MachineLearning.Mamba;
 [GeneratedLayer]
 public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer.Snapshot>
 {
-    public int SequenceLength /*T*/ => Alpha.Count;
+    public int MaxSequenceLength /*T*/ => Alpha.Count;
     public int StateDimensions /*N*/ => B.ColumnCount;
     [Weights] public Vector Alpha { get; } // how much memory to keep from the previous step
     [Weights] public Matrix B { get; } // how does the input_t affect the memory h_t
@@ -23,12 +23,12 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
 
     public Vector Forward(Vector input, Snapshot snapshot)
     {
-        Debug.Assert(input.Count == SequenceLength);
+        Debug.Assert(input.Count <= MaxSequenceLength);
 
-        input.CopyTo(snapshot.Input);
+        snapshot.Input = input;
         snapshot.Memory.ResetZero();
 
-        for (int t = 0; t < SequenceLength; t++)
+        for (int t = 0; t < snapshot.SequenceLength; t++)
         {
             // h = alpha_t * h + B_t * x_t
             var h = snapshot.Memory.RowRef(t);
@@ -48,12 +48,12 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
 
     public Vector BackwardPass(Vector outputGradient, Snapshot snapshot, Gradients gradients)
     {
-        Debug.Assert(outputGradient.Count == SequenceLength);
+        Debug.Assert(outputGradient.Count <= MaxSequenceLength);
 
         snapshot.GradientInput.ResetZero();
         snapshot.GradientMemory.ResetZero();
 
-        for (int t = SequenceLength - 1; t >= 0; t--)
+        for (int t = snapshot.SequenceLength - 1; t >= 0; t--)
         {
             // dY = derivative of L wrt outputY[t]
             float dY = outputGradient[t];
@@ -93,17 +93,18 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
 
         }
 
-        return snapshot.GradientInput;
+        return snapshot.GradientInput.Slice(0, snapshot.SequenceLength);
     }
 
     partial class Snapshot
     {
-        public Vector Input { get; } = Vector.Create(layer.SequenceLength);
-        public Vector GradientInput { get; } = Vector.Create(layer.SequenceLength);
-        public Vector Output { get; } = Vector.Create(layer.SequenceLength);
+        public int SequenceLength => Input.Count;
+        public Vector Input { get; set; }
+        public Vector GradientInput { get; } = Vector.Create(layer.MaxSequenceLength);
+        public Vector Output { get; } = Vector.Create(layer.MaxSequenceLength);
 
-        public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
-        public Matrix GradientMemory { get; } = Matrix.Create(layer.SequenceLength, layer.StateDimensions);
+        public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
+        public Matrix GradientMemory { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<Mamba2ScalarLayer>

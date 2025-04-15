@@ -56,8 +56,6 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
             VectorHelper.MultiplyToMatrixAddTo(outputGradients.RowRef(i), snapshot.Input.RowRef(i), gradients.UnEmbeddingMatrix);
             UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.GradientInput.RowRef(i));
         }
-
-        // gradients.UnEmbeddingMatrix.DivideToSelf(outputGradients.RowCount);
     }
 
     partial class Snapshot
