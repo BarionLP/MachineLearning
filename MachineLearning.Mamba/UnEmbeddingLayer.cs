@@ -39,7 +39,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
     public void Backward(Matrix outputGradients, Snapshot snapshot, Gradients gradients)
     {
         Debug.Assert(outputGradients.ColumnCount == TokenCount);
-        Debug.Assert(outputGradients.RowCount == snapshot.Input.RowCount);
+        Debug.Assert(outputGradients.RowCount == snapshot.SequenceLength);
 
         // this would be neccecary without CrossEntropyFromSoftmaxLoss (not sure if it is correct)
         // var tmp = Vector.Create(outputGradient.Count);
