@@ -7,22 +7,20 @@ using MachineLearning.Training.Attributes;
 
 namespace MachineLearning.Mamba;
 
-[GeneratedLayer, LayerSerializer("vmam2", 2), GenerateOptimizers]
+[GeneratedLayer, LayerSerializer("vmam2", 3), GenerateOptimizers]
 public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer.Snapshot>
 {
-    public int MaxSequenceLength /*T*/ => Alpha.Count;
-    public int StateDimensions /*N*/ => B.RowCount;
-    public int EmbeddingDimensions /*E*/ => B.ColumnCount;
-
-    // how much memory to keep from the previous step
-    [Weights] public Vector Alpha { get; }
-
-    // both could be a tensor (T*N*E) but it makes sense to share this transformation across steps so only (N*E)
-    [Weights] public Matrix B { get; } // how does the input_t affect the memory h_t
-    [Weights] public Matrix C { get; } // how does the memory h_t affect the output_t
+    [Parameter] public int MaxSequenceLength /*T*/ { get; }
+    public int StateDimensions /*N*/ => W_A.ColumnCount;
+    public int EmbeddingDimensions /*E*/ => W_A.RowCount;
+    [Weights] public Matrix W_A { get; }
+    [Weights] public Matrix W_B { get; }
+    [Weights] public Matrix W_C { get; }
+    [Weights] public Matrix W_X { get; }
+    [Weights] public Matrix W_O { get; }
 
     public Mamba2VectorLayer(int sequenceLength, int stateDimensions, int embeddingDimensions)
-        : this(Vector.Create(sequenceLength), Matrix.Create(stateDimensions, embeddingDimensions), Matrix.Create(stateDimensions, embeddingDimensions)) { }
+        : this(sequenceLength, Matrix.Create(embeddingDimensions, stateDimensions), Matrix.Create(embeddingDimensions, stateDimensions), Matrix.Create(embeddingDimensions, stateDimensions), Matrix.Create(embeddingDimensions, stateDimensions), Matrix.Create(embeddingDimensions, stateDimensions)) { }
 
     public Matrix Forward(Matrix input, Snapshot snapshot)
     {
@@ -34,21 +32,42 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         for (int t = 0; t < snapshot.SequenceLength; t++)
         {
+            var x_t = input.RowRef(t);
+
+            var A_hat = snapshot.Alpha.RowRef(t);
+            var B_hat = snapshot.B_Hat.RowRef(t);
+            var C_hat = snapshot.C_Hat.RowRef(t);
+            var X_t = snapshot.X.RowRef(t);
+
+            W_A.MultiplyTransposedTo(x_t, A_hat);
+            W_B.MultiplyTransposedTo(x_t, B_hat);
+            W_C.MultiplyTransposedTo(x_t, C_hat);
+            W_X.MultiplyTransposedTo(x_t, X_t);
+
+            var k = snapshot.K.RowRef(t);
+            var v = snapshot.V.RowRef(t);
+
+            A_hat.MapToSelf(value => 1 / (1 + Weight.Exp(value)));
+            B_hat.SwishTo(k);
+            C_hat.SwishTo(v);
+
             // h = alpha_t * h + B * x_t
             var h = snapshot.Memory.RowRef(t);
             if (t > 0)
             {
-                snapshot.Memory.RowRef(t - 1).MultiplyTo(Alpha[t], h);
+                Debug.Assert(h.Sum() == 0);
+                snapshot.Memory.RowRef(t - 1).PointwiseMultiplyTo(A_hat, h);
             }
 
-            B.MultiplyAddTo(input.RowRef(t), h); // h += B * x_t
 
-            // y_t = C^T * h
-            C.MultiplyTransposedTo(h, snapshot.Output.RowRef(t));
+            k.PointwiseMultiplyAddTo(X_t, h); // h += B * x_t
+
+            var gated = snapshot.Gated.RowRef(t);
+            v.PointwiseMultiplyTo(h, gated);
+            W_O.MultiplyTo(gated, snapshot.Output.RowRef(t));
         }
 
         NumericsDebug.AssertValidNumbers(snapshot.Output);
-
         return snapshot.Output.Rows(..snapshot.SequenceLength);
     }
 
@@ -72,42 +91,59 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
         for (int t = snapshot.SequenceLength - 1; t >= 0; t--)
         {
             var outputGradient_t = outputGradient.RowRef(t);
+            var memoryGradient_t = snapshot.GradientMemory.RowRef(t);
 
-            // output[t] = C^T * H[t]
-            // => dC += H[t] * dY
-            // => dH[t] += C * dY
-            VectorHelper.MultiplyToMatrixAddTo(snapshot.Memory.RowRef(t), outputGradient_t, gradients.C);
-            C.MultiplyAddTo(outputGradient_t, snapshot.GradientMemory.RowRef(t));
+            var gated = snapshot.Gated.RowRef(t);
+            var dGated = Vector.Create(gated.Count);
 
-            // h[t] = alpha[t] * h[t-1] + B * input[t]
-            // => wrt alpha[t] = (h[t-1] dot dH[t])
-            // => wrt h[t-1]   += alpha[t] * dH[t]
-            // => wrt B        += dH[t] * input[t]
-            // => wrt input[t] = B^T * dH[t]
+            W_O.MultiplyTransposedTo(outputGradient_t, dGated);                  // dGated = W_O * dY
+            VectorHelper.MultiplyToMatrixAddTo(outputGradient_t, gated, gradients.W_O);   // dW_O += dY ⊗ gated
 
-            // derivative wrt alpha[t]
-            // h[t-1] = (t>0) ? st.h[t-1] : zero
+            snapshot.V.RowRef(t).PointwiseMultiplyAddTo(dGated, memoryGradient_t);        // dH += dY ⊙ v
+            var dV = snapshot.Memory.RowRef(t).PointwiseMultiply(dGated);                 // dV = dY ⊙ h
+
             var hPrev = (t == 0) ? Zero : snapshot.Memory.RowRef(t - 1);
-
-            gradients.Alpha[t] = hPrev.Dot(snapshot.GradientMemory.RowRef(t));
-
-            // derivative wrt H[t-1]
-            // if t>0, add alpha[t]*dH[t] to dH[t-1]
+            var dAlpha = hPrev.PointwiseMultiply(memoryGradient_t);        // dα  = dH ⊙ h_{t-1}
             if (t > 0)
             {
-                snapshot.GradientMemory.RowRef(t).MultiplyTo(Alpha[t], snapshot.GradientMemory.RowRef(t - 1));
+                memoryGradient_t.PointwiseMultiplyAddTo(snapshot.Alpha.RowRef(t), snapshot.GradientMemory.RowRef(t - 1)); // dH_{t-1} += dH ⊙ α
             }
 
-            // derivative wrt B[t] and input[t]
-            // dB[t] = input[t] * dH[t]
-            VectorHelper.MultiplyToMatrixAddTo(snapshot.GradientMemory.RowRef(t), snapshot.Input.RowRef(t), gradients.B);
+            var dK = snapshot.X.RowRef(t).PointwiseMultiply(memoryGradient_t);                // dK = dH ⊙ X
+            var dX = snapshot.K.RowRef(t).PointwiseMultiply(memoryGradient_t);                // dX = dH ⊙ k
 
-            B.MultiplyTransposedTo(snapshot.GradientMemory.RowRef(t), snapshot.GradientInput.RowRef(t));
+            SigmoidPrimeInPlace(snapshot.Alpha.RowSpan(t), dAlpha.AsSpan());                 // dÂ
+            dAlpha.MultiplyToSelf(-1f);
+            SwishPrimeInPlace(snapshot.B_Hat.RowSpan(t), dK.AsSpan());                        // dB̂
+            SwishPrimeInPlace(snapshot.C_Hat.RowSpan(t), dV.AsSpan());                        // dĈ
 
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.Input.RowRef(t), dAlpha, gradients.W_A);
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.Input.RowRef(t), dK, gradients.W_B);
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.Input.RowRef(t), dV, gradients.W_C);
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.Input.RowRef(t), dX, gradients.W_X);
+            var inputGradient_t = snapshot.GradientInput.RowRef(t);
+            W_A.MultiplyAddTo(dAlpha, inputGradient_t);
+            W_B.MultiplyAddTo(dK, inputGradient_t);
+            W_C.MultiplyAddTo(dV, inputGradient_t);
+            W_X.MultiplyAddTo(dX, inputGradient_t);
         }
 
         return snapshot.GradientInput.Rows(..snapshot.SequenceLength);
     }
+
+    static void SigmoidPrimeInPlace(ReadOnlySpan<float> s, Span<float> grad)
+    {
+        for (int i = 0; i < s.Length; i++) grad[i] *= s[i] * (1 - s[i]);
+    }
+    static void SwishPrimeInPlace(ReadOnlySpan<float> z, Span<float> grad)
+    {
+        for (int i = 0; i < z.Length; i++)
+        {
+            var σ = 1f / (1f + MathF.Exp(-z[i]));
+            grad[i] *= σ * (1 + z[i] * (1 - σ));
+        }
+    }
+
 
     public partial class Snapshot
     {
@@ -118,6 +154,14 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         public Matrix Memory /*H*/ { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions); // one row per timestep
         public Matrix GradientMemory { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
+
+        public Matrix Alpha { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);   // post-sigmoid α
+        public Matrix B_Hat { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);   // pre‑swish B̂
+        public Matrix C_Hat { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);   // pre‑swish Ĉ
+        public Matrix V { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
+        public Matrix K { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
+        public Matrix X { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
+        public Matrix Gated { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<Mamba2VectorLayer>
@@ -126,14 +170,15 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
         public void Initialize(Mamba2VectorLayer layer)
         {
-            var scale = Weight.Sqrt(6 / ((Weight)layer.StateDimensions + layer.EmbeddingDimensions));
+            var scale = Weight.Sqrt(36 / ((Weight)layer.StateDimensions + layer.EmbeddingDimensions));
 
-            // affects how much memory the layer can keep from the previous step
-            // optimally [0.9,1.0] must be [0,1] to prevent vanishing/exploding gradients
-            layer.Alpha.Fill(0.9f);
+            layer.W_B.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+            layer.W_C.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+            layer.W_X.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+            layer.W_O.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
 
-            layer.B.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
-            layer.C.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+            float shift = -2.2f; // so that α = σ(-Â) ≈ 0.9 by default
+            layer.W_A.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, shift, 0.5f * scale));
         }
     }
 
