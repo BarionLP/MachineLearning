@@ -13,7 +13,7 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
 
     public Vector Process(Vector input)
     {
-        return Layers.Aggregate(input, (v, l) => l.Forward(v, (Mamba2ScalarLayer.Snapshot)LayerSnapshots.Get(l)));
+        return Layers.Aggregate(input, (v, l) => l.Forward(v, l.CreateSnapshot()));
     }
 
     public Vector Process(Vector input, ImmutableArray<Mamba2ScalarLayer.Snapshot> snapshots)
@@ -46,7 +46,7 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
 
     public (Matrix, int) Process(int[] input)
     {
-        return OutputLayer.Forward(HiddenLayers.Aggregate(InputLayer.Forward(input, (EmbeddingLayer.Snapshot)LayerSnapshots.Get(InputLayer)), (v, l) => l.Forward(v, (Mamba2VectorLayer.Snapshot)LayerSnapshots.Get(l))), (UnEmbeddingLayer.Snapshot)LayerSnapshots.Get(OutputLayer));
+        return OutputLayer.Forward(HiddenLayers.Aggregate(InputLayer.Forward(input, InputLayer.CreateSnapshot()), static (v, l) => l.Forward(v, l.CreateSnapshot())), OutputLayer.CreateSnapshot());
     }
 
     public (Matrix, int) Process(int[] input, ImmutableArray<ILayerSnapshot> snapshots)

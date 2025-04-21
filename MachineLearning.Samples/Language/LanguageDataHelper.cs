@@ -59,26 +59,51 @@ public static class LanguageDataHelper
 
         TrainingData MapData((int[] Input, int Expected) e)
         {
-            var expected = Matrix.Create(fillerToken.HasValue ? contextSize : e.Input.Length, tokenCount);
-            var inputStartIndex = Math.Max(1, e.Input.Length - contextSize + 1);
+            return fillerToken.HasValue ? ImplFiller(fillerToken.Value) : Impl();
 
-            if (fillerToken.HasValue && inputStartIndex == 0)
+            TrainingData Impl()
             {
-                var embedding = cache[fillerToken.Value];
-                foreach (var i in ..(contextSize - e.Input.Length - 1))
+                var length = int.Min(e.Input.Length, contextSize);
+                var expected = Matrix.Create(length, tokenCount);
+                var inputOffset = e.Input.Length <= contextSize ? 1 : e.Input.Length - contextSize + 1;
+
+                Debug.Assert((length - 1) + inputOffset == e.Input.Length);
+                foreach (var i in inputOffset..e.Input.Length)
                 {
-                    embedding.CopyTo(expected.RowRef(i));
+                    cache[e.Input[i]].CopyTo(expected.RowRef(i - inputOffset));
                 }
+
+                cache[e.Expected].CopyTo(expected.RowRef(length - 1));
+
+                return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
             }
 
-            foreach (var i in inputStartIndex..e.Input.Length)
+            // filling with a filler in this way is probably bad but i'll use dynamic input size anyway 
+            TrainingData ImplFiller(int filler)
             {
-                cache[e.Input[i]].CopyTo(expected.RowRef(fillerToken.HasValue ? contextSize - e.Input.Length + i - 1 : i - 1));
-            }
+                var length = contextSize;
+                var expected = Matrix.Create(length, tokenCount);
+                var inputOffset = e.Input.Length < contextSize ? 0 : e.Input.Length - contextSize + 1;
 
-            cache[e.Expected].CopyTo(expected.RowRef(expected.RowCount - 1));
-            
-            return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
+                if (e.Input.Length + 1 < contextSize)
+                {
+                    var embedding = cache[filler];
+                    foreach (var i in ..(contextSize - e.Input.Length - 1))
+                    {
+                        embedding.CopyTo(expected.RowRef(i));
+                    }
+                }
+
+                foreach (var i in inputOffset..e.Input.Length)
+                {
+                    cache[e.Input[i]].CopyTo(expected.RowRef(contextSize - e.Input.Length + i - 1));
+                }
+
+                cache[e.Expected].CopyTo(expected.RowRef(length - 1));
+
+                return new TrainingData<int[], int>(fillerToken.HasValue ? e.Input.PadLeft(contextSize, fillerToken.Value) : e.Input, e.Expected, expected.Storage);
+
+            }
         }
     }
 

@@ -1,0 +1,23 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="../../Packages/Ametrin.Numerics/generator/Ametrin.Numerics.Generator.csproj" />
+  <Project Path="../../Packages/Ametrin.Numerics/src/Ametrin.Numerics.csproj" />
+  <Project Path="../../Packages/Ametrin.Utils/src/Ametrin.Utils.csproj" />
+  <Project Path="analyzer/ML.Analyzer.csproj" />
+  <Project Path="MachineLearning.Benchmarks/MachineLearning.Benchmarks.csproj" />
+  <Project Path="MachineLearning.Data/MachineLearning.Data.csproj" />
+  <Project Path="MachineLearning.Mamba/MachineLearning.Mamba.csproj" />
+  <Project Path="MachineLearning.Model/MachineLearning.Model.csproj" />
+  <Project Path="MachineLearning.Samples/MachineLearning.Samples.csproj" />
+  <Project Path="MachineLearning.Serialization/MachineLearning.Serialization.csproj" />
+  <Project Path="MachineLearning.Training.GUI/MachineLearning.Training.GUI.csproj" />
+  <Project Path="MachineLearning.Training/MachineLearning.Training.csproj" />
+  <Project Path="MachineLearning.Visual/MachineLearning.Visual.csproj" />
+  <Project Path="mlp/ML.MultiLayerPerceptron.csproj" />
+  <Project Path="Simple/Simple.csproj" />
+  <Project Path="test/ML.Tests.csproj" />
+</Solution>

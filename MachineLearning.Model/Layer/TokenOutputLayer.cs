@@ -38,6 +38,6 @@ public sealed class TokenOutputLayer(int tokenCount, bool weightedRandom, Random
         return weights.Count - 1;
     }
 
-    public ILayerSnapshot CreateSnapshot() => LayerSnapshots.Empty;
+    public ILayerSnapshot CreateSnapshot() => ILayerSnapshot.Empty;
     public IGradients CreateGradientAccumulator() => IGradients.Empty;
 }

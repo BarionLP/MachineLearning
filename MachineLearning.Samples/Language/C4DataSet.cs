@@ -35,7 +35,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
             {
                 try
                 {
-                    dataEnumerator = tokenizer.Tokenize(NextLine()).ToArray().SlidingWindow(tokenizer.TokenizeSingle("\0"), contextSize).ToTrainingDataMatrix(tokenizer.TokenCount, contextSize, tokenizer.TokenizeSingle("\0")).GetEnumerator();
+                    dataEnumerator = tokenizer.Tokenize(NextLine()).ToArray().SlidingWindow(tokenizer.TokenizeSingle("\0"), contextSize).ToTrainingDataMatrix(tokenizer.TokenCount, contextSize, null).GetEnumerator();
                 }
                 catch (Exception) { /* Console.WriteLine(e.Message); */ }
             }
