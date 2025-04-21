@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 
 namespace MachineLearning.Visual;
 
+#pragma warning disable CA1416 // Validate platform compatibility
 public static class ModelVisualizer
 {
     // public static void Visualize(FeedForwardModel model, DirectoryInfo path)
@@ -27,13 +28,22 @@ public static class ModelVisualizer
         var height = matrix.RowCount;
         var bitmap = new Bitmap(width, height);
 
+        GenerateHeatmap(matrix, bitmap);
+
+        return bitmap;
+    }
+    public static Bitmap GenerateHeatmap(Matrix matrix, Bitmap bitmap)
+    {
+        var width = matrix.ColumnCount;
+        var height = matrix.RowCount;
+
         var min = -0.5;
         var max = 0.5;
         var range = max - min;
 
-        for(int y = 0; y < height; y++)
+        for (int y = 0; y < height; y++)
         {
-            for(int x = 0; x < width; x++)
+            for (int x = 0; x < width; x++)
             {
                 double normalizedValue = (matrix[y, x] - min) / range;
                 bitmap.SetPixel(x, y, normalizedValue < 0 ? Color.Black : normalizedValue > 1 ? Color.White : GetHeatmapColor(normalizedValue));
@@ -50,6 +60,7 @@ public static class ModelVisualizer
         return Color.FromArgb(255, r, 0, b);
     }
 }
+#pragma warning restore CA1416 // Validate platform compatibility
 
 public static class ModelAnalyzer
 {

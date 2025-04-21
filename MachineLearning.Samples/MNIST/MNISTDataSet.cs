@@ -1,6 +1,5 @@
 ﻿using MachineLearning.Data;
 using MachineLearning.Data.Noise;
-using System.Collections.Frozen;
 
 namespace MachineLearning.Samples.MNIST;
 

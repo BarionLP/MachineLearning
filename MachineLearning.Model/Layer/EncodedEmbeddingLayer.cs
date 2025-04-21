@@ -45,6 +45,6 @@ public sealed class EncodedEmbeddingLayer : IEmbeddingLayer<int[]>
     }
 
     public Vector Process(int[] input, ILayerSnapshot _) => Process(input);
-    public ILayerSnapshot CreateSnapshot() => LayerSnapshots.Empty;
+    public ILayerSnapshot CreateSnapshot() => ILayerSnapshot.Empty;
     public IGradients CreateGradientAccumulator() => IGradients.Empty;
 }

@@ -8,7 +8,7 @@ public sealed record TrainingConfig
     public required int EpochCount { get; init; }
 
     public required Optimizer Optimizer { get; init; }
-    public bool MultiThread { get; init; } = true;
+    public ThreadingMode Threading { get; init; } = ThreadingMode.Full;
 
     public Action<DataSetEvaluation>? EvaluationCallback { get; init; } = null;
     public bool DumpEvaluation => EvaluationCallback is not null;

@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using MachineLearning.Model.Layer;
+﻿using MachineLearning.Model.Layer;
 
 namespace MachineLearning.Model;
 

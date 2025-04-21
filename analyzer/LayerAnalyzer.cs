@@ -78,6 +78,8 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         if (layer is null) return;
 
+        var attribute = layer.GetAttributes().First(a => IsGeneratedLayerAttribute(a.AttributeClass!));
+
         var ilayer = GetGenericILayer(layer);
 
         if (ilayer is null) return;
@@ -85,6 +87,12 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         var tin = ilayer.TypeArguments[0];
         var tout = ilayer.TypeArguments[1];
         var tsnap = ilayer.TypeArguments[2];
+
+
+        if (attribute.NamedArguments.FirstOrDefault(p => p is { Key: "OutputGradientType", Value.Kind: TypedConstantKind.Type }) is { Key: not null } p)
+        {
+            tout = compilation.GetTypeByMetadataName(p.Value.Value!.ToString())!;
+        }
 
         var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
         var parameter = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsParameterAttribute(a.AttributeClass!)));
@@ -103,8 +111,10 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
                 {{string.Join("\n\t\t", parameter.Concat(weights).Select(p => $"this.{p.Name} = {p.Name.ToLower()};"))}}
             }
 
-            public ILayerSnapshot CreateSnapshot() => new Snapshot(this);
-            public IGradients CreateGradientAccumulator() => new Gradients(this);
+            public Snapshot CreateSnapshot() => new(this);
+            ILayerSnapshot MachineLearning.Model.Layer.ILayer.CreateSnapshot() => CreateSnapshot();
+            public Gradients CreateGradientAccumulator() => new(this);
+            IGradients MachineLearning.Model.Layer.ILayer.CreateGradientAccumulator() => CreateGradientAccumulator();
 
             public long WeightCount => {{string.Join(" + ", weights.Select(p => IsVector(p.Type) ? $"{p.Name}.Count" : $"{p.Name}.FlatCount"))}};
 
@@ -134,6 +144,18 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         foreach (var weight in weights)
         {
             sb.AppendLine($"\t\t\t{weight.Name}.AddToSelf(o.{weight.Name});");
+        }
+
+        sb.AppendLine("\t\t}");
+
+        sb.AppendLine($$"""
+                public void Reset()
+                {
+        """);
+
+        foreach (var weight in weights)
+        {
+            sb.AppendLine($"\t\t\t{weight.Name}.ResetZero();");
         }
 
         sb.AppendLine("\t\t}\n\t}");

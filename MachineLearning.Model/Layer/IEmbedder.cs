@@ -1,7 +1,4 @@
-﻿using MachineLearning.Model.Layer;
-using MachineLearning.Model.Layer.Snapshot;
-
-namespace MachineLearning.Model.Embedding;
+﻿namespace MachineLearning.Model.Embedding;
 
 // public interface IEmbedder<TInput, TOutput> : IEmbeddingLayer<TInput>, IUnembeddingLayer<TOutput>
 // {

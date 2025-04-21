@@ -14,7 +14,7 @@ public sealed class MNISTEmbedder() : IEmbeddingLayer<double[]>
 
     int IEmbeddingLayer<double[]>.OutputNodeCount => 784;
     long ILayer.WeightCount => 0;
-    ILayerSnapshot ILayer.CreateSnapshot() => LayerSnapshots.Empty;
+    ILayerSnapshot ILayer.CreateSnapshot() => ILayerSnapshot.Empty;
     public IGradients CreateGradientAccumulator() => IGradients.Empty;
 }
 
@@ -38,6 +38,6 @@ public sealed class MNISTUnEmbedder(ImmutableArray<int> _nodeMapping) : IUnembed
 
     int IUnembeddingLayer<int>.InputNodeCount => 10;
     long ILayer.WeightCount => 0;
-    ILayerSnapshot ILayer.CreateSnapshot() => LayerSnapshots.Empty;
+    ILayerSnapshot ILayer.CreateSnapshot() => ILayerSnapshot.Empty;
     public IGradients CreateGradientAccumulator() => IGradients.Empty;
 }

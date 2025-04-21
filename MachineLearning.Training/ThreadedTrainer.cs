@@ -7,31 +7,41 @@ namespace MachineLearning.Training;
 
 public sealed class ThreadedTrainer
 {
-    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, Func<ImmutableArray<IGradients>> gradientGetter, int threads, Action<TrainingData, TrainingContext> action)
+    public static TrainingContext Train(IEnumerable<TrainingData> trainingSet, ModelCachePool contextPool, ThreadingMode threading, Action<TrainingData, TrainingContext> action)
     {
-        var contexts = new ConcurrentQueue<TrainingContext>();
-        var options = new ParallelOptions { MaxDegreeOfParallelism = threads };
-        var result = Parallel.ForEach(trainingSet, options, () => new TrainingContext { Gradients = gradientGetter() }, (item, state, context) =>
+        using var contexts = new ThreadLocal<TrainingContext>(() => new() { Gradients = contextPool.RentGradients() }, trackAllValues: true);
+        var options = new ParallelOptions
         {
-            action(item, context);
-            return context;
-        }, contexts.Enqueue);
+            MaxDegreeOfParallelism = threading switch
+            {
+                ThreadingMode.Single => 1,
+                ThreadingMode.Half => Environment.ProcessorCount / 2,
+                ThreadingMode.AlmostFull => Environment.ProcessorCount > 1 ? Environment.ProcessorCount - 1 : 1,
+                ThreadingMode.Full => Environment.ProcessorCount, // setting MaxDegreeOfParallelism explicitly prevents too many presceduled tasks
+                _ => throw new UnreachableException()
+            },
+        };
+        var partitioner = Partitioner.Create(trainingSet);
+        var result = Parallel.ForEach(partitioner, options, (item, state) =>
+        {
+            action(item, contexts.Value!);
+        });
 
         Debug.Assert(result.IsCompleted);
-        Debug.Assert(!contexts.IsEmpty);
 
-        if (contexts.TryDequeue(out var context))
+        var context = contexts.Values[0];
+
+        foreach (var other in contexts.Values.Skip(1))
         {
-            while (contexts.TryDequeue(out var other))
-            {
-                context.Add(other);
-            }
-            return context;
+            context.Add(other);
+            contextPool.Return(other.Gradients);
         }
 
-        return new() { Gradients = gradientGetter() };
+        return context;
     }
 }
+
+public enum ThreadingMode { Single, Half, Full, AlmostFull }
 
 public sealed class TrainingContext
 {
@@ -49,6 +59,18 @@ public sealed class TrainingContext
         foreach (var (g, o) in Gradients.Zip(other.Gradients))
         {
             g.Add(o);
+        }
+    }
+
+    public void Reset()
+    {
+        TotalCount = 0;
+        CorrectCount = 0;
+        TotalCost = 0;
+
+        foreach (var gradient in Gradients)
+        {
+            gradient.Reset();
         }
     }
 }

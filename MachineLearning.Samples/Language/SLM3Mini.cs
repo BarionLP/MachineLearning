@@ -10,11 +10,11 @@ public sealed class SLM3Mini : ISample<int[], int>
     public const int CONTEXT_SIZE = 64;
 
     public static CharTokenizer Tokenizer { get; } = new("\0 !%'(),-.0123456789:=?_abcdefghijklmnopqrstuvwxyzß");
-    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3_mini.gmw"));
+    public static ModelSerializer Serializer { get; } = new(AssetManager.GetModelFile("slm3_mini"));
     public static EmbeddedModel<int[], int> CreateModel(Random? random = null)
     {
         var initializer = new HeInitializer(random);
-        return AdvancedModelBuilder
+        return EmbeddedModelBuilder
             .Create(new EncodedEmbeddingLayer(Tokenizer.TokenCount, CONTEXT_SIZE))
                 .DefaultActivation(LeakyReLUActivation.Instance)
                 .AddLayer(512 + 256, initializer)

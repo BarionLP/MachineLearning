@@ -6,6 +6,7 @@ using LiveChartsCore.SkiaSharpView.Painting.Effects;
 using MachineLearning.Data;
 using MachineLearning.Model;
 using MachineLearning.Model.Layer;
+using ML.MultiLayerPerceptron;
 using SkiaSharp;
 
 namespace MachineLearning.Training.GUI;
