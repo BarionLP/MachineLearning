@@ -2,7 +2,7 @@
 
 public static class LogicalStatementSource
 {
-    public static IEnumerable<DataEntry<string, char>> GenerateAdditionStatements(int count, Random? random = null)
+    public static IEnumerable<(string, char)> GenerateAdditionStatements(int count, Random? random = null)
     {
         random ??= Random.Shared;
         foreach (var a in 1..(count + 1))
@@ -15,7 +15,7 @@ public static class LogicalStatementSource
 
                 foreach (var sub in resultString)
                 {
-                    yield return new DataEntry<string, char>(statement, sub);
+                    yield return (statement, sub);
                     statement += sub;
                 }
             }
