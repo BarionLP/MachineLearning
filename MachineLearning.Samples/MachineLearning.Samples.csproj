@@ -1,5 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\MachineLearning.Mamba\MachineLearning.Mamba.csproj" />
     <ProjectReference Include="..\MachineLearning.Serialization\MachineLearning.Serialization.csproj" />
@@ -7,12 +14,5 @@
     <ProjectReference Include="..\MachineLearning.Model\MachineLearning.Model.csproj" />
     <ProjectReference Include="..\mlp\ML.MultiLayerPerceptron.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
 
 </Project>
