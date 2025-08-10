@@ -1,4 +1,6 @@
-﻿namespace ML.Analyzer;
+﻿using ML.Analyzer.LayerFile;
+
+namespace ML.Analyzer;
 
 [Generator]
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -132,7 +134,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\tpublic {weight.Type} {weight.Name} {{ get; }} = {weight.Type}.OfSize(layer.{weight.Name});");
+            sb.AppendLine($"\t\tpublic {weight.Type} {weight.Name}Gradient {{ get; }} = {weight.Type}.OfSize(layer.{weight.Name});");
         }
 
         sb.AppendLine($$"""
@@ -143,7 +145,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\t\t{weight.Name}.AddToSelf(o.{weight.Name});");
+            sb.AppendLine($"\t\t\t{weight.Name}Gradient.AddToSelf(o.{weight.Name}Gradient);");
         }
 
         sb.AppendLine("\t\t}");
@@ -155,7 +157,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\t\t{weight.Name}.ResetZero();");
+            sb.AppendLine($"\t\t\t{weight.Name}Gradient.ResetZero();");
         }
 
         sb.AppendLine("\t\t}\n\t}");
@@ -189,11 +191,26 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         sb.AppendLine("}");
 
-        if (layer.GetAttributes().FirstOrDefault(a => IsGenerateOptimizersAttribute(a.AttributeClass!)) is AttributeData attributeData)
+        if (layer.GetAttributes().FirstOrDefault(a => IsGenerateOptimizersAttribute(a.AttributeClass!)) is AttributeData)
         {
-            AdamLayerGenerator.GenerateAdam(context, compilation, new(layer, tin, tout, tsnap, weights), attributeData);
+            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.ContainingNamespace.ToString(), tin.ToString(), ToNumberType(tout), tsnap.ToString(), weights.Select(symbol => new Weights(symbol.Name, ToDims(symbol.Type), LayerFile.Location.Layer))));
         }
 
         context.AddSource($"{layer.Name}.g.cs", sb.ToString());
+    }
+
+    private static NumberType ToNumberType(ITypeSymbol type)
+    {
+        if (IsVector(type)) return NumberType.Vector;
+        if (IsMatrix(type)) return NumberType.Matrix;
+        if (IsTensor(type)) return NumberType.Tensor;
+        throw new InvalidOperationException($"{type} is not a numeric type");
+    }
+    private static ImmutableArray<Parameter> ToDims(ITypeSymbol type)
+    {
+        if (IsVector(type)) return [ValueParameter.Zero];
+        if (IsMatrix(type)) return [ValueParameter.Zero, ValueParameter.Zero];
+        if (IsTensor(type)) return [ValueParameter.Zero, ValueParameter.Zero, ValueParameter.Zero];
+        throw new InvalidOperationException($"{type} is not a numeric type");
     }
 }

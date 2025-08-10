@@ -10,11 +10,11 @@ namespace MachineLearning.Data.Source;
 /// </summary>
 public sealed class ImageDataSource(DirectoryInfo directoryInfo)
 {
-    public ImageDataEntry[] DataSet { get; } = directoryInfo.EnumerateFiles("*.png")
+    public ImageDataEntry[] DataSet { get; } = [.. directoryInfo.EnumerateFiles("*.png")
             .Select(file => new ImageDataEntry(
                 GetGrayscaleImageArray(file),
                 file.NameWithoutExtension().Parse<int>()
-            )).ToArray();
+            ))];
 
     public static double[] GetGrayscaleImageArray(FileInfo imageFile)
     {

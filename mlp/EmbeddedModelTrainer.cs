@@ -76,17 +76,18 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
         var inputWeights = Model.InputLayer.Process(data.InputValue);
         var result = Model.InnerModel.Process(inputWeights, snapshots);
 
-        var nodeValues = LayerBackPropagation.ComputeOutputLayerErrors(Model.InnerModel.Layers[^1], Config.Optimizer.CostFunction, data.ExpectedWeights, snapshots[^1]);
+        var nodeValues = Config.Optimizer.CostFunction.Derivative(result, data.ExpectedWeights);
         NumericsDebug.AssertValidNumbers(nodeValues);
         OutputLayerOptimizer.Update(nodeValues, snapshots[^1], gradients[^2]);
-
+        nodeValues = snapshots[^1].InputGradient;
+        NumericsDebug.AssertValidNumbers(nodeValues);
 
         for (int hiddenLayerIndex = LayerOptimizers.Length - 2; hiddenLayerIndex >= 0; hiddenLayerIndex--)
         {
             var hiddenLayer = LayerOptimizers[hiddenLayerIndex];
-            nodeValues = LayerBackPropagation.ComputeHiddenLayerErrors(Model.InnerModel.Layers[hiddenLayerIndex], Model.InnerModel.Layers[hiddenLayerIndex + 1], nodeValues, snapshots[hiddenLayerIndex]);
-            NumericsDebug.AssertValidNumbers(nodeValues);
             hiddenLayer.Update(nodeValues, snapshots[hiddenLayerIndex], gradients[hiddenLayerIndex + 1]);
+            nodeValues = snapshots[hiddenLayerIndex].InputGradient;
+            NumericsDebug.AssertValidNumbers(nodeValues);
         }
 
         return result;

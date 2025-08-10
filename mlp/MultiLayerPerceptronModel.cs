@@ -12,7 +12,7 @@ public sealed class MultiLayerPerceptronModel : IModel<Vector, PerceptronLayer.S
 
 
     public Vector Process(Vector input)
-        => Layers.Aggregate(input, (vector, layer) => layer.Forward(vector));
+        => Layers.Aggregate(input, (vector, layer) => layer.Forward(vector, new(layer)));
 
     public Vector Process(Vector input, ImmutableArray<PerceptronLayer.Snapshot> snapshots)
     {

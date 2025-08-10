@@ -76,7 +76,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
             // output[t] = C^T * H[t]
             // => dC += H[t] * dY
             // => dH[t] += C * dY
-            VectorHelper.MultiplyToMatrixAddTo(snapshot.Memory.RowRef(t), outputGradient_t, gradients.C);
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.Memory.RowRef(t), outputGradient_t, gradients.CGradient);
             C.MultiplyAddTo(outputGradient_t, snapshot.GradientMemory.RowRef(t));
 
             // h[t] = alpha[t] * h[t-1] + B * input[t]
@@ -89,7 +89,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
             // h[t-1] = (t>0) ? st.h[t-1] : zero
             var hPrev = (t == 0) ? Zero : snapshot.Memory.RowRef(t - 1);
 
-            gradients.Alpha[t] = hPrev.Dot(snapshot.GradientMemory.RowRef(t));
+            gradients.AlphaGradient[t] = hPrev.Dot(snapshot.GradientMemory.RowRef(t));
 
             // derivative wrt H[t-1]
             // if t>0, add alpha[t]*dH[t] to dH[t-1]
@@ -100,7 +100,7 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
 
             // derivative wrt B[t] and input[t]
             // dB[t] = input[t] * dH[t]
-            VectorHelper.MultiplyToMatrixAddTo(snapshot.GradientMemory.RowRef(t), snapshot.Input.RowRef(t), gradients.B);
+            VectorHelper.MultiplyToMatrixAddTo(snapshot.GradientMemory.RowRef(t), snapshot.Input.RowRef(t), gradients.BGradient);
 
             B.MultiplyTransposedTo(snapshot.GradientMemory.RowRef(t), snapshot.GradientInput.RowRef(t));
 

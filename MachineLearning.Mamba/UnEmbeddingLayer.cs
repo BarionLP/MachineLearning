@@ -53,7 +53,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
 
         foreach (var i in ..snapshot.SequenceLength)
         {
-            VectorHelper.MultiplyToMatrixAddTo(outputGradients.RowRef(i), snapshot.Input.RowRef(i), gradients.UnEmbeddingMatrix);
+            VectorHelper.MultiplyToMatrixAddTo(outputGradients.RowRef(i), snapshot.Input.RowRef(i), gradients.UnEmbeddingMatrixGradient);
             UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.GradientInput.RowRef(i));
         }
     }

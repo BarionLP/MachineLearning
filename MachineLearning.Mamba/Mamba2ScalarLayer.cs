@@ -61,7 +61,7 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
             // (a) output[t] = C[t] * H[t]
             // => dC[t] += H[t] * dY
             // => dH[t] += C[t] * dY
-            gradients.C.RowRef(t).AddToSelf(snapshot.Memory.RowRef(t).Multiply(dY));
+            gradients.CGradient.RowRef(t).AddToSelf(snapshot.Memory.RowRef(t).Multiply(dY));
             snapshot.GradientMemory.RowRef(t).AddToSelf(C.RowRef(t).Multiply(dY));
 
             // (b) h[t] = alpha[t] * h[t-1] + B[t] * inputX[t]
@@ -76,7 +76,7 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
                            ? Vector.Create(StateDimensions)
                            : snapshot.Memory.RowRef(t - 1);
 
-            gradients.Alpha[t] += hPrev.Dot(snapshot.GradientMemory.RowRef(t));  // dAlpha
+            gradients.AlphaGradient[t] += hPrev.Dot(snapshot.GradientMemory.RowRef(t));  // dAlpha
 
             // derivative w.r.t H[t-1]
             // if t>0, add alpha[t]*dH[t] to dH[t-1]
@@ -87,7 +87,7 @@ public sealed partial class Mamba2ScalarLayer : ILayer<Vector, Mamba2ScalarLayer
 
             // derivative w.r.t. B[t] and input[t]
             // dB[t] = input[t] * dH[t]
-            gradients.B.RowRef(t).AddToSelf(snapshot.GradientMemory.RowRef(t).Multiply(snapshot.Input[t]));
+            gradients.BGradient.RowRef(t).AddToSelf(snapshot.GradientMemory.RowRef(t).Multiply(snapshot.Input[t]));
 
             snapshot.GradientInput[t] += B.RowRef(t).Dot(snapshot.GradientMemory.RowRef(t));  // partial w.r.t. input[t]
 

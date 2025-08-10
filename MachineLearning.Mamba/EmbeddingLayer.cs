@@ -54,7 +54,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
         foreach (var i in ..snapshot.Input.Length)
         {
             var token = snapshot.Input[i];
-            var embeddingGradient = gradients.EmbeddingMatrix.RowSpan(token);
+            var embeddingGradient = gradients.EmbeddingMatrixGradient.RowSpan(token);
             TensorPrimitives.Add(embeddingGradient, outputGradients.RowSpan(i), embeddingGradient);
         }
     }
