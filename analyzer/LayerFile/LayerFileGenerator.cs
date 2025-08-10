@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.IO;
-using ML.Analyzer.LayerFile.Operations;
 
 namespace ML.Analyzer.LayerFile;
 
@@ -19,7 +18,8 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             var hasActivationFunction = false;
 
             var text = file.GetText(context.CancellationToken)!.ToString();
-            var lines = GetLines(text).GetEnumerator();
+
+            var layer = LayerFileParser.Parse(Path.GetFileNameWithoutExtension(file.Path), text);
 
             var sb = new StringBuilder();
 
@@ -29,93 +29,12 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
             sb.AppendLine();
 
-            lines.MoveNext();
-
-            var modelNamespace = string.Empty;
-            if (lines.Current.StartsWith("# namespace "))
-            {
-                modelNamespace = lines.Current.Substring("# namespace ".Length).Trim();
-                sb.AppendLine($"namespace {modelNamespace};");
-                sb.AppendLine();
-                lines.MoveNext();
-            }
-
-            var layerName = Path.GetFileNameWithoutExtension(file.Path);
-
-            if (lines.Current is "# Activation Function")
-            {
-                hasActivationFunction = true;
-                lines.MoveNext();
-            }
-
-            if (lines.Current is "# Parameters")
-            {
-                while (lines.MoveNext())
-                {
-                    if (lines.Current is "# Weights") break;
-
-                    registry.CreateParameter(lines.Current);
-                }
-            }
-
-            if (lines.Current is not "# Weights") return;
-
-            // list of weights
-            while (lines.MoveNext())
-            {
-                if (lines.Current.StartsWith("# Forward ")) break;
-
-                learnedWeights.Add(registry.ParseWeightDefinition(lines.Current.AsSpan().TrimEnd(), Location.Layer));
-            }
-
-            var inputWeights = registry.ParseWeightDefinition(lines.Current.AsSpan("# Forward".Length).Trim(), Location.Snapshot);
-            forwardPass.Add(new InputOperation(inputWeights with { Location = Location.Pass }, inputWeights));
-
-            var factory = new OperationFactory(registry);
-
-            // forward pass
-            while (lines.MoveNext())
-            {
-                var parts = lines.Current.Split(' ');
-                forwardPass.Add(parts switch
-                {
-                    [var result, "=", var source, "Activate"] => factory.NewLeakyReLU(registry[source], result),
-                    [var result, "=", var left, "+", var right] => factory.NewAdd(registry[left], registry[right], result),
-                    [var result, "=", var left, "*", var right] => factory.NewMatrixVectorMultiply(registry[left], registry[right], result),
-                    [var output] => new OutputOperation(registry[output]),
-                    _ => throw new InvalidOperationException($"unkown operation {lines.Current}"),
-                });
-
-                if (forwardPass[^1] is OutputOperation) break;
-            }
-
-
-            var outputWeights = forwardPass[^1].Result;
-
-
-            // construct backwards pass
-            var backwardsPass = new List<Operation>();
-            forwardPass.Reverse();
-            foreach (var operation in forwardPass)
-            {
-                operation.AppendGradientOp(backwardsPass, registry);
-            }
-            forwardPass.Reverse();
-
-
-
-            (string id, int version)? serializerInfos = null;
-            lines.MoveNext();
-            if (lines.Current.StartsWith("# Serializer "))
-            {
-                var parts = lines.Current.Split(' ');
-                serializerInfos = (parts[2], int.Parse(parts[3]));
-            }
+            
 
             // generate model file
 
             sb.AppendLine($$"""
-            public sealed partial class {{layerName}}({{(hasActivationFunction ? "MachineLearning.Model.Activation.IActivationFunction ActivationFunction, " : "")}}{{string.Join(", ", registry.Parameters.Select(p => $"int {p.Name}"))}}) : ILayer<{{inputWeights.Type}}, {{layerName}}.Snapshot>
+            public sealed partial class {{layer.Name}}({{(hasActivationFunction ? "MachineLearning.Model.Activation.IActivationFunction ActivationFunction, " : "")}}{{string.Join(", ", registry.Parameters.Select(p => $"int {p.Name}"))}}) : ILayer<{{layer.Input.Type}}, {{layer.Name}}.Snapshot>
             {
             """);
 
@@ -145,7 +64,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
                 public long WeightCount => {{string.Join(" + ", learnedWeights.Select(static w => w.Type switch { NumberType.Single => "1", NumberType.Vector => $"{w.Access(Location.Layer)}.Count", _ => $"{w.Access(Location.Layer)}.FlatCount" }))}};
 
-                public Vector Forward({{inputWeights.Type}} {{inputWeights.Name}}, Snapshot snapshot)
+                public Vector Forward({{layer.Input.Type}} {{layer.Input.Name}}, Snapshot snapshot)
                 {
             """);
 
@@ -160,11 +79,11 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             """);
 
             sb.AppendLine($$"""
-                public Vector Backward({{inputWeights.Type}} outputGradient, Snapshot snapshot, Gradients gradients)
+                public Vector Backward({{layer.Input.Type}} outputGradient, Snapshot snapshot, Gradients gradients)
                 {
             """);
 
-            foreach (var operation in backwardsPass)
+            foreach (var operation in layer.BackwardPass)
             {
                 sb.Append("        ");
                 operation.AppendCode(sb);
@@ -181,7 +100,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                 public Gradients CreateGradientAccumulator() => new(this);
                 IGradients MachineLearning.Model.Layer.ILayer.CreateGradientAccumulator() => CreateGradientAccumulator();
 
-                public sealed class Snapshot({{layerName}} layer) : ILayerSnapshot
+                public sealed class Snapshot({{layer.Name}} layer) : ILayerSnapshot
                 {
             """);
 
@@ -195,7 +114,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             sb.AppendLine($$"""
                 }
 
-                public sealed class Gradients({{layerName}} layer) : IGradients
+                public sealed class Gradients({{layer.Name}} layer) : IGradients
                 {
             """);
 
@@ -236,7 +155,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                 }
             """);
 
-            if (serializerInfos is { } infos)
+            if (layer.Serializer is { } infos)
             {
                 sb.Insert(0, "using MachineLearning.Serialization;\n");
                 sb.AppendLine($$"""
@@ -248,7 +167,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                         MachineLearning.Serialization.ModelSerializer.RegisterLayer("{{infos.id}}", {{infos.version}}, Save, Read);
                     }
 
-                    public static ErrorState Save({{layerName}} layer, System.IO.BinaryWriter writer)
+                    public static ErrorState Save({{layer.Name}} layer, System.IO.BinaryWriter writer)
                     {
                         {{(hasActivationFunction ? "ActivationFunctionSerializer.Write(writer, layer.ActivationFunction);" : "")}}
                         {{string.Join("\n\t\t\t", registry.Parameters.Select(w => $"writer.Write({w.Access(Location.Serializer)});"))}}
@@ -256,9 +175,9 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                         return default;
                     }
 
-                    public static Result<{{layerName}}> Read(System.IO.BinaryReader reader)
+                    public static Result<{{layer.Name}}> Read(System.IO.BinaryReader reader)
                     {
-                        var layer = new {{layerName}}({{(hasActivationFunction ? $"ActivationFunctionSerializer.Read(reader), " : "")}}{{string.Join(", ", registry.Parameters.Select(static w => $"reader.ReadInt32()"))}});
+                        var layer = new {{layer.Name}}({{(hasActivationFunction ? $"ActivationFunctionSerializer.Read(reader), " : "")}}{{string.Join(", ", registry.Parameters.Select(static w => $"reader.ReadInt32()"))}});
             """);
 
                 foreach (var weight in learnedWeights)
@@ -277,9 +196,9 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             }
             """);
 
-            context.AddSource($"{layerName}.g.cs", sb.ToString());
+            context.AddSource($"{layer.Name}.g.cs", sb.ToString());
 
-            AdamLayerGenerator.GenerateAdam(context, new(layerName, modelNamespace, inputWeights.Type.ToString(), outputWeights.Type, $"{layerName}.Snapshot", learnedWeights));
+            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.Namespace, layer.Input.Type.ToString(), layer.Output.Type, $"{layer.Name}.Snapshot", learnedWeights));
         });
     }
 

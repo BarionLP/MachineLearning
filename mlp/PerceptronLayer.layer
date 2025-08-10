@@ -1,7 +1,6 @@
 # namespace ML.MultiLayerPerceptron
 
 # Activation Function
-
 # Parameters
 InputNodes
 OutputNodes

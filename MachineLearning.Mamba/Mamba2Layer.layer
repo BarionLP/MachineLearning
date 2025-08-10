@@ -1,0 +1,16 @@
+# namespace MachineLearning.Mamba
+
+# Parameters
+MaxSequenceLength
+StateDimensions
+EmbeddingDimensions
+
+# Weights
+Alpha [MaxSequenceLength]
+B [StateDimensions, EmbeddingDimensions]
+C [StateDimensions, EmbeddingDimensions]
+
+# Forward Input [MaxSequenceLength, EmbeddingDimensions]
+Input
+
+# Serializer m2l 1

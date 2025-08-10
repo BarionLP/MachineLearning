@@ -9,7 +9,7 @@ namespace MachineLearning.Mamba;
 
 public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IModel<Vector, Mamba2ScalarLayer.Snapshot>
 {
-    public ImmutableArray<Mamba2ScalarLayer> Layers { get; } = [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2ScalarLayer(contextSize, dims))];
+    public ImmutableArray<Mamba2Layer> Layers { get; } = [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2ScalarLayer(contextSize, dims))];
 
     public Vector Process(Vector input)
     {
