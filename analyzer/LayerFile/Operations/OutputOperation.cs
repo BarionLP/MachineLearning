@@ -14,8 +14,8 @@ internal sealed class OutputOperation(Weights weights) : Operation
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
     {
-        var input = new Weights("outputGradient", Weights.Dimensions, Location.Pass); // defined as method parameter
-        registry.AddAlias(Weights.GetGradientName(), input);
+        var input = new DirectWeights("outputGradient", Weights.Dimensions, Location.Pass); // defined as method parameter
+        registry.AddAlias(((DirectWeights)Weights).GetGradientName(), input);
         // var result = registry.CreateGradient(Weights, Location.Pass);
         // ops.Add(new DefineOperation(input, result));
     }

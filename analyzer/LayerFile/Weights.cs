@@ -1,6 +1,6 @@
 namespace ML.Analyzer.LayerFile;
 
-internal sealed record Weights(string Name, ImmutableArray<Parameter> Dimensions, Location Location)
+internal abstract record Weights(ImmutableArray<Parameter> Dimensions)
 {
     public NumberType Type { get; } = Dimensions.Length switch
     {
@@ -11,10 +11,15 @@ internal sealed record Weights(string Name, ImmutableArray<Parameter> Dimensions
         _ => throw new InvalidOperationException(),
     };
 
-    public override string ToString() => $"{Name} {string.Join(", ", Dimensions.Select(d => d.Access(Location.Layer)))}";
-
     public string PassAccess() => Access(Location.Pass);
-    public string Access(Location from)
+    public abstract string Access(Location from);
+}
+
+internal sealed record DirectWeights(string Name, ImmutableArray<Parameter> Dimensions, Location Location) : Weights(Dimensions)
+{
+    public override string ToString() => $"{Name} [{string.Join(", ", Dimensions.Select(d => d.Access(Location.Layer)))}]";
+    public string GetGradientName() => $"{Name}Gradient";
+    public override string Access(Location from)
     {
         if (from == Location) return Name;
 
@@ -28,5 +33,18 @@ internal sealed record Weights(string Name, ImmutableArray<Parameter> Dimensions
             _ => throw new InvalidOperationException($"Cannot access {Location} {this} from {from}"),
         };
     }
-    public string GetGradientName() => $"{Name}Gradient";
+}
+
+internal sealed record RowReferenceWeights(DirectWeights Matrix, string Row) : Weights(Matrix.Type is NumberType.Matrix ? [Matrix.Dimensions[1]] : throw new InvalidOperationException($"cannot refenrence a row of {Matrix}"))
+{
+    public override string ToString() => $"{Matrix.Name}[{Row}] [{string.Join(", ", Dimensions.Select(d => d.Access(Location.Layer)))}]";
+
+    public override string Access(Location from) => $"{Matrix.Access(from)}.RowRef({Row})";
+}
+
+internal sealed record ItemReferenceWeights(DirectWeights Weights, ImmutableArray<string> Accessor) : Weights(Weights.Dimensions.Length == Accessor.Length ? [] : throw new InvalidOperationException($"cannot refenrence a value of {Weights} with [{string.Join(", ", Accessor)}]"))
+{
+    public override string ToString() => $"{Weights.Name}[{string.Join(", ", Accessor)}]";
+
+    public override string Access(Location from) => $"{Weights.Access(from)}[{string.Join(", ", Accessor)}]";
 }

@@ -8,18 +8,20 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        if (!Debugger.IsAttached)
+            Debugger.Launch();
+
         var files = context.AdditionalTextsProvider.Where(a => a.Path.EndsWith(".layer"));
 
         context.RegisterSourceOutput(files, static (context, file) =>
         {
-            var registry = new LayerRegistry();
-            var learnedWeights = new List<Weights>();
-            var forwardPass = new List<Operation>();
-            var hasActivationFunction = false;
-
             var text = file.GetText(context.CancellationToken)!.ToString();
 
             var layer = LayerFileParser.Parse(Path.GetFileNameWithoutExtension(file.Path), text);
+            var registry = layer.Registry;
+            var learnedWeights = layer.LearnedWeights;
+            var forwardPass = layer.ForwardPass;
+            var hasActivationFunction = layer.HasActivationFunction;
 
             var sb = new StringBuilder();
 
@@ -29,9 +31,13 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
             sb.AppendLine();
 
-            
+            if (!string.IsNullOrEmpty(layer.Namespace))
+            {
+                sb.AppendLine($$"""namespace {{layer.Namespace}};""");
+            }
 
             // generate model file
+
 
             sb.AppendLine($$"""
             public sealed partial class {{layer.Name}}({{(hasActivationFunction ? "MachineLearning.Model.Activation.IActivationFunction ActivationFunction, " : "")}}{{string.Join(", ", registry.Parameters.Select(p => $"int {p.Name}"))}}) : ILayer<{{layer.Input.Type}}, {{layer.Name}}.Snapshot>
@@ -104,7 +110,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                 {
             """);
 
-            foreach (var snap in registry.Weights.Distinct().Where(static w => w.Location is Location.Snapshot))
+            foreach (var snap in registry.Weights.Distinct().OfType<DirectWeights>().Where(static w => w.Location is Location.Snapshot))
             {
                 sb.AppendLine($$"""
                     public {{snap.Type}} {{snap.Name}} { get; } = {{snap.Type}}.Create({{string.Join(", ", snap.Dimensions.Select(static p => p.Access(Location.Snapshot)))}});

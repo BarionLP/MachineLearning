@@ -12,7 +12,7 @@ internal static class LayerFileParser
             Name = name,
         };
 
-        var lines = new LineIterator(text);
+        var lines = new LineEnumerator(text);
 
         lines.MoveNext();
 
@@ -56,6 +56,8 @@ internal static class LayerFileParser
 
         var factory = new OperationFactory(def.Registry);
 
+        var contextStack = new Stack<ForeachRowOperation>();
+
         // forward pass
         while (lines.MoveNext())
         {
@@ -64,11 +66,17 @@ internal static class LayerFileParser
             {
                 [var result, "=", var source, "Activate"] => factory.NewLeakyReLU(def.Registry[source], result),
                 [var result, "=", var left, "+", var right] => factory.NewAdd(def.Registry[left], def.Registry[right], result),
-                [var result, "=", var left, "*", var right] => factory.NewMatrixVectorMultiply(def.Registry[left], def.Registry[right], result),
+                [var result, "=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], result),
+                ["foreach", "row", var index, "in", var matrix] => new ForeachRowOperation(def.Registry[matrix], index, false),
+                ["end"] => new EndLoopOperation(contextStack.Pop()),
                 [var output] => new OutputOperation(def.Registry[output]),
-                _ => throw new InvalidOperationException($"unkown operation {lines.Current.ToString()}"),
+                _ => throw new InvalidOperationException($"unkown operation '{lines.Current.ToString()}'"),
             });
 
+            if (def.ForwardPass[^1] is ForeachRowOperation lop)
+            {
+                contextStack.Push(lop);
+            }
             if (def.ForwardPass[^1] is OutputOperation) break;
         }
 
@@ -94,7 +102,7 @@ internal static class LayerFileParser
         return def;
     }
 
-    private struct LineIterator(string text)
+    private struct LineEnumerator(string text)
     {
         private readonly string text = text;
         private int start = -1;
@@ -117,7 +125,7 @@ internal static class LayerFileParser
             length = lineBreakIndex - (line.Length - endTrimmed.Length) - (line.Length - startTrimmed.Length);
             nextStart += lineBreakIndex + 1;
 
-            if (Current.IsEmpty)
+            if (length == -1 || Current.IsEmpty)
             {
                 return MoveNext();
             }
@@ -133,10 +141,10 @@ internal sealed class LayerDefinition
     public required string Name { get; init; }
     public bool HasActivationFunction { get; set; } = false;
     public LayerRegistry Registry { get; } = new();
-    public List<Weights> LearnedWeights { get; } = [];
+    public List<DirectWeights> LearnedWeights { get; } = [];
     public List<Operation> ForwardPass { get; } = [];
     public List<Operation> BackwardPass { get; } = [];
-    public Weights Input { get; set; } = default!;
+    public DirectWeights Input { get; set; } = default!;
     public Weights Output { get; set; } = default!;
     public (string id, int version)? Serializer { get; set; } = null;
 }

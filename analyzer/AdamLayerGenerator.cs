@@ -154,4 +154,4 @@ internal static class AdamLayerGenerator
     }
 }
 
-internal sealed record LayerData(string Name, string? Namespace, string InputType, NumberType OutputType, string SnapshotType, IEnumerable<Weights> Weights);
+internal sealed record LayerData(string Name, string? Namespace, string InputType, NumberType OutputType, string SnapshotType, IEnumerable<DirectWeights> Weights);

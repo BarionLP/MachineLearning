@@ -25,7 +25,7 @@ internal sealed class AddOperation(Weights left, Weights right, Weights result) 
         var rightGradient = registry.CreateWeightsGradient(Right);
         var resultGradient = registry.GetGradient(Result);
         ops.Add(new AddOperation(rightGradient, resultGradient, rightGradient));
-        registry.AddAlias(Left.GetGradientName(), resultGradient);
+        registry.AddAlias(((DirectWeights)Left).GetGradientName(), resultGradient);
         // ops.Add(new DefineOperation(resultGradient, registry.CreateGradient(Left, Location.Pass)));
     }
 }

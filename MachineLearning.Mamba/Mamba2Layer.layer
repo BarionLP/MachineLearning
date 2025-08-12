@@ -11,6 +11,13 @@ B [StateDimensions, EmbeddingDimensions]
 C [StateDimensions, EmbeddingDimensions]
 
 # Forward Input [MaxSequenceLength, EmbeddingDimensions]
-Input
+foreach row t in Input
+    Memory1[t] = B * Input[t]
+    Memory2[t] = Memory[t-1] * Alpha[t]
+    Memory[t] = Memory1[t] + Memory2[t]
+    Stop[t] = C * Memory[t]
+end
+Stop
+
 
 # Serializer m2l 1
