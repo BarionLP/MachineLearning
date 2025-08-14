@@ -36,7 +36,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         return (snapshot.Output.Rows(..snapshot.SequenceLength), snapshot.Output.RowRef(snapshot.SequenceLength - 1).MaximumIndex());
     }
 
-    public void Backward(Matrix outputGradients, Snapshot snapshot, Gradients gradients)
+    public Matrix Backward(Matrix outputGradients, Snapshot snapshot, Gradients gradients)
     {
         Debug.Assert(outputGradients.ColumnCount == TokenCount);
         Debug.Assert(outputGradients.RowCount == snapshot.SequenceLength);
@@ -54,8 +54,10 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         foreach (var i in ..snapshot.SequenceLength)
         {
             VectorHelper.MultiplyToMatrixAddTo(outputGradients.RowRef(i), snapshot.Input.RowRef(i), gradients.UnEmbeddingMatrixGradient);
-            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.GradientInput.RowRef(i));
+            UnEmbeddingMatrix.MultiplyTransposedTo(outputGradients.RowRef(i), snapshot.InputGradient.RowRef(i));
         }
+
+        return snapshot.InputGradient;
     }
 
     partial class Snapshot
@@ -65,7 +67,7 @@ public sealed partial class UnEmbeddingLayer : ILayer<Matrix, (Vector, int), UnE
         public Vector WeightedInput { get; } = Vector.Create(layer.TokenCount);
         public Matrix Output { get; } = Matrix.Create(layer.ContextSize, layer.TokenCount);
 
-        public Matrix GradientInput { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
+        public Matrix InputGradient { get; } = Matrix.Create(layer.ContextSize, layer.EmbeddingSize);
     }
 
     public sealed class Initializer(Random? random = null) : IInitializer<UnEmbeddingLayer>

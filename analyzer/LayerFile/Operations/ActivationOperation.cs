@@ -14,7 +14,7 @@ internal sealed class ActivationOperation(Weights source, Weights result) : Oper
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
     {
-        var sourceGradient = registry.CreateWeightsGradient(Source);
+        var sourceGradient = registry.GetOrCreateGradient(Source);
         var resultGradient = registry.GetGradient(Result);
         ops.Add(new ActivationGradientOperation(Source, sourceGradient));
         ops.Add(new PointwiseMultiplyOperation(sourceGradient, resultGradient, sourceGradient));

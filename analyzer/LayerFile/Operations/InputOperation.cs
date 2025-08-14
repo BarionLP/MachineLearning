@@ -9,7 +9,7 @@ internal sealed class InputOperation(Weights weights, Weights result) : Operatio
 
     public override void AppendCode(StringBuilder sb)
     {
-        sb.AppendLine($$"""{{Weights.PassAccess()}}.CopyTo({{Result.PassAccess()}});""");
+        sb.AppendLine($$"""{{Result.PassAccess()}} = {{Weights.PassAccess()}};""");
     }
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)

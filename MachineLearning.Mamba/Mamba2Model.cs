@@ -1,7 +1,9 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using MachineLearning.Model;
+using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
+using MachineLearning.Model.Layer.Initialization;
 using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Serialization;
 
@@ -9,7 +11,7 @@ namespace MachineLearning.Mamba;
 
 public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IModel<Vector, Mamba2ScalarLayer.Snapshot>
 {
-    public ImmutableArray<Mamba2Layer> Layers { get; } = [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2ScalarLayer(contextSize, dims))];
+    public ImmutableArray<Mamba2ScalarLayer> Layers { get; } = [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2ScalarLayer(contextSize, dims))];
 
     public Vector Process(Vector input)
     {
@@ -33,16 +35,16 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
     IEnumerable<ILayer> IModel<Vector, Mamba2ScalarLayer.Snapshot>.Layers => Layers;
 }
 
-public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<Mamba2VectorLayer> hiddenLayers, UnEmbeddingLayer outputLayer) : IEmbeddedModel<int[], int>
+public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<Mamba2Layer> hiddenLayers, UnEmbeddingLayer outputLayer) : IEmbeddedModel<int[], int>
 {
     public EmbeddingLayer InputLayer { get; } = inputLayer;
-    public ImmutableArray<Mamba2VectorLayer> HiddenLayers { get; } = hiddenLayers;
+    public ImmutableArray<Mamba2Layer> HiddenLayers { get; } = hiddenLayers;
     public UnEmbeddingLayer OutputLayer { get; } = outputLayer;
 
     public int ContextSize => InputLayer.ContextSize;
 
     public Mamba2VectorModel(int layerCount, int tokenCount, int contextSize, int stateDimensions, int embeddingDimensions)
-        : this(new EmbeddingLayer(tokenCount, contextSize, embeddingDimensions), [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2VectorLayer(contextSize, stateDimensions, embeddingDimensions))], new UnEmbeddingLayer(tokenCount, contextSize, embeddingDimensions)) { }
+        : this(new EmbeddingLayer(tokenCount, contextSize, embeddingDimensions), [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2Layer(contextSize, stateDimensions, embeddingDimensions))], new UnEmbeddingLayer(tokenCount, contextSize, embeddingDimensions)) { }
 
     public (Matrix, int) Process(int[] input)
     {
@@ -52,15 +54,32 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
     public (Matrix, int) Process(int[] input, ImmutableArray<ILayerSnapshot> snapshots)
     {
         Debug.Assert(snapshots.Length == HiddenLayers.Length + 2);
-        return OutputLayer.Forward(HiddenLayers.Zip(snapshots.Skip(1).Take(HiddenLayers.Length).Cast<Mamba2VectorLayer.Snapshot>()).Aggregate(InputLayer.Forward(input, (EmbeddingLayer.Snapshot)snapshots[0]), (v, l) => l.First.Forward(v, l.Second)), (UnEmbeddingLayer.Snapshot)snapshots[^1]);
+        return OutputLayer.Forward(HiddenLayers.Zip(snapshots.Skip(1).Take(HiddenLayers.Length).Cast<Mamba2Layer.Snapshot>()).Aggregate(InputLayer.Forward(input, (EmbeddingLayer.Snapshot)snapshots[0]), (v, l) => l.First.Forward(v, l.Second)), (UnEmbeddingLayer.Snapshot)snapshots[^1]);
     }
 
     public void Initialize(Random? random = null)
     {
         new EmbeddingLayer.Initializer(random).Initialize(InputLayer);
-        var initer = new Mamba2VectorLayer.Initializer(random);
+        var initer = new Initializer(random);
         HiddenLayers.Consume(initer.Initialize);
         new UnEmbeddingLayer.Initializer(random).Initialize(OutputLayer);
+    }
+
+    public sealed class Initializer(Random? random = null) : IInitializer<Mamba2Layer>
+    {
+        public Random Random { get; } = random ?? Random.Shared;
+
+        public void Initialize(Mamba2Layer layer)
+        {
+            var scale = Weight.Sqrt(6 / ((Weight)layer.StateDimensions + layer.EmbeddingDimensions));
+
+            // affects how much memory the layer can keep from the previous step
+            // optimally [0.9,1.0] must be [0,1] to prevent vanishing/exploding gradients
+            layer.Alpha.Fill(0.9f);
+
+            layer.B.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+            layer.C.MapToSelf(_ => InitializationHelper.RandomInUniformDistribution(Random, 0f, scale));
+        }
     }
 
     // public Vector Backward(Matrix outputGradient, ImmutableArray<EmbeddedMamba2Layer.Snapshot> snapshots)
@@ -103,10 +122,10 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
             return error1;
         }
 
-        var hiddenLayers = new Mamba2VectorLayer[hiddenLayerCount];
+        var hiddenLayers = new Mamba2Layer[hiddenLayerCount];
         foreach (var i in ..hiddenLayerCount)
         {
-            var layer = ModelSerializer.ReadLayer(reader).Require<Mamba2VectorLayer>(v => new InvalidCastException("Mamba requires EmbeddedMamba2Layer"));
+            var layer = ModelSerializer.ReadLayer(reader).Require<Mamba2Layer>(v => new InvalidCastException("Mamba requires EmbeddedMamba2Layer"));
             if (OptionsMarshall.TryGetError(layer, out var error2))
             {
                 return error2;

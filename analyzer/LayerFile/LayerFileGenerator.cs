@@ -8,8 +8,8 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        if (!Debugger.IsAttached)
-            Debugger.Launch();
+        // if (!Debugger.IsAttached)
+        //     Debugger.Launch();
 
         var files = context.AdditionalTextsProvider.Where(a => a.Path.EndsWith(".layer"));
 
@@ -70,7 +70,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
                 public long WeightCount => {{string.Join(" + ", learnedWeights.Select(static w => w.Type switch { NumberType.Single => "1", NumberType.Vector => $"{w.Access(Location.Layer)}.Count", _ => $"{w.Access(Location.Layer)}.FlatCount" }))}};
 
-                public Vector Forward({{layer.Input.Type}} {{layer.Input.Name}}, Snapshot snapshot)
+                public {{layer.Output.Type}} Forward({{layer.Input.Type}} {{layer.Input.Name}}, Snapshot snapshot)
                 {
             """);
 
@@ -85,7 +85,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             """);
 
             sb.AppendLine($$"""
-                public Vector Backward({{layer.Input.Type}} outputGradient, Snapshot snapshot, Gradients gradients)
+                public {{layer.Input.Type}} Backward({{layer.Output.Type}} outputGradient, Snapshot snapshot, Gradients gradients)
                 {
             """);
 
@@ -112,9 +112,19 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
             foreach (var snap in registry.Weights.Distinct().OfType<DirectWeights>().Where(static w => w.Location is Location.Snapshot))
             {
-                sb.AppendLine($$"""
+                if (snap.ReadOnlyProperty)
+                {
+
+                    sb.AppendLine($$"""
                     public {{snap.Type}} {{snap.Name}} { get; } = {{snap.Type}}.Create({{string.Join(", ", snap.Dimensions.Select(static p => p.Access(Location.Snapshot)))}});
             """);
+                }
+                else
+                {
+                    sb.AppendLine($$"""
+                    public {{snap.Type}} {{snap.Name}} { get; set; }
+            """);
+                }
             }
 
             sb.AppendLine($$"""

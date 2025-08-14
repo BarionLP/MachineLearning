@@ -22,7 +22,7 @@ internal sealed class AddOperation(Weights left, Weights right, Weights result) 
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
     {
-        var rightGradient = registry.CreateWeightsGradient(Right);
+        var rightGradient = registry.GetOrCreateGradient(Right);
         var resultGradient = registry.GetGradient(Result);
         ops.Add(new AddOperation(rightGradient, resultGradient, rightGradient));
         registry.AddAlias(((DirectWeights)Left).GetGradientName(), resultGradient);

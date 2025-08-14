@@ -43,16 +43,28 @@ internal static class LayerFileParser
 
         // weights
         if (lines.Current is not "# Weights") throw new InvalidOperationException($"{name} has no weights");
+        if (lines.Current is not "# Weights") throw new InvalidOperationException($"{name} has no weights");
 
         while (lines.MoveNext())
         {
-            if (lines.Current.StartsWith("# Forward ".AsSpan())) break;
+            if (lines.Current.StartsWith("# Forward ".AsSpan()) || lines.Current is "# Snapshot") break;
 
             def.LearnedWeights.Add(def.Registry.ParseWeightDefinition(lines.Current, Location.Layer));
         }
 
-        def.Input = def.Registry.ParseWeightDefinition(lines.Current.Slice("# Forward".Length).Trim(), Location.Snapshot);
-        def.ForwardPass.Add(new InputOperation(def.Input with { Location = Location.Pass }, def.Input));
+        // parameters
+        if (lines.Current is "# Snapshot")
+        {
+            while (lines.MoveNext())
+            {
+                if (lines.Current.StartsWith("# Forward ".AsSpan())) break;
+
+                def.Registry.ParseWeightDefinition(lines.Current, Location.Snapshot);
+            }
+        }
+
+        def.Input = def.Registry.ParseWeightDefinition(lines.Current.Slice("# Forward".Length).Trim(), Location.Snapshot, readOnlyProperty: false);
+        def.ForwardPass.Add(new InputOperation(def.Input.WithLocation(Location.Pass), def.Input));
 
         var factory = new OperationFactory(def.Registry);
 
@@ -64,9 +76,10 @@ internal static class LayerFileParser
             var parts = lines.Current.ToString().Split(' ');
             def.ForwardPass.Add(parts switch
             {
-                [var result, "=", var source, "Activate"] => factory.NewLeakyReLU(def.Registry[source], result),
-                [var result, "=", var left, "+", var right] => factory.NewAdd(def.Registry[left], def.Registry[right], result),
-                [var result, "=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], result),
+                [var result, "=", var source, "Activate"] => def.HasActivationFunction ? new ActivationOperation(def.Registry[source], def.Registry[result]) : throw new InvalidOperationException("layer has no activation function"),
+                [var result, "=", var left, "+", var right] => new AddOperation(def.Registry[left], def.Registry[right], def.Registry[result]),
+                [var result, "=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], def.Registry[result]),
+                [var result, "+=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], def.Registry[result], add: true),
                 ["foreach", "row", var index, "in", var matrix] => new ForeachRowOperation(def.Registry[matrix], index, false),
                 ["end"] => new EndLoopOperation(contextStack.Pop()),
                 [var output] => new OutputOperation(def.Registry[output]),

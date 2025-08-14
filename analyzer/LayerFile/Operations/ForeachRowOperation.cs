@@ -11,8 +11,8 @@ internal sealed class ForeachRowOperation(Weights matrix, string indexName, bool
     public override void AppendCode(StringBuilder sb)
     {
         sb.AppendLine(Reversed
-            ? $$"""for(int {{((DirectWeights)Result).Name}} = {{Matrix.PassAccess()}}.RowCount - 1; i <= 0 , i++) {"""
-            : $$"""for(int {{((DirectWeights)Result).Name}} = 0; i < {{Matrix.PassAccess()}}.RowCount, i++) {"""
+            ? $$"""for(int {{Result.PassAccess()}} = {{Matrix.PassAccess()}}.RowCount - 1; {{Result.PassAccess()}} <= 0; {{Result.PassAccess()}}--) {"""
+            : $$"""for(int {{Result.PassAccess()}} = 0; {{Result.PassAccess()}} < {{Matrix.PassAccess()}}.RowCount; {{Result.PassAccess()}}++) {"""
         );
     }
 

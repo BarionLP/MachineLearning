@@ -10,7 +10,7 @@ internal sealed class DotProductOperation(Weights left, Weights right, Weights r
 
     public override void AppendCode(StringBuilder sb)
     {
-        sb.AppendLine($$"""{{Result.PassAccess()}} = {{Left.PassAccess()}}.Dot({{Right.PassAccess()}})""");
+        sb.AppendLine($$"""{{Result.PassAccess()}} = {{Left.PassAccess()}}.Dot({{Right.PassAccess()}});""");
     }
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)

@@ -161,7 +161,7 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
         NumericsDebug.AssertValidNumbers(gradient);
 
         OutputLayerOptimizer.Update(gradient, outputSnapshot, gradients[^1]);
-        gradient = outputSnapshot.GradientInput.Storage;
+        gradient = outputSnapshot.InputGradient.Storage;
 
         for (int layerIndex = LayerOptimizers.Length - 1; layerIndex >= 0; layerIndex--)
         {

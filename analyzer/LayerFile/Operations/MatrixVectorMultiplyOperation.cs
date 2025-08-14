@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Security.Cryptography;
 
 namespace ML.Analyzer.LayerFile.Operations;
 
@@ -11,13 +10,13 @@ internal sealed class MatrixVectorMultiplyOperation(Weights matrix, Weights vect
 
     public override void AppendCode(StringBuilder sb)
     {
-        sb.AppendLine($"{Matrix.PassAccess()}.MultiplyTo({Vector.PassAccess()}, {Result.PassAccess()});");
+        sb.AppendLine($"{Matrix.PassAccess()}.Multiply{(Result.Location is Location.Gradients ? "Add" : "")}To({Vector.PassAccess()}, {Result.PassAccess()});");
     }
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
     {
-        ops.Add(new VectorVectorMultiplyMatrixOperation(registry.GetGradient(Result), Vector, registry.CreateWeightsGradient(Matrix)));
-        ops.Add(new MatrixTransposedVectorMultiplyOperation(Matrix, registry.GetGradient(Result), registry.CreateWeightsGradient(Vector)));
+        ops.Add(new VectorVectorMultiplyMatrixOperation(registry.GetGradient(Result), Vector, registry.GetOrCreateGradient(Matrix)));
+        ops.Add(new MatrixTransposedVectorMultiplyOperation(Matrix, registry.GetGradient(Result), registry.GetOrCreateGradient(Vector)));
     }
 }
 
@@ -29,7 +28,7 @@ internal sealed class MatrixTransposedVectorMultiplyOperation(Weights matrix, We
 
     public override void AppendCode(StringBuilder sb)
     {
-        sb.AppendLine($"{Matrix.PassAccess()}.MultiplyTransposedTo({Vector.PassAccess()}, {Result.PassAccess()});");
+        sb.AppendLine($"{Matrix.PassAccess()}.MultiplyTransposed{(Result.Location is Location.Gradients ? "Add" : "")}To({Vector.PassAccess()}, {Result.PassAccess()});");
     }
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)

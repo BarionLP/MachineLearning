@@ -9,5 +9,5 @@ public sealed class EmptyLayerOptimizer : ILayerOptimizer
     public void Apply(IGradients gradients) { }
     public void FullReset() { }
     public void GradientCostReset() { }
-    public void Update(Vector nodeValues, ILayerSnapshot snapshot, IGradients gradients) { }
+    public Vector Update(Vector outputGradient, ILayerSnapshot snapshot, IGradients gradients) => outputGradient;
 }

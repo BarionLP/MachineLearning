@@ -10,7 +10,7 @@ internal sealed class VectorVectorMultiplyMatrixOperation(Weights rowVector, Wei
 
     public override void AppendCode(StringBuilder sb)
     {
-        sb.AppendLine($"VectorHelper.MultiplyToMatrixAddTo({RowVector.PassAccess()}, {ColumnVector.PassAccess()}, {Result.PassAccess()});");
+        sb.AppendLine($"VectorHelper.MultiplyToMatrix{(Result.Location is Location.Gradients ? "Add" : "")}To({RowVector.PassAccess()}, {ColumnVector.PassAccess()}, {Result.PassAccess()});");
     }
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)

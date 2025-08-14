@@ -68,11 +68,11 @@ internal static class AdamLayerGenerator
 
         #region Update
         sb.AppendLine($$"""
-                public void Update(Vector costGradient, MachineLearning.Model.Layer.Snapshot.ILayerSnapshot snapshot, MachineLearning.Model.Layer.Snapshot.IGradients gradients)
+                public Vector Update(Vector costGradient, MachineLearning.Model.Layer.Snapshot.ILayerSnapshot snapshot, MachineLearning.Model.Layer.Snapshot.IGradients gradients)
                 {
                     var g = Guard.Is<{{name}}.Gradients>(gradients);
                     var s = Guard.Is<{{snapshot}}>(snapshot);
-                    Layer.Backward({{(output is NumberType.Vector ? "costGradient" : $"{output}.Of(costGradient.Count / s.Output.ColumnCount, s.Output.ColumnCount, costGradient)")}}, s, g);
+                    var result = Layer.Backward({{(output is NumberType.Vector ? "costGradient" : $"{output}.Of(costGradient.Count / s.Output.ColumnCount, s.Output.ColumnCount, costGradient)")}}, s, g){{(output is NumberType.Vector ? "" : ".Storage")}};
 
         """);
 
@@ -82,6 +82,7 @@ internal static class AdamLayerGenerator
         }
 
         sb.AppendLine($$"""
+                    return result;
                 }
         """);
 

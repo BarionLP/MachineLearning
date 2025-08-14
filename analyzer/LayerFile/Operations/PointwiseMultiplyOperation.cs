@@ -12,17 +12,17 @@ internal sealed class PointwiseMultiplyOperation(Weights left, Weights right, We
     {
         if (ReferenceEquals(Left, Result))
         {
-            sb.AppendLine($"{Left.PassAccess()}.PointwiseMultiplyToSelf({Right.PassAccess()});");
+            sb.AppendLine($"{Left.PassAccess()}.PointwiseMultiply{(Result.Location is Location.Gradients ? "Add" : "")}ToSelf({Right.PassAccess()});");
         }
         else
         {
-            sb.AppendLine($"{Left.PassAccess()}.PointwiseMultiplyTo({Right.PassAccess()}, {Result.PassAccess()});");
+            sb.AppendLine($"{Left.PassAccess()}.PointwiseMultiply{(Result.Location is Location.Gradients ? "Add" : "")}To({Right.PassAccess()}, {Result.PassAccess()});");
         }
     }
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
     {
-        var rightGradient = registry.CreateWeightsGradient(Right);
+        var rightGradient = registry.GetOrCreateGradient(Right);
         var resultGradient = registry.GetGradient(Result);
         ops.Add(new AddOperation(rightGradient, resultGradient, rightGradient));
         ops.Add(new DefineOperation(resultGradient, registry.CreateWeightsGradient(Left, Location.Pass)));

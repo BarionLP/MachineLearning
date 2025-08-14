@@ -29,14 +29,21 @@ internal sealed class LayerRegistry
     public Dictionary<string, Weights>.ValueCollection Weights => weightsLookup.Values;
     public Dictionary<string, ReferenceParameter>.ValueCollection Parameters => paramLookup.Values;
 
-    public Weights GetGradient(Weights original) => original switch
+    public Weights GetOrCreateGradient(Weights original) => TryGetGradient(original) ?? CreateWeightsGradient(original);
+    public Weights GetGradient(Weights original) => TryGetGradient(original) ?? throw new InvalidOperationException($"Gradient for {original} not created");
+    public Weights? TryGetGradient(Weights original)
     {
-        DirectWeights dw => GetGradient(dw),
-        RowReferenceWeights rw => rw with { Matrix = GetGradient(rw.Matrix) },
-        ItemReferenceWeights rw => rw with { Weights = GetGradient(rw.Weights) },
-        _ => throw new InvalidOperationException(),
-    };
-    public DirectWeights GetGradient(DirectWeights original) => weightsLookup.TryGetValue(original.GetGradientName(), out var value) ? (DirectWeights)value : throw new InvalidOperationException($"Gradient for {original.Name} not created");
+        return original switch
+        {
+            DirectWeights dw => TryGetGradient(dw),
+            RowReferenceWeights rw => TryGetGradient(rw.Matrix) is {} w ? rw with { Matrix = w } : null,
+            ItemReferenceWeights rw => TryGetGradient(rw.Weights) is {} w ? rw with { Weights = w } : null,
+            _ => throw new InvalidOperationException(),
+        };
+    }
+
+    public DirectWeights GetGradient(DirectWeights original) => TryGetGradient(original) ?? throw new InvalidOperationException($"Gradient for {original} not created");
+    public DirectWeights? TryGetGradient(DirectWeights original) => weightsLookup.TryGetValue(original.GetGradientName(), out var value) ? (DirectWeights?)(DirectWeights)value : null;
 
     public void AddAlias(string name, Weights weights)
     {
@@ -50,30 +57,13 @@ internal sealed class LayerRegistry
         paramLookup.Add(name, new(name));
     }
 
-    public DirectWeights CreateWeights(string name, ImmutableArray<Parameter> dimensions, Location location)
+    public DirectWeights CreateWeights(string name, ImmutableArray<Parameter> dimensions, Location location, bool readOnlyProperty = true)
     {
         ThrowIfDuplicate(name);
 
-        var obj = new DirectWeights(name, dimensions, location);
+        var obj = new DirectWeights(name, dimensions, location, readOnlyProperty);
         weightsLookup.Add(name, obj);
         return obj;
-    }
-
-    public Weights CreateResultWeights(string name, Weights target) => CreateResultWeights(name, target.Dimensions, target);
-    public Weights CreateResultWeights(string name, ImmutableArray<Parameter> dimensions, Weights target)
-    {
-        if (name[^1] is ']')
-        {
-            var idx = name.IndexOf('[');
-            var accessor = name.Substring(idx + 1, name.Length - idx - 2).Split([", "], StringSplitOptions.None).Select(static s => s.Trim()).ToImmutableArray();
-            var underlying = target is RowReferenceWeights rw && accessor.Length is 1
-                ? rw.Matrix
-                : ((ItemReferenceWeights)target).Weights;
-            var result = CreateWeights(name.Substring(0, idx), dimensions, Location.Snapshot);
-            return target is RowReferenceWeights rw2 ? rw2 with { Matrix = result } : ((ItemReferenceWeights)target) with { Weights = result };
-        }
-
-        return CreateWeights(name, dimensions, Location.Snapshot);
     }
 
     public Weights CreateWeightsGradient(Weights original) => original switch
@@ -108,19 +98,15 @@ internal sealed class LayerRegistry
         return obj;
     }
 
-    public DirectWeights ParseWeightDefinition(ReadOnlySpan<char> line, Location location)
+    public DirectWeights ParseWeightDefinition(ReadOnlySpan<char> line, Location location, bool readOnlyProperty = true)
     {
         var nameEndIndex = line.IndexOf('[');
         var name = line.Slice(0, nameEndIndex).Trim().ToString();
 
-        ThrowIfDuplicate(name);
-
         var dimensionsSpan = line.Slice(nameEndIndex + 1, line.IndexOf(']') - nameEndIndex - 1).Trim();
         var dimensions = dimensionsSpan.ToString().Split(',').Select(static s => s.Trim()).Select<string, Parameter>(s => int.TryParse(s, out var value) ? new ValueParameter(value) : paramLookup.TryGetValue(s, out var reference) ? reference : throw new InvalidOperationException($"Undefined Parameter {s}"));
 
-        var obj = new DirectWeights(name, [.. dimensions], location);
-        weightsLookup.Add(name, obj);
-        return obj;
+        return CreateWeights(name, [.. dimensions], location, readOnlyProperty);
     }
 
     private void ThrowIfDuplicate(string name)
