@@ -93,7 +93,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         if (attribute.NamedArguments.FirstOrDefault(p => p is { Key: "OutputGradientType", Value.Kind: TypedConstantKind.Type }) is { Key: not null } p)
         {
-            tout = compilation.GetTypeByMetadataName(p.Value.Value!.ToString())!;
+            tout = compilation.GetTypeByMetadataName(p.Value.Value!.ToString()!)!;
         }
 
         var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
@@ -193,7 +193,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         if (layer.GetAttributes().FirstOrDefault(a => IsGenerateOptimizersAttribute(a.AttributeClass!)) is not null)
         {
-            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.ContainingNamespace.ToString(), tin.ToString(), ToNumberType(tout), tsnap.ToString(), weights.Select(symbol => new DirectWeights(symbol.Name, ToDims(symbol.Type), LayerFile.Location.Layer))));
+            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.ContainingNamespace.ToString(), tin.ToString()!, ToNumberType(tout), tsnap.ToString()!, weights.Select(symbol => new DirectWeights(symbol.Name, ToDims(symbol.Type), LayerFile.Location.Layer))));
         }
 
         context.AddSource($"{layer.Name}.g.cs", sb.ToString());

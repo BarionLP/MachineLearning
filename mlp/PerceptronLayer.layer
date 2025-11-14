@@ -9,6 +9,11 @@ OutputNodes
 Weights [OutputNodes, InputNodes]
 Biases [OutputNodes]
 
+# Snapshot
+Weighted [OutputNodes]
+Biased [OutputNodes]
+Activated [OutputNodes]
+
 # Forward Input [InputNodes]
 Weighted = Weights * Input
 Biased = Weighted + Biases
