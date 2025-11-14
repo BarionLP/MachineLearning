@@ -47,7 +47,7 @@ public sealed class MultiLayerPerceptronModel : IModel<Vector, PerceptronLayer.S
         foreach (var i in ..layerCount)
         {
             var result = ModelSerializer.ReadLayer(reader).Require<PerceptronLayer>();
-            if (OptionsMarshall.TryGetError(result, out var error))
+            if (!result.Branch(out _, out var error))
             {
                 return error;
             }

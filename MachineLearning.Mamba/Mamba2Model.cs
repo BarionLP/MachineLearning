@@ -20,7 +20,6 @@ public sealed class Mamba2Model(int layerCount, int contextSize, int dims) : IMo
 
     public Vector Process(Vector input, ImmutableArray<Mamba2ScalarLayer.Snapshot> snapshots)
     {
-
         return Layers.Zip(snapshots).Aggregate(input, (v, l) => l.First.Forward(v, l.Second));
     }
 
@@ -91,20 +90,20 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
     {
         writer.Write(model.HiddenLayers.Length);
 
-        if (OptionsMarshall.TryGetError(ModelSerializer.SaveLayer(model.InputLayer, writer), out var error1))
+        if (!ModelSerializer.SaveLayer(model.InputLayer, writer).Branch(out var error1))
         {
             return error1;
         }
 
         foreach (var layer in model.HiddenLayers)
         {
-            if (OptionsMarshall.TryGetError(ModelSerializer.SaveLayer(layer, writer), out var error2))
+            if (!ModelSerializer.SaveLayer(layer, writer).Branch(out var error2))
             {
                 return error2;
             }
         }
 
-        if (OptionsMarshall.TryGetError(ModelSerializer.SaveLayer(model.OutputLayer, writer), out var error3))
+        if (!ModelSerializer.SaveLayer(model.OutputLayer, writer).Branch(out var error3))
         {
             return error3;
         }
@@ -117,7 +116,7 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
         var hiddenLayerCount = reader.ReadInt32();
 
         var input = ModelSerializer.ReadLayer(reader).Require<EmbeddingLayer>(v => new InvalidCastException("Mamba requires an EmbeddingLayer"));
-        if (OptionsMarshall.TryGetError(input, out var error1))
+        if (!input.Branch(out _, out var error1))
         {
             return error1;
         }
@@ -126,7 +125,7 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
         foreach (var i in ..hiddenLayerCount)
         {
             var layer = ModelSerializer.ReadLayer(reader).Require<Mamba2Layer>(v => new InvalidCastException("Mamba requires EmbeddedMamba2Layer"));
-            if (OptionsMarshall.TryGetError(layer, out var error2))
+            if (!layer.Branch(out _, out var error2))
             {
                 return error2;
             }
@@ -134,7 +133,7 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
         }
 
         var output = ModelSerializer.ReadLayer(reader).Require<UnEmbeddingLayer>(v => new InvalidCastException("Mamba requires an UnEmbeddingLayer"));
-        if (OptionsMarshall.TryGetError(output, out var error3))
+        if (!output.Branch(out _, out var error3))
         {
             return error3;
         }

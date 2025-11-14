@@ -57,19 +57,19 @@ public static class EmbeddedModel
     public static Result<EmbeddedModel<int[], int>> Read(BinaryReader reader)
     {
         var input = ModelSerializer.ReadEncodedEmbeddingLayer(reader);
-        if (OptionsMarshall.TryGetError(input, out var error))
+        if (!input.Branch(out _, out var error))
         {
             return error;
         }
 
-        var inner = MultiLayerPerceptronModel.Read(reader).Require<MultiLayerPerceptronModel>();
-        if (OptionsMarshall.TryGetError(inner, out error))
+        var inner = MultiLayerPerceptronModel.Read(reader);
+        if (!inner.Branch(out _, out error))
         {
             return error;
         }
 
         var output = ModelSerializer.ReadTokenOutputLayer(reader);
-        if (OptionsMarshall.TryGetError(output, out error))
+        if (!output.Branch(out _, out error))
         {
             return error;
         }
