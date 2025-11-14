@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <DotNetVersion>net10.0</DotNetVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
