@@ -8,12 +8,12 @@ internal sealed class DotProductOperation(Weights left, Weights right, Weights r
     public Weights Right { get; } = right.Type is NumberType.Vector ? right : throw new InvalidOperationException();
     public override Weights Result { get; } = result.Type is NumberType.Single ? result : throw new InvalidOperationException();
 
-    public override void AppendCode(StringBuilder sb)
+    public override void AppendCode(MethodBodyWriter sb)
     {
-        sb.AppendLine($$"""{{Result.PassAccess()}} = {{Left.PassAccess()}}.Dot({{Right.PassAccess()}});""");
+        sb.WriteOperation($$"""{{Result.PassAccess()}} = {{Left.PassAccess()}}.Dot({{Right.PassAccess()}});""");
     }
 
-    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
+    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)
     {
         throw new NotImplementedException();
     }

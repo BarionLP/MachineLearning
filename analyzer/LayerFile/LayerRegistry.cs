@@ -36,9 +36,10 @@ internal sealed class LayerRegistry
         return original switch
         {
             DirectWeights dw => TryGetGradient(dw),
-            RowReferenceWeights rw => TryGetGradient(rw.Matrix) is {} w ? rw with { Matrix = w } : null,
-            ItemReferenceWeights rw => TryGetGradient(rw.Weights) is {} w ? rw with { Weights = w } : null,
-            _ => throw new InvalidOperationException(),
+            RowReferenceWeights rw => TryGetGradient(rw.Matrix) is { } w ? rw with { Matrix = w } : null,
+            ItemReferenceWeights rw => TryGetGradient(rw.Weights) is { } w ? rw with { Weights = w } : null,
+            ConditionalReferenceWeights cw => TryGetGradient(cw.WhenTrue) is { } w ? cw with { WhenTrue = w, WhenFalse = null } : null,
+            _ => throw new InvalidOperationException($"unkown weight type {original}"),
         };
     }
 
@@ -71,13 +72,14 @@ internal sealed class LayerRegistry
         DirectWeights dw => CreateWeightsGradient(dw),
         RowReferenceWeights rw => rw with { Matrix = CreateWeightsGradient(rw.Matrix) },
         ItemReferenceWeights rw => rw with { Weights = CreateWeightsGradient(rw.Weights) },
-        _ => throw new InvalidOperationException(),
+        ConditionalReferenceWeights cw => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue), WhenFalse = null },
+        _ => throw new InvalidOperationException($"unkown weight type {original}"),
     };
     public DirectWeights CreateWeightsGradient(DirectWeights original) => CreateWeightsGradient(original, original.Location switch
     {
         Location.Layer => Location.Gradients,
         Location.Snapshot => Location.Snapshot,
-        _ => throw new InvalidOperationException()
+        _ => throw new InvalidOperationException($"unkown location type {original.Location}")
     });
 
     public Weights CreateWeightsGradient(Weights original, Location location) => original switch
@@ -85,7 +87,8 @@ internal sealed class LayerRegistry
         DirectWeights dw => CreateWeightsGradient(dw, location),
         RowReferenceWeights rw => rw with { Matrix = CreateWeightsGradient(rw.Matrix, location) },
         ItemReferenceWeights rw => rw with { Weights = CreateWeightsGradient(rw.Weights, location) },
-        _ => throw new InvalidOperationException(),
+        ConditionalReferenceWeights cw => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue, location), WhenFalse = null },
+        _ => throw new InvalidOperationException($"unkown weight type {original}"),
     };
     public DirectWeights CreateWeightsGradient(DirectWeights original, Location location)
     {

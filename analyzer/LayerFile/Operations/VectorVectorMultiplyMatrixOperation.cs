@@ -8,12 +8,12 @@ internal sealed class VectorVectorMultiplyMatrixOperation(Weights rowVector, Wei
     public Weights ColumnVector { get; } = columnVector.Type is NumberType.Vector ? columnVector : throw new InvalidOperationException($"{columnVector} is not a vector");
     public override Weights Result { get; } = result;
 
-    public override void AppendCode(StringBuilder sb)
+    public override void AppendCode(MethodBodyWriter sb)
     {
-        sb.AppendLine($"VectorHelper.MultiplyToMatrix{(Result.Location is Location.Gradients ? "Add" : "")}To({RowVector.PassAccess()}, {ColumnVector.PassAccess()}, {Result.PassAccess()});");
+        sb.WriteOperation($"VectorHelper.MultiplyToMatrix{(Result.Location is Location.Gradients ? "Add" : "")}To({RowVector.PassAccess()}, {ColumnVector.PassAccess()}, {Result.PassAccess()});");
     }
 
-    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
+    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)
     {
         throw new NotImplementedException();
     }

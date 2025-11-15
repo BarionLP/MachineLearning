@@ -120,11 +120,11 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
         public Matrix GradientMemory { get; } = Matrix.Create(layer.MaxSequenceLength, layer.StateDimensions);
     }
 
-    public sealed class Initializer(Random? random = null) : IInitializer<Mamba2VectorLayer>
+    public sealed class Initializer(Random? random = null) : IInitializer<Mamba2Layer>
     {
         public Random Random { get; } = random ?? Random.Shared;
 
-        public void Initialize(Mamba2VectorLayer layer)
+        public void Initialize(Mamba2Layer layer)
         {
             var scale = Weight.Sqrt(6 / ((Weight)layer.StateDimensions + layer.EmbeddingDimensions));
 
@@ -137,4 +137,9 @@ public sealed partial class Mamba2VectorLayer : ILayer<Matrix, Mamba2VectorLayer
         }
     }
 
+}
+
+partial class Mamba2Layer
+{
+    private readonly Vector ZERO = Vector.Create(StateDimensions);
 }

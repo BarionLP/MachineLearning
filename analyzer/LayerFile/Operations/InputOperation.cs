@@ -7,12 +7,12 @@ internal sealed class InputOperation(Weights weights, Weights result) : Operatio
     public Weights Weights { get; } = weights;
     public override Weights Result { get; } = result;
 
-    public override void AppendCode(StringBuilder sb)
+    public override void AppendCode(MethodBodyWriter sb)
     {
-        sb.AppendLine($$"""{{Result.PassAccess()}} = {{Weights.PassAccess()}};""");
+        sb.WriteOperation($$"""{{Result.PassAccess()}} = {{Weights.PassAccess()}};""");
     }
 
-    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
+    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)
     {
         ops.Add(new OutputOperation(registry.GetGradient(Result)));
     }

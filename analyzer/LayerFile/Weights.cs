@@ -9,7 +9,7 @@ internal abstract record Weights(ImmutableArray<Parameter> Dimensions)
         1 => NumberType.Vector,
         2 => NumberType.Matrix,
         3 => NumberType.Tensor,
-        _ => throw new InvalidOperationException(),
+        _ => throw new InvalidOperationException($"undefined dimension count {Dimensions.Length}"),
     };
 
     public string PassAccess() => Access(Location.Pass);
@@ -52,4 +52,11 @@ internal sealed record ItemReferenceWeights(DirectWeights Weights, ImmutableArra
     public override Location Location => Weights.Location;
     public override string ToString() => $"{Weights.Name}[{string.Join(", ", Accessor)}]";
     public override string Access(Location from) => $"{Weights.Access(from)}[{string.Join(", ", Accessor)}]";
+}
+
+internal sealed record ConditionalReferenceWeights(string Condition, Weights WhenTrue, string? WhenFalse) : Weights(WhenTrue.Dimensions)
+{
+    public override Location Location => WhenTrue.Location;
+    public override string ToString() => Access(Location);
+    public override string Access(Location from) => $"({Condition} ? {WhenTrue.Access(from)} : {WhenFalse})";
 }

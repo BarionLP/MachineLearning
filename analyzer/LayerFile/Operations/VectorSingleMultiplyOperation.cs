@@ -9,15 +9,15 @@ internal sealed class VectorSingleMultiplyOperation(Weights vector, Weights sing
     public override Weights Result { get; } = result.Dimensions.SequenceEqual(vector.Dimensions) ? result : throw new InvalidOperationException();
     public bool Add { get; } = add ?? result.Location is Location.Gradients;
 
-    public override void AppendCode(StringBuilder sb)
+    public override void AppendCode(MethodBodyWriter sb)
     {
-        sb.AppendLine($$"""{{Vector.PassAccess()}}.Multiply{{(Add ? "Add" : "")}}To({{Single.PassAccess()}}, {{Result.PassAccess()}});""");
+        sb.WriteOperation($$"""{{Vector.PassAccess()}}.Multiply{{(Add ? "Add" : "")}}To({{Single.PassAccess()}}, {{Result.PassAccess()}});""");
     }
 
-    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
+    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)
     {
         var resultGradient = registry.GetGradient(Result);
-        ops.Add(new VectorSingleMultiplyOperation(resultGradient, Single, registry.GetOrCreateGradient(Vector)));
+        ops.Add(factory.NewMultiply(resultGradient, Single, registry.GetOrCreateGradient(Vector)));
         ops.Add(new DotProductOperation(resultGradient, Vector, registry.GetOrCreateGradient(Single)));
     }
 }

@@ -7,12 +7,12 @@ internal sealed class ActivationGradientOperation(Weights source, Weights result
     public Weights Source { get; } = source;
     public override Weights Result { get; } = result;
 
-    public override void AppendCode(StringBuilder sb)
+    public override void AppendCode(MethodBodyWriter sb)
     {
-        sb.AppendLine($"ActivationFunction.DerivativeTo({Source.PassAccess()}, {Result.PassAccess()});");
+        sb.WriteOperation($"ActivationFunction.DerivativeTo({Source.PassAccess()}, {Result.PassAccess()});");
     }
 
-    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry)
+    public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)
     {
         throw new NotImplementedException();
     }

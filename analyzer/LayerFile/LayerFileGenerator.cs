@@ -20,7 +20,6 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             var layer = LayerFileParser.Parse(Path.GetFileNameWithoutExtension(file.Path), text);
             var registry = layer.Registry;
             var learnedWeights = layer.LearnedWeights;
-            var forwardPass = layer.ForwardPass;
             var hasActivationFunction = layer.HasActivationFunction;
 
             var sb = new StringBuilder();
@@ -37,7 +36,6 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             }
 
             // generate model file
-
 
             sb.AppendLine($$"""
             public sealed partial class {{layer.Name}}({{(hasActivationFunction ? "MachineLearning.Model.Activation.IActivationFunction ActivationFunction, " : "")}}{{string.Join(", ", registry.Parameters.Select(p => $"int {p.Name}"))}}) : ILayer<{{layer.Input.Type}}, {{layer.Name}}.Snapshot>
@@ -73,11 +71,10 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                 public {{layer.Output.Type}} Forward({{layer.Input.Type}} {{layer.Input.Name}}, Snapshot snapshot)
                 {
             """);
-
-            foreach (var operation in forwardPass)
+            var methodWriter = new MethodBodyWriter(sb, 2);
+            foreach (var operation in layer.ForwardPass)
             {
-                sb.Append("        ");
-                operation.AppendCode(sb);
+                operation.AppendCode(methodWriter);
             }
 
             sb.AppendLine($$"""
@@ -91,8 +88,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
             foreach (var operation in layer.BackwardPass)
             {
-                sb.Append("        ");
-                operation.AppendCode(sb);
+                operation.AppendCode(methodWriter);
             }
 
             sb.AppendLine($$"""

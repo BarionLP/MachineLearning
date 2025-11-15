@@ -47,17 +47,17 @@ internal static class LayerFileParser
 
         while (lines.MoveNext())
         {
-            if (lines.Current.StartsWith("# Forward ".AsSpan()) || lines.Current is "# Snapshot") break;
+            if (lines.Current.StartsWith("# Forward ") || lines.Current is "# Snapshot") break;
 
             def.LearnedWeights.Add(def.Registry.ParseWeightDefinition(lines.Current, Location.Layer));
         }
 
-        // parameters
+        // snapshot
         if (lines.Current is "# Snapshot")
         {
             while (lines.MoveNext())
             {
-                if (lines.Current.StartsWith("# Forward ".AsSpan())) break;
+                if (lines.Current.StartsWith("# Forward ")) break;
 
                 def.Registry.ParseWeightDefinition(lines.Current, Location.Snapshot);
             }
@@ -68,7 +68,7 @@ internal static class LayerFileParser
 
         var factory = new OperationFactory(def.Registry);
 
-        var contextStack = new Stack<ForeachRowOperation>();
+        var contextStack = new Stack<RowwiseRecurrenceOperation>();
 
         // forward pass
         while (lines.MoveNext())
@@ -80,13 +80,13 @@ internal static class LayerFileParser
                 [var result, "=", var left, "+", var right] => new AddOperation(def.Registry[left], def.Registry[right], def.Registry[result]),
                 [var result, "=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], def.Registry[result]),
                 [var result, "+=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], def.Registry[result], add: true),
-                ["foreach", "row", var index, "in", var matrix] => new ForeachRowOperation(def.Registry[matrix], index, false),
+                ["recur", "over", ..] => factory.CreateRecurrence([.. parts.Skip(2).Select(p => def.Registry[p])], reversed: false),
                 ["end"] => new EndLoopOperation(contextStack.Pop()),
                 [var output] => new OutputOperation(def.Registry[output]),
                 _ => throw new InvalidOperationException($"unkown operation '{lines.Current.ToString()}'"),
             });
 
-            if (def.ForwardPass[^1] is ForeachRowOperation lop)
+            if (def.ForwardPass[^1] is RowwiseRecurrenceOperation lop)
             {
                 contextStack.Push(lop);
             }
@@ -107,7 +107,7 @@ internal static class LayerFileParser
         def.ForwardPass.Reverse();
         foreach (var operation in def.ForwardPass)
         {
-            operation.AppendGradientOp(def.BackwardPass, def.Registry);
+            operation.AppendGradientOp(def.BackwardPass, def.Registry, factory);
         }
         def.ForwardPass.Reverse();
 

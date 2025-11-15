@@ -15,10 +15,10 @@ Memory [MaxSequenceLength, StateDimensions]
 Output [MaxSequenceLength, EmbeddingDimensions]
 
 # Forward Input [MaxSequenceLength, EmbeddingDimensions]
-foreach row t in Input
-    Memory[t] = B * Input[t]
-    Memory[t] += Memory[t-1] * Alpha[t]
-    Output[t] = C * Memory[t]
+recur over Input Memory Alpha Output
+    Memory_current = B * Input_current
+    Memory_current += Memory_previous * Alpha_current
+    Output_current = C * Memory_current
 end
 Output
 
