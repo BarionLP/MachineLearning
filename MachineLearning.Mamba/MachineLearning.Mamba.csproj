@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="**\*.layer" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\MachineLearning.Model\MachineLearning.Model.csproj" />
     <ProjectReference Include="..\MachineLearning.Serialization\MachineLearning.Serialization.csproj" />
     <ProjectReference Include="..\MachineLearning.Training\MachineLearning.Training.csproj" />

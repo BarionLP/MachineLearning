@@ -3,4 +3,9 @@
     <DotNetVersion>net10.0</DotNetVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="**\*.layer" />
+  </ItemGroup>
+
 </Project>
