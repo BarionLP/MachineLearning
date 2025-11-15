@@ -1,27 +1,34 @@
 using System.Collections.Generic;
+using ML.Analyzer.LayerFile;
 
 namespace ML.Analyzer;
 
-public static class AdamLayerGenerator
+internal static class AdamLayerGenerator
 {
     private const string WeightType = "float";
 
-    public static void GenerateAdam(SourceProductionContext context, Compilation compilation, LayerData data, AttributeData adamConfig)
+    public static void GenerateAdam(SourceProductionContext context, LayerData data)
     {
         var sb = new StringBuilder();
 
-        var (layer, input, output, snapshot, weights) = data;
+        var (name, @namespace, _, output, snapshot, weights) = data;
 
         sb.AppendLine($$"""
         using Ametrin.Guards;
+        using Ametrin.Numerics;
+        """);
 
-        namespace {{layer.ContainingNamespace}};
+        if (!string.IsNullOrEmpty(@namespace))
+        {
+            sb.AppendLine($$"""namespace {{@namespace}};""");
+        }
 
-        partial class {{layer.Name}}
+        sb.AppendLine($$"""
+        partial class {{name}}
         {
             public sealed class Adam : MachineLearning.Training.Optimization.ILayerOptimizer
             {
-                public {{layer.Name}} Layer { get; }
+                public {{name}} Layer { get; }
                 public MachineLearning.Training.Optimization.Adam.AdamOptimizer Optimizer { get; }
 
         """);
@@ -37,7 +44,7 @@ public static class AdamLayerGenerator
         #endregion
 
         sb.AppendLine($$"""
-                public Adam(MachineLearning.Training.Optimization.Adam.AdamOptimizer optimizer, {{layer.Name}} layer)
+                public Adam(MachineLearning.Training.Optimization.Adam.AdamOptimizer optimizer, {{name}} layer)
                 {
                     this.Optimizer = optimizer;
                     this.Layer = layer;
@@ -55,26 +62,27 @@ public static class AdamLayerGenerator
                 [System.Runtime.CompilerServices.ModuleInitializer]
                 internal static void Register()
                 {
-                    MachineLearning.Training.Optimization.Adam.AdamOptimizer.Registry.Register<{{layer.Name}}>((op, l) => new Adam(op, l));
+                    MachineLearning.Training.Optimization.Adam.AdamOptimizer.Registry.Register<{{name}}>((op, l) => new Adam(op, l));
                 }
         """);
 
         #region Update
         sb.AppendLine($$"""
-                public void Update(Vector costGradient, MachineLearning.Model.Layer.Snapshot.ILayerSnapshot snapshot, MachineLearning.Model.Layer.Snapshot.IGradients gradients)
+                public Vector Update(Vector costGradient, MachineLearning.Model.Layer.Snapshot.ILayerSnapshot snapshot, MachineLearning.Model.Layer.Snapshot.IGradients gradients)
                 {
-                    var g = Guard.Is<{{layer.Name}}.Gradients>(gradients);
+                    var g = Guard.Is<{{name}}.Gradients>(gradients);
                     var s = Guard.Is<{{snapshot}}>(snapshot);
-                    Layer.Backward({{(IsVector(output) ? "costGradient" : $"{output}.Of(costGradient.Count / s.Output.ColumnCount, s.Output.ColumnCount, costGradient)")}}, s, g);
+                    var result = Layer.Backward({{(output is NumberType.Vector ? "costGradient" : $"{output}.Of(costGradient.Count / s.Output.ColumnCount, s.Output.ColumnCount, costGradient)")}}, s, g){{(output is NumberType.Vector ? "" : ".Storage")}};
 
         """);
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\t\tNumericsDebug.AssertValidNumbers(g.{weight.Name});");
+            sb.AppendLine($"\t\t\tNumericsDebug.AssertValidNumbers(g.{weight.GetGradientName()});");
         }
 
         sb.AppendLine($$"""
+                    return result;
                 }
         """);
 
@@ -84,7 +92,7 @@ public static class AdamLayerGenerator
         sb.Append($$"""
                 public void Apply(MachineLearning.Model.Layer.Snapshot.IGradients gradients)
                 {
-                    if(gradients is not {{layer.Name}}.Gradients gradient)
+                    if(gradients is not {{name}}.Gradients gradient)
                     {
                         throw new Exception();
                     }
@@ -95,14 +103,14 @@ public static class AdamLayerGenerator
         {
             sb.AppendLine($$"""
 
-                    max = Weight.Abs(gradient.{{weight.Name}}.MaxMagnitude());
+                    max = Weight.Abs(gradient.{{weight.GetGradientName()}}.MaxMagnitude());
                     if(max > 100_000)
                     {
-                        gradient.{{weight.Name}}.DivideToSelf(max/100_000);
+                        gradient.{{weight.GetGradientName()}}.DivideToSelf(max/100_000);
                     }
-                    (FirstMoment{{weight.Name}}, gradient.{{weight.Name}}).MapToFirst(FirstMomentEstimate);
+                    (FirstMoment{{weight.Name}}, gradient.{{weight.GetGradientName()}}).MapToFirst(FirstMomentEstimate);
                     NumericsDebug.AssertValidNumbers(FirstMoment{{weight.Name}});
-                    (SecondMoment{{weight.Name}}, gradient.{{weight.Name}}).MapToFirst(SecondMomentEstimate);
+                    (SecondMoment{{weight.Name}}, gradient.{{weight.GetGradientName()}}).MapToFirst(SecondMomentEstimate);
                     NumericsDebug.AssertValidNumbers(SecondMoment{{weight.Name}});
                     Layer.{{weight.Name}}.SubtractToSelf((FirstMoment{{weight.Name}}, SecondMoment{{weight.Name}}).Map(WeightReduction));
         """);
@@ -143,24 +151,8 @@ public static class AdamLayerGenerator
         }    
         """);
 
-        context.AddSource($"{layer.Name}.Adam.g.cs", sb.ToString());
+        context.AddSource($"{name}.Adam.g.cs", sb.ToString());
     }
 }
 
-public sealed class LayerData(INamedTypeSymbol type, ITypeSymbol inputType, ITypeSymbol outputType, ITypeSymbol snapshotType, IEnumerable<IPropertySymbol> weights)
-{
-    public INamedTypeSymbol Type { get; } = type;
-    public ITypeSymbol InputType { get; } = inputType;
-    public ITypeSymbol OutputType { get; } = outputType;
-    public ITypeSymbol SnapshotType { get; } = snapshotType;
-    public IEnumerable<IPropertySymbol> Weights { get; } = weights;
-
-    public void Deconstruct(out INamedTypeSymbol type, out ITypeSymbol inputType, out ITypeSymbol outputType, out ITypeSymbol snapshotType, out IEnumerable<IPropertySymbol> weights)
-    {
-        type = Type;
-        inputType = InputType;
-        outputType = OutputType;
-        snapshotType = SnapshotType;
-        weights = Weights;
-    }
-}
+internal sealed record LayerData(string Name, string? Namespace, string InputType, NumberType OutputType, string SnapshotType, IEnumerable<DirectWeights> Weights);

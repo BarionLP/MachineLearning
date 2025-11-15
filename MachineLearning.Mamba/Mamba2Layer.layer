@@ -1,0 +1,26 @@
+# namespace MachineLearning.Mamba
+
+# Parameters
+MaxSequenceLength
+StateDimensions
+EmbeddingDimensions
+
+# Weights
+Alpha [MaxSequenceLength]
+B [StateDimensions, EmbeddingDimensions]
+C [EmbeddingDimensions, StateDimensions]
+
+# Snapshot
+Memory [MaxSequenceLength, StateDimensions]
+Output [MaxSequenceLength, EmbeddingDimensions]
+
+# Forward Input [MaxSequenceLength, EmbeddingDimensions]
+recur over Input Memory Alpha Output
+    Memory_current = B * Input_current
+    Memory_current += Memory_previous * Alpha_current
+    Output_current = C * Memory_current
+end
+Output
+
+
+# Serializer m2l 1

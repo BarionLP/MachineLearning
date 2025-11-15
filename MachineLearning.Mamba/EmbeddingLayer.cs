@@ -49,14 +49,16 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
         return EmbeddingMatrix.RowSpan(index);
     }
 
-    public void Backward(Matrix outputGradients, Snapshot snapshot, Gradients gradients)
+    public Matrix Backward(Matrix outputGradients, Snapshot snapshot, Gradients gradients)
     {
         foreach (var i in ..snapshot.Input.Length)
         {
             var token = snapshot.Input[i];
-            var embeddingGradient = gradients.EmbeddingMatrix.RowSpan(token);
+            var embeddingGradient = gradients.EmbeddingMatrixGradient.RowSpan(token);
             TensorPrimitives.Add(embeddingGradient, outputGradients.RowSpan(i), embeddingGradient);
         }
+
+        return null!;
     }
 
     partial class Snapshot

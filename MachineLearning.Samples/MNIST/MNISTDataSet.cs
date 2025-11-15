@@ -11,7 +11,7 @@ public sealed class MNISTDataSet(IEnumerable<DataEntry<double[], int>> data) : I
     public IInputDataNoise<double[]> Noise { get; init; } = NoInputNoise<double[]>.Instance;
     public int BatchSize => data.Length / BatchCount;
 
-    private readonly DataEntry<double[], int>[] data = data.ToArray();
+    private readonly DataEntry<double[], int>[] data = [.. data];
 
     public IEnumerable<Batch> GetBatches()
     {

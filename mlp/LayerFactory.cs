@@ -24,7 +24,7 @@ public sealed class LayerFactory(int inputNodeCount, int outputNodeCount)
 
     public PerceptronLayer Create()
     {
-        var layer = new PerceptronLayer(ActivationFunction, Matrix.Create(OutputNodeCount, InputNodeCount), Vector.Create(OutputNodeCount));
+        var layer = new PerceptronLayer(ActivationFunction, InputNodeCount, OutputNodeCount);
         Initializer.Initialize(layer);
         return layer;
     }
