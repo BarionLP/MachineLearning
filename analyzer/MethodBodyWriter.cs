@@ -11,6 +11,18 @@ internal sealed class MethodBodyWriter(StringBuilder sb, int indent = 0)
         SbIndent();
         sb.AppendLine(operation);
     }
+
+    public void OpenScope()
+    {
+        WriteOperation("{");
+        Indent++;
+    }
+
+    public void CloseScope()
+    {
+        Indent--;
+        WriteOperation("}");
+    }
     
     private void SbIndent()
     {

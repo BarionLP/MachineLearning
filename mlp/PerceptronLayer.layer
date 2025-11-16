@@ -17,7 +17,7 @@ Activated [OutputNodes]
 # Forward Input [InputNodes]
 Weighted = Weights * Input
 Biased = Weighted + Biases
-Activated = Biased Activate
+Activated = activate Biased
 Activated
 
 # Serializer pl 2

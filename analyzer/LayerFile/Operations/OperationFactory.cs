@@ -6,11 +6,7 @@ internal sealed class OperationFactory(LayerRegistry registry)
 
     public Operation NewMultiply(Weights left, Weights right, Weights result, bool? add = null)
     {
-        if (result is ConditionalReferenceWeights { WhenFalse: null, Condition: { } condition, WhenTrue: { } inner })
-        {
-            return new ConditionOperation(condition, Impl(left, right, inner, add));
-        }
-        return Impl(left, right, result, add);
+        return CreateConditionalAware(result, result => Impl(left, right, result, add));
 
         static Operation Impl(Weights left, Weights right, Weights result, bool? add = null)
         {
@@ -22,6 +18,20 @@ internal sealed class OperationFactory(LayerRegistry registry)
                 _ => throw new NotImplementedException($"cannot multiply {left} and {right}"),
             };
         }
+    }
+
+    public Operation CreateAttention(Weights queries, Weights keys, Weights result)
+    {
+        return CreateConditionalAware(result, result => new ConstructAttentionMatrixOperation(queries, keys, result));
+    }
+
+    private static Operation CreateConditionalAware(Weights relevant, Func<Weights, Operation> factory)
+    {
+        if (relevant is ConditionalReferenceWeights { Condition: { } condition, WhenTrue: { } inner, WhenFalse: null })
+        {
+            return new ConditionOperation(condition, factory(inner));
+        }
+        return factory(relevant);
     }
 
     public RowwiseRecurrenceOperation CreateRecurrence(ImmutableArray<Weights> weights, bool reversed)

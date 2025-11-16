@@ -76,10 +76,13 @@ internal static class LayerFileParser
             var parts = lines.Current.ToString().Split(' ');
             def.ForwardPass.Add(parts switch
             {
-                [var result, "=", var source, "Activate"] => def.HasActivationFunction ? new ActivationOperation(def.Registry[source], def.Registry[result]) : throw new InvalidOperationException("layer has no activation function"),
+                [var result, "=", "activate", var source] => def.HasActivationFunction ? new ActivationOperation(def.Registry[source], def.Registry[result], "ActivationFunction") : throw new InvalidOperationException("layer has no activation function"),
                 [var result, "=", var left, "+", var right] => new AddOperation(def.Registry[left], def.Registry[right], def.Registry[result]),
+                [var result, "+=", var other] => new AddOperation(def.Registry[result], def.Registry[other], def.Registry[result]),
                 [var result, "=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], def.Registry[result]),
                 [var result, "+=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], def.Registry[result], add: true),
+                [var result, "=", var queries, "attend", var keys] => factory.CreateAttention(def.Registry[queries], def.Registry[keys], def.Registry[result]),
+                [var result, "=", "softmax", var input] => new ActivationOperation(def.Registry[input], def.Registry[result], "SoftMaxActivation.Instance"),
                 ["recur", "over", ..] => factory.CreateRecurrence([.. parts.Skip(2).Select(p => def.Registry[p])], reversed: false),
                 ["end"] => new EndLoopOperation(contextStack.Pop()),
                 [var output] => new OutputOperation(def.Registry[output]),

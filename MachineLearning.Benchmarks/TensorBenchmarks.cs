@@ -1,4 +1,4 @@
-﻿using MachineLearning.Model.Activation;
+﻿using System.Numerics.Tensors;
 
 namespace MachineLearning.Benchmarks;
 
@@ -26,13 +26,13 @@ public class TensorBenchmarks
     [Benchmark(Baseline = true)]
     public void MyVector()
     {
-        SoftMaxActivation.Instance.ActivateTo(vector_l, result_v);
+        vector_l.SoftMaxTo(result_v);
     }
 
     [Benchmark]
     public void Vector_Primitives()
     {
-        vector_l.SoftMaxTo(result_v);
+        TensorPrimitives.SoftMax(vector_l.AsSpan(), result_v.AsSpan());
     }
 
     //TensorPrimitives is faster (keep my type and use AsSpan())

@@ -1,4 +1,4 @@
 ﻿using BenchmarkDotNet.Running;
 using MachineLearning.Benchmarks;
 
-BenchmarkRunner.Run<VectorBenchmarks>();
+BenchmarkRunner.Run<TensorBenchmarks>();

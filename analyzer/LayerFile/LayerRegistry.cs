@@ -75,6 +75,7 @@ internal sealed class LayerRegistry
         ConditionalReferenceWeights cw => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue), WhenFalse = null },
         _ => throw new InvalidOperationException($"unkown weight type {original}"),
     };
+    
     public DirectWeights CreateWeightsGradient(DirectWeights original) => CreateWeightsGradient(original, original.Location switch
     {
         Location.Layer => Location.Gradients,
@@ -99,6 +100,22 @@ internal sealed class LayerRegistry
         var obj = new DirectWeights(name, original.Dimensions, location);
         weightsLookup.Add(name, obj);
         return obj;
+    }
+
+
+    public Weights CreateWeightsGradient(Weights original, Weights reference) => (original, reference) switch
+    {
+        (DirectWeights dw, DirectWeights) => CreateWeightsGradient(dw, reference),
+        (RowReferenceWeights rw, RowReferenceWeights rrw) => rw with { Matrix = CreateWeightsGradient(rw.Matrix, rrw.Matrix) },
+        (ItemReferenceWeights rw, ItemReferenceWeights rrw) => rw with { Weights = CreateWeightsGradient(rw.Weights, rrw.Weights) },
+        (ConditionalReferenceWeights cw, ConditionalReferenceWeights rcw) => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue, rcw.WhenTrue), WhenFalse = null },
+        _ => throw new InvalidOperationException($"cannot use {reference} as gradient for {original}"),
+    };
+    public Weights CreateWeightsGradient(DirectWeights original, Weights reference)
+    {
+        var name = original.GetGradientName();
+        AddAlias(name, reference);
+        return reference;
     }
 
     public DirectWeights ParseWeightDefinition(ReadOnlySpan<char> line, Location location, bool readOnlyProperty = true)

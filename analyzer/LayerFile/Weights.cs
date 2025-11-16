@@ -39,18 +39,18 @@ internal sealed record DirectWeights(string Name, ImmutableArray<Parameter> Dime
     }
 }
 
-internal sealed record RowReferenceWeights(DirectWeights Matrix, string Row) : Weights(Matrix.Type is NumberType.Matrix ? [Matrix.Dimensions[1]] : throw new InvalidOperationException($"cannot refenrence a row of {Matrix}"))
+internal sealed record RowReferenceWeights(Weights Matrix, string Row) : Weights(Matrix.Type is NumberType.Matrix ? [Matrix.Dimensions[1]] : throw new InvalidOperationException($"cannot refenrence a row of {Matrix}"))
 {
     public override Location Location => Matrix.Location;
-    public override string ToString() => $"{Matrix.Name}[{Row}] [{string.Join(", ", Dimensions.Select(d => d.Access(Location.Layer)))}]";
+    public override string ToString() => $"{Matrix}[{Row}] [{string.Join(", ", Dimensions.Select(d => d.Access(Location.Layer)))}]";
 
     public override string Access(Location from) => $"{Matrix.Access(from)}.RowRef({Row})";
 }
 
-internal sealed record ItemReferenceWeights(DirectWeights Weights, ImmutableArray<string> Accessor) : Weights(Weights.Dimensions.Length == Accessor.Length ? [] : throw new InvalidOperationException($"cannot reference into {Weights} with [{string.Join(", ", Accessor)}]"))
+internal sealed record ItemReferenceWeights(Weights Weights, ImmutableArray<string> Accessor) : Weights(Weights.Dimensions.Length == Accessor.Length ? [] : throw new InvalidOperationException($"cannot reference into {Weights} with [{string.Join(", ", Accessor)}]"))
 {
     public override Location Location => Weights.Location;
-    public override string ToString() => $"{Weights.Name}[{string.Join(", ", Accessor)}]";
+    public override string ToString() => $"{Weights}[{string.Join(", ", Accessor)}]";
     public override string Access(Location from) => $"{Weights.Access(from)}[{string.Join(", ", Accessor)}]";
 }
 

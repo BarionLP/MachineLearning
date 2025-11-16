@@ -15,6 +15,7 @@ internal sealed class DotProductOperation(Weights left, Weights right, Weights r
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)
     {
-        throw new NotImplementedException();
+        registry.CreateWeightsGradient(left, right);
+        registry.CreateWeightsGradient(right, left);
     }
 }
