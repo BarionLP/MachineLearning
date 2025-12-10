@@ -12,7 +12,7 @@ internal sealed class RowwiseRecurrenceOperation(ImmutableArray<Weights> weights
     public override void AppendCode(MethodBodyWriter sb)
     {
         sb.WriteOperation(Reversed
-            ? $$"""for(int t = {{Weights[0].PassAccess()}}.RowCount - 1; t <= 0; t--)"""
+            ? $$"""for(int t = {{Weights[0].PassAccess()}}.RowCount - 1; t >= 0; t--)"""
             : $$"""for(int t = 0; t < {{Weights[0].PassAccess()}}.RowCount; t++)"""
         );
         sb.WriteOperation("{");

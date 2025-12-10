@@ -18,6 +18,6 @@ internal sealed class ActivationOperation(Weights source, Weights result, string
         var sourceGradient = registry.GetOrCreateGradient(Source);
         var resultGradient = registry.GetGradient(Result);
         ops.Add(new ActivationGradientOperation(Source, sourceGradient, Location));
-        ops.Add(new PointwiseMultiplyOperation(sourceGradient, resultGradient, sourceGradient));
+        ops.Add(factory.NewPointwiseMultiply(sourceGradient, resultGradient, sourceGradient));
     }
 }

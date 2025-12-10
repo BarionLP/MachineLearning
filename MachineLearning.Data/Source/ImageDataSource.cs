@@ -13,7 +13,7 @@ public sealed class ImageDataSource(DirectoryInfo directoryInfo)
     public ImageDataEntry[] DataSet { get; } = [.. directoryInfo.EnumerateFiles("*.png")
             .Select(file => new ImageDataEntry(
                 GetGrayscaleImageArray(file),
-                file.NameWithoutExtension().Parse<int>()
+                file.NameWithoutExtension.Parse<int>()
             ))];
 
     public static double[] GetGrayscaleImageArray(FileInfo imageFile)

@@ -2,15 +2,16 @@ using System.Collections.Generic;
 
 namespace ML.Analyzer.LayerFile.Operations;
 
-internal sealed class MatrixVectorMultiplyOperation(Weights matrix, Weights vector, Weights result) : Operation
+internal sealed class MatrixVectorMultiplyOperation(Weights matrix, Weights vector, Weights result, bool? add = null) : Operation
 {
     public Weights Matrix { get; } = matrix.Type is NumberType.Matrix ? matrix : throw new InvalidOperationException($"{matrix} is not a matrix");
     public Weights Vector { get; } = vector.Type is NumberType.Vector ? vector : throw new InvalidOperationException($"{vector} is not a vector");
     public override Weights Result { get; } = result;
+    public bool Add { get; } = add ?? result.Location is Location.Gradients;
 
     public override void AppendCode(MethodBodyWriter sb)
     {
-        sb.WriteOperation($"{Matrix.PassAccess()}.Multiply{(Result.Location is Location.Gradients ? "Add" : "")}To({Vector.PassAccess()}, {Result.PassAccess()});");
+        sb.WriteOperation($"{Matrix.PassAccess()}.Multiply{(Add ? "Add" : "")}To({Vector.PassAccess()}, {Result.PassAccess()});");
     }
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)

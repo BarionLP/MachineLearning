@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using MachineLearning.Model;
+using MachineLearning.Model.Activation;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
@@ -43,7 +44,7 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
     public int ContextSize => InputLayer.ContextSize;
 
     public Mamba2VectorModel(int layerCount, int tokenCount, int contextSize, int stateDimensions, int embeddingDimensions)
-        : this(new EmbeddingLayer(tokenCount, contextSize, embeddingDimensions), [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2Layer(contextSize, stateDimensions, embeddingDimensions))], new UnEmbeddingLayer(tokenCount, contextSize, embeddingDimensions)) { }
+        : this(new EmbeddingLayer(tokenCount, contextSize, embeddingDimensions), [.. Enumerable.Range(0, layerCount).Select(_ => new Mamba2Layer(LeakyReLUActivation.Instance, contextSize, stateDimensions, embeddingDimensions))], new UnEmbeddingLayer(tokenCount, contextSize, embeddingDimensions)) { }
 
     public (Matrix, int) Process(int[] input)
     {

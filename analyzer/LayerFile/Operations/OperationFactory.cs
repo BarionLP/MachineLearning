@@ -4,20 +4,21 @@ internal sealed class OperationFactory(LayerRegistry registry)
 {
     private readonly LayerRegistry registry = registry;
 
+    public Operation NewPointwiseMultiply(Weights left, Weights right, Weights result, bool? add = null)
+    {
+        return CreateConditionalAware(result, result => new PointwiseMultiplyOperation(left, right, result, add));
+    }
+
     public Operation NewMultiply(Weights left, Weights right, Weights result, bool? add = null)
     {
-        return CreateConditionalAware(result, result => Impl(left, right, result, add));
-
-        static Operation Impl(Weights left, Weights right, Weights result, bool? add = null)
-        {
-            return (left.Type, right.Type) switch
+        return CreateConditionalAware(result, result => (left.Type, right.Type) switch
             {
-                (NumberType.Matrix, NumberType.Vector) when right is RowReferenceWeights rw => new MatrixVectorMultiplyOperation(left, right, result),
-                (NumberType.Matrix, NumberType.Vector) => new MatrixVectorMultiplyOperation(left, right, result),
+                (NumberType.Matrix, NumberType.Vector) when right is RowReferenceWeights rw => new MatrixVectorMultiplyOperation(left, right, result, add),
+                (NumberType.Matrix, NumberType.Vector) => new MatrixVectorMultiplyOperation(left, right, result, add),
                 (NumberType.Vector, NumberType.Single) => new VectorSingleMultiplyOperation(left, right, result, add),
-                _ => throw new NotImplementedException($"cannot multiply {left} and {right}"),
-            };
-        }
+                _ => throw new NotImplementedException($"cannot multiply{(add is true ? "-add" : "")} {left} and {right}"),
+            }
+        );
     }
 
     public Operation CreateAttention(Weights queries, Weights keys, Weights result)

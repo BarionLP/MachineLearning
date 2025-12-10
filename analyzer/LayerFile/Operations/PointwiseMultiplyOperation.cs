@@ -2,21 +2,22 @@ using System.Collections.Generic;
 
 namespace ML.Analyzer.LayerFile.Operations;
 
-internal sealed class PointwiseMultiplyOperation(Weights left, Weights right, Weights result) : Operation
+internal sealed class PointwiseMultiplyOperation(Weights left, Weights right, Weights result, bool? add = null) : Operation
 {
     public Weights Left { get; } = left;
     public Weights Right { get; } = right.Dimensions.SequenceEqual(left.Dimensions) ? right : throw new InvalidOperationException($"cannot pointwise multiply {left} and {right}");
     public override Weights Result { get; } = right.Dimensions.SequenceEqual(result.Dimensions) ? result : throw new InvalidOperationException($"{result} cannot store {left} * {right}");
+    public bool Add { get; } = add ?? result.Location is Location.Gradients;
 
     public override void AppendCode(MethodBodyWriter sb)
     {
         if (ReferenceEquals(Left, Result))
         {
-            sb.WriteOperation($"{Left.PassAccess()}.PointwiseMultiply{(Result.Location is Location.Gradients ? "Add" : "")}ToSelf({Right.PassAccess()});");
+            sb.WriteOperation($"{Left.PassAccess()}.PointwiseMultiply{(Add ? "Add" : "")}ToSelf({Right.PassAccess()});");
         }
         else
         {
-            sb.WriteOperation($"{Left.PassAccess()}.PointwiseMultiply{(Result.Location is Location.Gradients ? "Add" : "")}To({Right.PassAccess()}, {Result.PassAccess()});");
+            sb.WriteOperation($"{Left.PassAccess()}.PointwiseMultiply{(Add ? "Add" : "")}To({Right.PassAccess()}, {Result.PassAccess()});");
         }
     }
 

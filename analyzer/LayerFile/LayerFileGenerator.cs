@@ -8,8 +8,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // if (!Debugger.IsAttached)
-        //     Debugger.Launch();
+        // Debugger.Launch();
 
         var files = context.AdditionalTextsProvider.Where(a => a.Path.EndsWith(".layer"));
 
