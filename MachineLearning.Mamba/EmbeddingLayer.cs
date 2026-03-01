@@ -58,7 +58,7 @@ public sealed partial class EmbeddingLayer : ILayer<int[], Matrix, EmbeddingLaye
             TensorPrimitives.Add(embeddingGradient, outputGradients.RowSpan(i), embeddingGradient);
         }
 
-        return null!;
+        return Matrix.Empty;
     }
 
     partial class Snapshot

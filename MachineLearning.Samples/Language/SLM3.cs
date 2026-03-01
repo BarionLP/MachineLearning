@@ -42,10 +42,10 @@ public static class SLM3
 
         var trainer = new EmbeddedModelTrainer<int[], int>(model, config ?? DefaultTrainingConfig(), trainingSet ?? GetTrainingSet());
         trainer.TrainConsole();
-        Serializer.Save(model).Consume(
-            () => Console.WriteLine("Model saved!"),
-            error => Console.WriteLine($"Error saving model: {error.Message}")
-        );
+        // Serializer.Save(model).Consume(
+        //     () => Console.WriteLine("Model saved!"),
+        //     error => Console.WriteLine($"Error saving model: {error.Message}")
+        // );
         LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
         return model;
     }
@@ -62,7 +62,7 @@ public static class SLM3
 
         EvaluationCallback = result => Console.WriteLine(result.Dump()),
         DumpEvaluationAfterBatches = 16,
-        //MultiThread = false,
+        // MultiThread = false,
         RandomSource = random ?? Random.Shared,
     };
 
@@ -76,9 +76,9 @@ public static class SLM3
 
         Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
 
-        //var words = lines.SelectMany(l => l.Split([' ', '.', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-        //var usages = words.CountBy(w => w).OrderByDescending(g => g.Value).Select(g => $"{g.Key}: {g.Value}");
-        //Console.WriteLine(string.Join('\n', usages.Take(50)));
+        // var words = lines.SelectMany(l => l.Split([' ', '.', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        // var usages = words.CountBy(w => w).OrderByDescending(g => g.Value).Select(g => $"{g.Key}: {g.Value}");
+        // Console.WriteLine(string.Join('\n', usages.Take(50)));
         var endToken = Tokenizer.TokenizeSingle("\0");
 
         return new PredefinedTrainingSet(lines.Tokenize(Tokenizer).ExpandPerToken(endToken, CONTEXT_SIZE).ToTrainingData(Tokenizer.TokenCount)) 
