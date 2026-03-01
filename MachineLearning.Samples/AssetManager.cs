@@ -2,7 +2,7 @@
 
 public static class AssetManager
 {
-    public static readonly DirectoryInfo Directory = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).Directory(@"OneDrive - Schulen Stadt Schwäbisch Gmünd\Data\MachineLearning");
+    public static readonly DirectoryInfo Directory = new DirectoryInfo(@"I:\Coding\TestChamber\MachineLearning");
     public static readonly DirectoryInfo ModelDirectory = Directory.Directory("Model");
     public static readonly DirectoryInfo WeightMapsDirectory = Directory.Directory("Maps");
     public static readonly DirectoryInfo DataDirectory = Directory.Directory("Data");

@@ -61,7 +61,7 @@ public sealed class Mamba2VectorModel(EmbeddingLayer inputLayer, ImmutableArray<
     {
         new EmbeddingLayer.Initializer(random).Initialize(InputLayer);
         var initer = new Initializer(random);
-        HiddenLayers.Consume(initer.Initialize);
+        HiddenLayers.ForEach(initer.Initialize);
         new UnEmbeddingLayer.Initializer(random).Initialize(OutputLayer);
     }
 

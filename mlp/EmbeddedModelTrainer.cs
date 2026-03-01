@@ -93,6 +93,6 @@ public sealed class EmbeddedModelTrainer<TIn, TOut> : ITrainer<EmbeddedModel<TIn
         return result;
     }
 
-    private void Apply(ImmutableArray<IGradients> gradients) => LayerOptimizers.Zip(gradients.Skip(1).Take(Model.InnerModel.Layers.Length)).Consume(p => p.First.Apply(p.Second));
-    public void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
+    private void Apply(ImmutableArray<IGradients> gradients) => LayerOptimizers.Zip(gradients.Skip(1).Take(Model.InnerModel.Layers.Length)).ForEach(p => p.First.Apply(p.Second));
+    public void FullReset() => LayerOptimizers.ForEach(static layer => layer.FullReset());
 }

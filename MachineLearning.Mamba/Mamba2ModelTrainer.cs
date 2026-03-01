@@ -82,8 +82,8 @@ public sealed class Mamba2ModelTrainer : ITrainer<Mamba2Model>
         return result;
     }
 
-    private void Apply(ImmutableArray<IGradients> gradients) => LayerOptimizers.Zip(gradients).Consume(p => p.First.Apply(p.Second));
-    public void FullReset() => LayerOptimizers.Consume(layer => layer.FullReset());
+    private void Apply(ImmutableArray<IGradients> gradients) => LayerOptimizers.Zip(gradients).ForEach(p => p.First.Apply(p.Second));
+    public void FullReset() => LayerOptimizers.ForEach(layer => layer.FullReset());
 }
 
 public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
@@ -178,14 +178,14 @@ public sealed class Mamba2VectorModelTrainer : ITrainer<Mamba2VectorModel>
     private void Apply(ImmutableArray<IGradients> gradients)
     {
         InputLayerOptimizer.Apply(gradients[0]);
-        LayerOptimizers.Zip(gradients.Skip(1).Take(LayerOptimizers.Length)).Consume(p => p.First.Apply(p.Second));
+        LayerOptimizers.Zip(gradients.Skip(1).Take(LayerOptimizers.Length)).ForEach(p => p.First.Apply(p.Second));
         OutputLayerOptimizer.Apply(gradients[^1]);
     }
 
     public void FullReset()
     {
         InputLayerOptimizer.FullReset();
-        LayerOptimizers.Consume(layer => layer.FullReset());
+        LayerOptimizers.ForEach(layer => layer.FullReset());
         OutputLayerOptimizer.FullReset();
     }
 }

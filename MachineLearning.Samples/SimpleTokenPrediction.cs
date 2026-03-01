@@ -15,7 +15,7 @@ public class SimpleTokenPrediction
         new EmbeddingLayer.Initializer(random).Initialize(model.InputLayer);
         new UnEmbeddingLayer.Initializer(random).Initialize(model.OutputLayer);
         var initer = new Mamba2VectorLayer.Initializer(random);
-        model.HiddenLayers.Consume(initer.Initialize);
+        model.HiddenLayers.ForEach(initer.Initialize);
 
         return model;
     }
