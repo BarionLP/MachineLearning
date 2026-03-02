@@ -3,12 +3,8 @@ using MachineLearning.Model.Attributes;
 using MachineLearning.Model.Initialization;
 using MachineLearning.Model.Layer;
 using MachineLearning.Model.Layer.Initialization;
-using MachineLearning.Model.Layer.Snapshot;
 using MachineLearning.Serialization;
 using MachineLearning.Training.Attributes;
-using MachineLearning.Training.Cost;
-using MachineLearning.Training.Optimization;
-using MachineLearning.Training.Optimization.Adam;
 
 
 namespace MachineLearning.Mamba;

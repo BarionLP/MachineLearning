@@ -98,6 +98,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         var weights = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsWeightAttribute(a.AttributeClass!)));
         var parameter = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsParameterAttribute(a.AttributeClass!)));
+        var modules = layer.GetMembers().OfType<IPropertySymbol>().Where(p => p.GetAttributes().Any(a => IsModuleAttribute(a.AttributeClass!)));
 
         var sb = new StringBuilder();
         sb.AppendLine($$"""
@@ -106,11 +107,11 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         namespace {{layer.ContainingNamespace}};
         
-        partial class {{layer.Name}} 
+        partial class {{layer.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}} 
         {
             public {{layer.Name}}({{string.Join(", ", parameter.Concat(weights).Select(p => $"{p.Type} {p.Name.ToLower()}"))}})
             {
-                {{string.Join("\n\t\t", parameter.Concat(weights).Select(p => $"this.{p.Name} = {p.Name.ToLower()};"))}}
+                {{string.Join("\n    ", parameter.Concat(weights).Select(p => $"this.{p.Name} = {p.Name.ToLower()};"))}}
             }
 
             public Snapshot CreateSnapshot() => new(this);
@@ -118,9 +119,9 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
             public Gradients CreateGradientAccumulator() => new(this);
             IGradients MachineLearning.Model.Layer.ILayer.CreateGradientAccumulator() => CreateGradientAccumulator();
 
-            public long WeightCount => {{string.Join(" + ", weights.Select(p => IsVector(p.Type) ? $"{p.Name}.Count" : $"{p.Name}.FlatCount"))}};
+            public long WeightCount => {{string.Join(" + ", [..modules.Select(m => $"{m.Name}.WeightCount"), ..weights.Select(p => IsVector(p.Type) ? $"{p.Name}.Count" : $"{p.Name}.FlatCount")])}};
 
-            public sealed partial class Snapshot({{layer.Name}} layer) : ILayerSnapshot
+            public sealed partial class Snapshot({{layer.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}} layer) : ILayerSnapshot
             {
                 // TODO: 
                 // public {{tin.Name}} Input { get; } = {{tin.Name}}.Create(T, E);
@@ -130,11 +131,16 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
         
         """);
 
-        sb.AppendLine($"\tpublic sealed partial class Gradients({layer.Name} layer) : IGradients\n\t{{");
+        sb.AppendLine($"    public sealed partial class Gradients({layer.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)} layer) : IGradients\n    {{");
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\tpublic {weight.Type} {weight.Name}Gradient {{ get; }} = {weight.Type}.OfSize(layer.{weight.Name});");
+            sb.AppendLine($"        public {weight.Type} {weight.Name}Gradient {{ get; }} = {weight.Type}.OfSize(layer.{weight.Name});");
+        }
+        
+        foreach (var module in modules)
+        {
+            sb.AppendLine($"        public IGradients {module.Name} {{ get; }} = layer.{module.Name}.CreateGradientAccumulator();");
         }
 
         sb.AppendLine($$"""
@@ -145,10 +151,15 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\t\t{weight.Name}Gradient.AddToSelf(o.{weight.Name}Gradient);");
+            sb.AppendLine($"            {weight.Name}Gradient.AddToSelf(o.{weight.Name}Gradient);");
+        }
+        
+        foreach (var module in modules)
+        {
+            sb.AppendLine($"            {module.Name}.Add(o.{module.Name});");
         }
 
-        sb.AppendLine("\t\t}");
+        sb.AppendLine("        }");
 
         sb.AppendLine($$"""
                 public void Reset()
@@ -157,10 +168,15 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\t\t{weight.Name}Gradient.ResetZero();");
+            sb.AppendLine($"            {weight.Name}Gradient.ResetZero();");
+        }
+        
+        foreach (var module in modules)
+        {
+            sb.AppendLine($"            {module.Name}.Reset();");
         }
 
-        sb.AppendLine("\t\t}\n\t}");
+        sb.AppendLine("        }\n    }");
 
         if (layer!.GetAttributes().FirstOrDefault(a => IsLayerSerializerAttribute(a.AttributeClass!)) is AttributeData ad)
         {
@@ -176,8 +192,8 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
                     public static ErrorState Save({{layer.Name}} layer, System.IO.BinaryWriter writer)
                     {
-                        {{string.Join("\n\t\t\t", parameter.Select(w => w.Type is { Name: "IActivationFunction" } ? $"ActivationFunctionSerializer.Write(writer, layer.{w.Name});" : $"writer.Write(layer.{w.Name});"))}}
-                        {{string.Join("\n\t\t\t", weights.Select(w => $"ModelSerializationHelper.Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
+                        {{string.Join("\n            ", parameter.Select(w => w.Type is { Name: "IActivationFunction" } ? $"ActivationFunctionSerializer.Write(writer, layer.{w.Name});" : $"writer.Write(layer.{w.Name});"))}}
+                        {{string.Join("\n            ", weights.Select(w => $"ModelSerializationHelper.Write{w.Type.Name}(layer.{w.Name}, writer);"))}}
                         return default;
                     }
 

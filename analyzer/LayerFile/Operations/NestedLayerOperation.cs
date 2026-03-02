@@ -15,7 +15,7 @@ internal sealed class NestedLayerOperation(Module module, Weights input, Weights
 
     public override void AppendGradientOp(List<Operation> ops, LayerRegistry registry, OperationFactory factory)
     {
-        ops.Add(new NestedLayerBackwardOperation(Module, Result, registry.CreateWeightsGradient(Input, preAllocate: false)));
+        ops.Add(new NestedLayerBackwardOperation(Module, registry.GetGradient(Result), registry.CreateWeightsGradient(Input, preAllocate: false)));
     }
 }
 

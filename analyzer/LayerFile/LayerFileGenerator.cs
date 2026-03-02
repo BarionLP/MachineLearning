@@ -56,9 +56,18 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
             foreach (var module in layer.Modules)
             {
-                sb.AppendLine($$"""
-                    public {{module.Type}} {{module.Name}} = new({{string.Join(", ", module.Args)}});
-                """);
+                if (module.Args.HasValue)
+                {
+                    sb.AppendLine($$"""
+                        public {{module.Type}} {{module.Name}} { get; } = new({{string.Join(", ", module.Args.Value)}});
+                    """);
+                }
+                else
+                {
+                    sb.AppendLine($$"""
+                        public required {{module.Type}} {{module.Name}} { get; init; };
+                    """);
+                }
             }
 
             foreach (var weight in learnedWeights)

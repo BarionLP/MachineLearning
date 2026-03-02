@@ -15,6 +15,7 @@ public static class Helper
 
     public static bool IsWeightAttribute(ITypeSymbol symbol) => symbol is { Name: "WeightsAttribute", ContainingAssembly.Name: "MachineLearning.Model", ContainingNamespace.Name: "Attributes" };
     public static bool IsParameterAttribute(ITypeSymbol symbol) => symbol is { Name: "ParameterAttribute", ContainingAssembly.Name: "MachineLearning.Model", ContainingNamespace.Name: "Attributes" };
+    public static bool IsModuleAttribute(ITypeSymbol symbol) => symbol is { Name: "ModuleAttribute", ContainingAssembly.Name: "MachineLearning.Model", ContainingNamespace.Name: "Attributes" };
     public static bool IsGeneratedLayerAttribute(ITypeSymbol symbol) => symbol is { Name: "GeneratedLayerAttribute", ContainingAssembly.Name: "MachineLearning.Model", ContainingNamespace.Name: "Attributes" };
     public static bool IsGenerateOptimizersAttribute(ITypeSymbol symbol) => symbol is { Name: "GenerateOptimizersAttribute", ContainingAssembly.Name: "MachineLearning.Training", ContainingNamespace.Name: "Attributes" };
     public static bool IsLayerSerializerAttribute(ITypeSymbol symbol) => symbol is { Name: "LayerSerializerAttribute", ContainingAssembly.Name: "MachineLearning.Serialization" };

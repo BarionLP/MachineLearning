@@ -1,6 +1,4 @@
-﻿using MachineLearning.Model.Layer;
-
-namespace MachineLearning.Training.Optimization.Adam;
+﻿namespace MachineLearning.Training.Optimization.Adam;
 
 public class AdamOptimizer : Optimizer
 {
@@ -13,10 +11,16 @@ public class AdamOptimizer : Optimizer
 
     public Weight Iteration { get; set; } = 1; // even when retraining!
 
-    static AdamOptimizer()
+    public float FirstMomentEstimate(float lastMoment, float gradient) => FirstDecayRate * lastMoment + (1 - FirstDecayRate) * gradient;
+    public float SecondMomentEstimate(float lastMoment, float gradient) => SecondDecayRate * lastMoment + (1 - SecondDecayRate) * gradient * gradient;
+
+    public float WeightReduction(float firstMoment, float secondMoment)
     {
-        // Registry.Register<FeedForwardLayer>((op, layer) => new SimpleAdamOptimizer(op, layer));
+        var mHat = firstMoment / (1 - Weight.Pow(FirstDecayRate, Iteration));
+        var vHat = secondMoment / (1 - Weight.Pow(SecondDecayRate, Iteration));
+        return LearningRate * mHat / (Weight.Sqrt(vHat) + Epsilon);
     }
+
 
     public override void OnBatchCompleted()
     {

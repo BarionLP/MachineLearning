@@ -179,7 +179,7 @@ internal sealed class LayerDefinition
 }
 
 
-internal sealed record Module(string Type, string Name, ImmutableArray<string> Args)
+internal sealed record Module(string Type, string Name, ImmutableArray<string>? Args)
 {
     public string Access(Location from) => LayerRegistry.GetAccessString(from, Location.Layer, Name);
     public string AccessSnapshot(Location from) => LayerRegistry.GetAccessString(from, Location.Snapshot, Name);

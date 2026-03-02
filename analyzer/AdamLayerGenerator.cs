@@ -124,42 +124,29 @@ internal static class AdamLayerGenerator
                     {
                         gradient.{{weight.GetGradientName()}}.DivideToSelf(max/100_000);
                     }
-                    (FirstMoment{{weight.Name}}, gradient.{{weight.GetGradientName()}}).MapToFirst(FirstMomentEstimate);
+                    (FirstMoment{{weight.Name}}, gradient.{{weight.GetGradientName()}}).MapToFirst(Optimizer.FirstMomentEstimate);
                     NumericsDebug.AssertValidNumbers(FirstMoment{{weight.Name}});
-                    (SecondMoment{{weight.Name}}, gradient.{{weight.GetGradientName()}}).MapToFirst(SecondMomentEstimate);
+                    (SecondMoment{{weight.Name}}, gradient.{{weight.GetGradientName()}}).MapToFirst(Optimizer.SecondMomentEstimate);
                     NumericsDebug.AssertValidNumbers(SecondMoment{{weight.Name}});
-                    Layer.{{weight.Name}}.SubtractToSelf((FirstMoment{{weight.Name}}, SecondMoment{{weight.Name}}).Map(WeightReduction));
+                    Layer.{{weight.Name}}.SubtractToSelf((FirstMoment{{weight.Name}}, SecondMoment{{weight.Name}}).Map(Optimizer.WeightReduction));
         """);
         }
+
+        sb.AppendLine();
 
         foreach (var module in modules)
         {
             sb.AppendLine($$"""
-
                     {{module.Name}}Adam.Apply(gradient.{{module.Name}});
         """);
         }
-
-        sb.AppendLine($$"""
-                }
-
-                private {{WeightType}} WeightReduction({{WeightType}} firstMoment, {{WeightType}} secondMoment)
-                {
-                    var mHat = firstMoment / (1 - Weight.Pow(Optimizer.FirstDecayRate, Optimizer.Iteration));
-                    var vHat = secondMoment / (1 - Weight.Pow(Optimizer.SecondDecayRate, Optimizer.Iteration));
-                    return Optimizer.LearningRate * mHat / (Weight.Sqrt(vHat) + Optimizer.Epsilon);
-                }
-
-                private {{WeightType}} FirstMomentEstimate({{WeightType}} lastMoment, {{WeightType}} gradient) => Optimizer.FirstDecayRate * lastMoment + (1 - Optimizer.FirstDecayRate) * gradient;
-
-                private {{WeightType}} SecondMomentEstimate({{WeightType}} lastMoment, {{WeightType}} gradient) => Optimizer.SecondDecayRate * lastMoment + (1 - Optimizer.SecondDecayRate) * gradient * gradient;
-
-        """);
         #endregion
 
         #region Reset
 
         sb.AppendLine($$"""
+                }
+
                 public void FullReset()
                 {
                     {{string.Join("\n            ", weights.Select(w => $"FirstMoment{w.Name}.ResetZero();"))}}

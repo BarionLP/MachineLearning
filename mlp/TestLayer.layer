@@ -7,13 +7,19 @@ InputNodes
 OutputNodes
 
 # Modules
-ML.MultiLayerPerceptron.PerceptronLayer lp Default InputNodes OutputNodes
+ML.MultiLayerPerceptron.PerceptronLayer InputLayer Default 784 256
+ML.MultiLayerPerceptron.PerceptronLayer HiddenLayer1 Default 256 128
+ML.MultiLayerPerceptron.PerceptronLayer OutputLayer Output 128 10
 
 # Weights
 
 # Snapshot
-Result []
+InputResult []
+HiddenResult1 []
+OutputResult []
 
 # Forward Input [InputNodes]
-Result = lp forward Input
-Result
+InputResult = InputLayer forward Input
+HiddenResult1 = HiddenLayer1 forward InputResult
+OutputResult = OutputLayer forward HiddenResult1
+OutputResult

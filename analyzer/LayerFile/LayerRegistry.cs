@@ -146,7 +146,7 @@ internal sealed class LayerRegistry
             throw new InvalidOperationException($"invalid module definition: {line.ToString()}");
         }
 
-        var module = new Module(parts[0], parts[1], [..parts.AsSpan(2)]);
+        var module = parts[0] is "extern" ? new Module(parts[1], parts[2], null) : new Module(parts[0], parts[1], [.. parts.AsSpan(2)]);
 
         ThrowIfDuplicate(module.Name);
         moduleLookup.Add(module.Name, module);
