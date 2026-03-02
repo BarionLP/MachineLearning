@@ -26,14 +26,21 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         var attribute = module.TryGetAttribute(IsGeneratedModuleAttribute);
         Debug.Assert(attribute is not null);
 
-        var moduleInterface = GetIModule(module);
-        Debug.Assert(moduleInterface is not null);
+        var moduleInfo = GetIModule(module);
+        Debug.Assert(moduleInfo is not null);
 
-        var modules = module.GetProperties().Where(static p => p.HasAttribute(IsSubModuleAttribute)).ToImmutableArray();
+        var modules = module.GetProperties().Where(static p => p.HasAttribute(IsSubModuleAttribute)).Select(SubModuleInfo.FromProperty).OfType<SubModuleInfo>().ToImmutableArray();
         var weights = module.GetProperties().Where(static p => p.HasAttribute(IsWeightAttribute)).ToImmutableArray();
 
-        var tarch = moduleInterface.TypeArguments[0];
-        var generateSnapshot = moduleInterface.TypeArguments.Length == 1;
+        var generateDataClasses = moduleInfo.SnapshotType is null;
+        if (generateDataClasses)
+        {
+            moduleInfo = moduleInfo with
+            {
+                SnapshotTypeString = $$"""{{moduleDefinitionString}}.Snapshot""",
+                GradientsTypeString = $$"""{{moduleDefinitionString}}.Gradients""",
+            };
+        }
 
         var sb = new StringBuilder();
 
@@ -46,35 +53,46 @@ public sealed class ModuleGenerator : IIncrementalGenerator
             sb.AppendLine();
         }
 
-        var parameterCountCalc = string.Join(" + ", [.. modules.Select(m => $"{m.Name}.ParameterCount"), .. weights.Select(w => $"(ulong){w.Name}.FlatCount")]);
 
         sb.Append($$"""
         partial class {{moduleDefinitionString}}
         """);
-        if (generateSnapshot)
+        if (generateDataClasses)
         {
-            sb.AppendLine($$""" : IModule<{{tarch}}, {{moduleDefinitionString}}.Snapshot, {{moduleDefinitionString}}.Gradients>""");
+            sb.AppendLine(moduleInfo.RootModule.Name switch
+            {
+                ModuleName => $$""" : {{ModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
+                HiddenModuleName => $$""" : {{HiddenModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
+                _ => throw new NotImplementedException($"cannot impl {moduleInfo.RootModule.Name}"),
+            });
         }
         else
         {
             sb.AppendLine();
         }
 
-
-
+        var parameterCount = string.Join(" + ", [.. modules.Select(m => $"{m.Name}.ParameterCount"), .. weights.Select(w => $"(ulong){w.Name}.FlatCount")]);
+        if (string.IsNullOrEmpty(parameterCount))
+        {
+            parameterCount = "0";
+        }
         sb.AppendLine($$"""
         {
-            public ulong ParameterCount => {{parameterCountCalc}};
+            public ulong ParameterCount => {{parameterCount}};
 
 
-            public Snapshot CreateSnapshot() => new(this);
-            public Gradients CreateGradients() => new(this);        
+            public {{moduleInfo.SnapshotTypeString}} CreateSnapshot() => new(this);
+            public {{moduleInfo.GradientsTypeString}} CreateGradients() => new(this);
         
         """);
 
-        GenerateSnapshot(sb, moduleDefinitionString, modules, weights);
-        sb.AppendLine();
-        GenerateGradients(sb, moduleDefinitionString, modules, weights);
+        if (generateDataClasses)
+        {
+            GenerateSnapshot(sb, moduleDefinitionString, modules, weights);
+            sb.AppendLine();
+            GenerateGradients(sb, moduleDefinitionString, modules, weights);
+        }
+
 
         sb.AppendLine($$"""
         }
@@ -83,19 +101,17 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         context.AddSource($"{module.Name}.g.cs", sb.ToString());
     }
 
-    private static void GenerateSnapshot(StringBuilder sb, string moduleDefinitionString, IEnumerable<IPropertySymbol> modules, IEnumerable<IPropertySymbol> weights)
+    private static void GenerateSnapshot(StringBuilder sb, string moduleDefinitionString, IEnumerable<SubModuleInfo> modules, IEnumerable<IPropertySymbol> weights)
     {
         sb.AppendLine($$"""
             public sealed partial class Snapshot({{moduleDefinitionString}} module) : IModuleSnapshot
             {
         """);
 
-        foreach (var module in modules)
+        foreach (var sub in modules)
         {
-            var moduleSymbol = GetIModule(module.Type)!;
-            var snapshotTypeName = moduleSymbol.TypeArguments.Length is 1 ? "IModuleSnapshot" : moduleSymbol.TypeArguments[1].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             sb.AppendLine($$"""
-                public {{snapshotTypeName}} {{module.Name}} { get; } = module.{{module.Name}}.CreateSnapshot();
+                public {{sub.Module.SnapshotTypeString}} {{sub.Name}} { get; } = module.{{sub.Name}}.CreateSnapshot();
         """);
         }
 
@@ -104,19 +120,17 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         """);
     }
 
-    private static void GenerateGradients(StringBuilder sb, string moduleDefinitionString, IEnumerable<IPropertySymbol> modules, IEnumerable<IPropertySymbol> weights)
+    private static void GenerateGradients(StringBuilder sb, string moduleDefinitionString, IEnumerable<SubModuleInfo> modules, IEnumerable<IPropertySymbol> weights)
     {
         sb.AppendLine($$"""
             public sealed partial class Gradients({{moduleDefinitionString}} module) : IModuleGradients<Gradients>
             {
         """);
 
-        foreach (var module in modules)
+        foreach (var sub in modules)
         {
-            var moduleSymbol = GetIModule(module.Type)!;
-            var gradientTypeName = moduleSymbol.TypeArguments.Length is 1 ? "IModuleGradients" : moduleSymbol.TypeArguments[2].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             sb.AppendLine($$"""
-                public {{gradientTypeName}} {{module.Name}} { get; } = module.{{module.Name}}.CreateGradients();
+                public {{sub.Module.GradientsTypeString}} {{sub.Name}} { get; } = module.{{sub.Name}}.CreateGradients();
         """);
         }
 

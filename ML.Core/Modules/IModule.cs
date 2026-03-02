@@ -37,3 +37,12 @@ public interface IModuleGradients<TSelf> : IModuleGradients where TSelf : IModul
     public void Add(TSelf other);
     void IModuleGradients.Add(IModuleGradients other) => Add(Guard.Is<TSelf>(other));
 }
+
+public sealed class EmptyModuleGradients() : IModuleGradients<EmptyModuleGradients>
+{
+    public static EmptyModuleGradients Instance => field ??= new();
+    public EmptyModuleGradients(object? _) : this() { }
+
+    public void Add(EmptyModuleGradients other) { }
+    public void Reset() { }
+}

@@ -23,6 +23,8 @@ public sealed class GlobalUsingsGenerator : IIncrementalGenerator
 
             global using ML.Core;
             global using Weight = float;
+            global using SimdVector = System.Numerics.Vector<float>;
+            global using SimdVectorHelper = System.Numerics.Vector;
             """);
         });
     }
