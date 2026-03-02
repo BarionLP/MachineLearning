@@ -1,6 +1,6 @@
 # namespace ML.MultiLayerPerceptron
 
-# Activation Function
+# Activation Function ActivationFunction
 # Parameters
 InputNodes
 OutputNodes
@@ -17,7 +17,7 @@ Activated [OutputNodes]
 # Forward Input [InputNodes]
 Weighted = Weights * Input
 Biased = Weighted + Biases
-Activated = activate Biased
+Activated = activate ActivationFunction Biased
 Activated
 
 # Serializer pl 2

@@ -8,6 +8,7 @@ internal sealed class LayerRegistry
 {
     private readonly Dictionary<string, Weights> weightsLookup = [];
     private readonly Dictionary<string, ReferenceParameter> paramLookup = [];
+    internal readonly Dictionary<string, Module> moduleLookup = [];
 
     public Weights this[string name, [CallerFilePath] string file = default!, [CallerLineNumber] int line = -1]
     {
@@ -29,7 +30,7 @@ internal sealed class LayerRegistry
     public Dictionary<string, Weights>.ValueCollection Weights => weightsLookup.Values;
     public Dictionary<string, ReferenceParameter>.ValueCollection Parameters => paramLookup.Values;
 
-    public Weights GetOrCreateGradient(Weights original) => TryGetGradient(original) ?? CreateWeightsGradient(original);
+    public Weights GetOrCreateGradient(Weights original, bool preAllocate = true) => TryGetGradient(original) ?? CreateWeightsGradient(original, preAllocate);
     public Weights GetGradient(Weights original) => TryGetGradient(original) ?? throw new InvalidOperationException($"Gradient for {original} not created");
     public Weights? TryGetGradient(Weights original)
     {
@@ -44,7 +45,7 @@ internal sealed class LayerRegistry
     }
 
     public DirectWeights GetGradient(DirectWeights original) => TryGetGradient(original) ?? throw new InvalidOperationException($"Gradient for {original} not created");
-    public DirectWeights? TryGetGradient(DirectWeights original) => weightsLookup.TryGetValue(original.GetGradientName(), out var value) ? (DirectWeights?)(DirectWeights)value : null;
+    public DirectWeights? TryGetGradient(DirectWeights original) => weightsLookup.TryGetValue(original.GetGradientName(), out var value) ? (DirectWeights?)value : null;
 
     public void AddAlias(string name, Weights weights)
     {
@@ -67,37 +68,37 @@ internal sealed class LayerRegistry
         return obj;
     }
 
-    public Weights CreateWeightsGradient(Weights original) => original switch
+    public Weights CreateWeightsGradient(Weights original, bool preAllocate = true) => original switch
     {
-        DirectWeights dw => CreateWeightsGradient(dw),
-        RowReferenceWeights rw => rw with { Matrix = CreateWeightsGradient(rw.Matrix) },
-        ItemReferenceWeights rw => rw with { Weights = CreateWeightsGradient(rw.Weights) },
-        ConditionalReferenceWeights cw => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue), WhenFalse = null },
+        DirectWeights dw => CreateWeightsGradient(dw, preAllocate),
+        RowReferenceWeights rw => rw with { Matrix = CreateWeightsGradient(rw.Matrix, preAllocate) },
+        ItemReferenceWeights rw => rw with { Weights = CreateWeightsGradient(rw.Weights, preAllocate) },
+        ConditionalReferenceWeights cw => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue, preAllocate), WhenFalse = null },
         _ => throw new InvalidOperationException($"unkown weight type {original}"),
     };
-    
-    public DirectWeights CreateWeightsGradient(DirectWeights original) => CreateWeightsGradient(original, original.Location switch
+
+    public DirectWeights CreateWeightsGradient(DirectWeights original, bool preAllocate = true) => CreateWeightsGradient(original, original.Location switch
     {
         Location.Layer => Location.Gradients,
         Location.Snapshot => Location.Snapshot,
         _ => throw new InvalidOperationException($"unkown location type {original.Location}")
-    });
+    }, preAllocate);
 
-    public Weights CreateWeightsGradient(Weights original, Location location) => original switch
+    public Weights CreateWeightsGradient(Weights original, Location location, bool preAllocate = true) => original switch
     {
-        DirectWeights dw => CreateWeightsGradient(dw, location),
-        RowReferenceWeights rw => rw with { Matrix = CreateWeightsGradient(rw.Matrix, location) },
-        ItemReferenceWeights rw => rw with { Weights = CreateWeightsGradient(rw.Weights, location) },
-        ConditionalReferenceWeights cw => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue, location), WhenFalse = null },
+        DirectWeights dw => CreateWeightsGradient(dw, location, preAllocate),
+        RowReferenceWeights rw => rw with { Matrix = CreateWeightsGradient(rw.Matrix, location, preAllocate) },
+        ItemReferenceWeights rw => rw with { Weights = CreateWeightsGradient(rw.Weights, location, preAllocate) },
+        ConditionalReferenceWeights cw => cw with { WhenTrue = CreateWeightsGradient(cw.WhenTrue, location, preAllocate), WhenFalse = null },
         _ => throw new InvalidOperationException($"unkown weight type {original}"),
     };
-    public DirectWeights CreateWeightsGradient(DirectWeights original, Location location)
+    public DirectWeights CreateWeightsGradient(DirectWeights original, Location location, bool preAllocate = true)
     {
         var name = original.GetGradientName();
 
         ThrowIfDuplicate(name);
 
-        var obj = new DirectWeights(name, original.Dimensions, location);
+        var obj = new DirectWeights(name, original.Dimensions, location, preAllocate);
         weightsLookup.Add(name, obj);
         return obj;
     }
@@ -118,15 +119,54 @@ internal sealed class LayerRegistry
         return reference;
     }
 
-    public DirectWeights ParseWeightDefinition(ReadOnlySpan<char> line, Location location, bool readOnlyProperty = true)
+    public DirectWeights ParseWeightDefinition(ReadOnlySpan<char> line, Location location, bool preAllocate = true)
     {
         var nameEndIndex = line.IndexOf('[');
         var name = line.Slice(0, nameEndIndex).Trim().ToString();
 
         var dimensionsSpan = line.Slice(nameEndIndex + 1, line.IndexOf(']') - nameEndIndex - 1).Trim();
-        var dimensions = dimensionsSpan.ToString().Split(',').Select(static s => s.Trim()).Select<string, Parameter>(s => int.TryParse(s, out var value) ? new ValueParameter(value) : paramLookup.TryGetValue(s, out var reference) ? reference : throw new InvalidOperationException($"Undefined Parameter {s}"));
+        var rawDimensions = dimensionsSpan.ToString().Split(',').Select(static s => s.Trim()).ToArray();
+        (var dimensions, preAllocate) = rawDimensions switch
+        {
+            [""] => ([new ValueParameter(1)], false),
+            ["", ""] => ([new ValueParameter(1), new ValueParameter(1)], false),
+            ["", "", ""] => ([new ValueParameter(1), new ValueParameter(1), new ValueParameter(1)], false),
+            _ => (rawDimensions.Select<string, Parameter>(s => int.TryParse(s, out var value) ? new ValueParameter(value) : paramLookup.TryGetValue(s, out var reference) ? reference : throw new InvalidOperationException($"Undefined Parameter {s}")), preAllocate),
+        };
 
-        return CreateWeights(name, [.. dimensions], location, readOnlyProperty);
+        return CreateWeights(name, [.. dimensions], location, preAllocate);
+    }
+
+    public Module ParseModule(ReadOnlySpan<char> line)
+    {
+        var parts = line.ToString().Split([' '], StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length < 2)
+        {
+            throw new InvalidOperationException($"invalid module definition: {line.ToString()}");
+        }
+
+        var module = new Module(parts[0], parts[1], [..parts.AsSpan(2)]);
+
+        ThrowIfDuplicate(module.Name);
+        moduleLookup.Add(module.Name, module);
+        return module;
+    }
+
+    public static string GetAccessString(Location from, Location target, string name)
+    {
+        if (from == target) return name;
+
+        return (from, target) switch
+        {
+            (Location.Pass, Location.Layer) => name,
+            (Location.Pass, Location.Snapshot) => $"snapshot.{name}",
+            (Location.Pass, Location.Gradients) => $"gradients.{name}",
+            (Location.Gradients, Location.Layer) => $"layer.{name}",
+            (Location.Snapshot, Location.Layer) => $"layer.{name}",
+            (Location.Serializer, Location.Layer) => $"layer.{name}",
+            _ => throw new InvalidOperationException($"Cannot access {target} {name} from {from}"),
+        };
     }
 
     private void ThrowIfDuplicate(string name)
@@ -138,6 +178,10 @@ internal sealed class LayerRegistry
         if (paramLookup.TryGetValue(name, out var existingP))
         {
             throw new InvalidOperationException($"{name} is already defined as parameter {existingP}");
+        }
+        if (moduleLookup.TryGetValue(name, out var existingM))
+        {
+            throw new InvalidOperationException($"{name} is already defined as module {existingM}");
         }
     }
 }

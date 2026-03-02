@@ -1,0 +1,19 @@
+# namespace ML.MultiLayerPerceptron
+
+# Activation Function Default
+# Activation Function Output
+# Parameters
+InputNodes
+OutputNodes
+
+# Modules
+ML.MultiLayerPerceptron.PerceptronLayer lp Default InputNodes OutputNodes
+
+# Weights
+
+# Snapshot
+Result []
+
+# Forward Input [InputNodes]
+Result = lp forward Input
+Result

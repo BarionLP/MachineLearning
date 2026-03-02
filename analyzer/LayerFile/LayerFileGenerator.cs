@@ -19,7 +19,6 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             var layer = LayerFileParser.Parse(Path.GetFileNameWithoutExtension(file.Path), text);
             var registry = layer.Registry;
             var learnedWeights = layer.LearnedWeights;
-            var hasActivationFunction = layer.HasActivationFunction;
 
             var sb = new StringBuilder();
 
@@ -37,14 +36,14 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             // generate model file
 
             sb.AppendLine($$"""
-            public sealed partial class {{layer.Name}}({{(hasActivationFunction ? "MachineLearning.Model.Activation.IActivationFunction ActivationFunction, " : "")}}{{string.Join(", ", registry.Parameters.Select(p => $"int {p.Name}"))}}) : ILayer<{{layer.Input.Type}}, {{layer.Name}}.Snapshot>
+            public sealed partial class {{layer.Name}}({{string.Join(", ", [.. layer.ActivationFunctions.Select(a => $"MachineLearning.Model.Activation.IActivationFunction {a}"), ..registry.Parameters.Select(p => $"int {p.Name}")])}}) : ILayer<{{layer.Input.Type}}, {{layer.Name}}.Snapshot>
             {
             """);
 
-            if (hasActivationFunction)
+            foreach (var activationFunction in layer.ActivationFunctions)
             {
                 sb.AppendLine($$"""
-                    public MachineLearning.Model.Activation.IActivationFunction ActivationFunction { get; } = ActivationFunction; 
+                    public MachineLearning.Model.Activation.IActivationFunction {{activationFunction}} { get; } = {{activationFunction}}; 
                 """);
             }
 
@@ -55,6 +54,13 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                 """);
             }
 
+            foreach (var module in layer.Modules)
+            {
+                sb.AppendLine($$"""
+                    public {{module.Type}} {{module.Name}} = new({{string.Join(", ", module.Args)}});
+                """);
+            }
+
             foreach (var weight in learnedWeights)
             {
                 sb.AppendLine($$"""
@@ -62,10 +68,12 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                 """);
             }
 
+            var weightCounts = learnedWeights.Select(static w => w.Type switch { NumberType.Single => "1", NumberType.Vector => $"{w.Access(Location.Layer)}.Count", _ => $"{w.Access(Location.Layer)}.FlatCount" });
+            var moduleCounts = layer.Modules.Select(module => $"{module.Access(Location.Layer)}.WeightCount");
 
             sb.AppendLine($$"""
 
-                public long WeightCount => {{string.Join(" + ", learnedWeights.Select(static w => w.Type switch { NumberType.Single => "1", NumberType.Vector => $"{w.Access(Location.Layer)}.Count", _ => $"{w.Access(Location.Layer)}.FlatCount" }))}};
+                public long WeightCount => {{string.Join(" + ", [.. weightCounts, .. moduleCounts])}};
 
                 public {{layer.Output.Type}} Forward({{layer.Input.Type}} {{layer.Input.Name}}, Snapshot snapshot)
                 {
@@ -107,9 +115,8 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
             foreach (var snap in registry.Weights.Distinct().OfType<DirectWeights>().Where(static w => w.Location is Location.Snapshot))
             {
-                if (snap.ReadOnlyProperty)
+                if (snap.PreAllocate)
                 {
-
                     sb.AppendLine($$"""
                     public {{snap.Type}} {{snap.Name}} { get; } = {{snap.Type}}.Create({{string.Join(", ", snap.Dimensions.Select(static p => p.Access(Location.Snapshot)))}});
             """);
@@ -120,6 +127,13 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
                     public {{snap.Type}} {{snap.Name}} { get; set; }
             """);
                 }
+            }
+
+            foreach (var module in layer.Modules)
+            {
+                sb.AppendLine($$"""
+                    public {{module.Type}}.Snapshot {{module.Name}} { get; } = {{module.Access(Location.Snapshot)}}.CreateSnapshot();
+            """);
             }
 
             sb.AppendLine($$"""
@@ -138,6 +152,13 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             """);
             }
 
+            foreach (var module in layer.Modules)
+            {
+                sb.AppendLine($$"""
+                    public {{module.Type}}.Gradients {{module.Name}} { get; } = {{module.Access(Location.Gradients)}}.CreateGradientAccumulator();
+            """);
+            }
+
             sb.AppendLine($$"""
                     public void Add(IGradients other)
                     {
@@ -147,6 +168,11 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             foreach (var (weight, gradient) in weightsGradientPairs)
             {
                 sb.AppendLine($"            {gradient.Name}.AddToSelf(o.{gradient.Name});");
+            }
+
+            foreach (var module in layer.Modules)
+            {
+                sb.AppendLine($"            {module.Name}.Add(o.{module.Name});");
             }
 
             sb.AppendLine($$"""
@@ -159,6 +185,11 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
             foreach (var (weight, gradient) in weightsGradientPairs)
             {
                 sb.AppendLine($"            {gradient.Name}.ResetZero();");
+            }
+
+            foreach (var module in layer.Modules)
+            {
+                sb.AppendLine($"            {module.Name}.Reset();");
             }
 
             sb.AppendLine($$"""
@@ -180,15 +211,15 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
                     public static ErrorState Save({{layer.Name}} layer, System.IO.BinaryWriter writer)
                     {
-                        {{(hasActivationFunction ? "ActivationFunctionSerializer.Write(writer, layer.ActivationFunction);" : "")}}
-                        {{string.Join("\n\t\t\t", registry.Parameters.Select(w => $"writer.Write({w.Access(Location.Serializer)});"))}}
-                        {{string.Join("\n\t\t\t", learnedWeights.Select(w => $"ModelSerializationHelper.Write{w.Type}({w.Access(Location.Serializer)}, writer);"))}}
+                        {{string.Join("\n            ", layer.ActivationFunctions.Select(a => $"ActivationFunctionSerializer.Write(writer, layer.{a});"))}}
+                        {{string.Join("\n            ", registry.Parameters.Select(w => $"writer.Write({w.Access(Location.Serializer)});"))}}
+                        {{string.Join("\n            ", learnedWeights.Select(w => $"ModelSerializationHelper.Write{w.Type}({w.Access(Location.Serializer)}, writer);"))}}
                         return default;
                     }
 
                     public static Result<{{layer.Name}}> Read(System.IO.BinaryReader reader)
                     {
-                        var layer = new {{layer.Name}}({{(hasActivationFunction ? $"ActivationFunctionSerializer.Read(reader), " : "")}}{{string.Join(", ", registry.Parameters.Select(static w => $"reader.ReadInt32()"))}});
+                        var layer = new {{layer.Name}}({{string.Join(", ", [.. layer.ActivationFunctions.Select(_ => "ActivationFunctionSerializer.Read(reader)"), .. registry.Parameters.Select(static w => $"reader.ReadInt32()")])}});
             """);
 
                 foreach (var weight in learnedWeights)
@@ -209,7 +240,7 @@ public sealed class LayerFileGenerator : IIncrementalGenerator
 
             context.AddSource($"{layer.Name}.g.cs", sb.ToString());
 
-            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.Namespace, layer.Input.Type.ToString(), layer.Output.Type, $"{layer.Name}.Snapshot", learnedWeights));
+            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.Namespace, layer.Input.Type.ToString(), layer.Output.Type, $"{layer.Name}.Snapshot", learnedWeights, layer.Modules));
         });
     }
 

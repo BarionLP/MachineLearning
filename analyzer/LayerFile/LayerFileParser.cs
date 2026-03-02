@@ -24,9 +24,9 @@ internal static class LayerFileParser
         }
 
         // activation function
-        if (lines.Current is "# Activation Function")
+        while (lines.Current.StartsWith("# Activation Function"))
         {
-            def.HasActivationFunction = true;
+            def.ActivationFunctions.Add(lines.Current.Slice("# Activation Function".Length).Trim().ToString());
             lines.MoveNext();
         }
 
@@ -35,14 +35,23 @@ internal static class LayerFileParser
         {
             while (lines.MoveNext())
             {
-                if (lines.Current is "# Weights") break;
+                if (lines.Current is "# Weights" or "# Modules") break;
 
                 def.Registry.CreateParameter(lines.Current.ToString());
             }
         }
 
+        if (lines.Current is "# Modules")
+        {
+            while (lines.MoveNext())
+            {
+                if (lines.Current is "# Weights") break;
+
+                def.Modules.Add(def.Registry.ParseModule(lines.Current));
+            }
+        }
+
         // weights
-        if (lines.Current is not "# Weights") throw new InvalidOperationException($"{name} has no weights");
         if (lines.Current is not "# Weights") throw new InvalidOperationException($"{name} has no weights");
 
         while (lines.MoveNext())
@@ -63,7 +72,7 @@ internal static class LayerFileParser
             }
         }
 
-        def.Input = def.Registry.ParseWeightDefinition(lines.Current.Slice("# Forward".Length).Trim(), Location.Snapshot, readOnlyProperty: false);
+        def.Input = def.Registry.ParseWeightDefinition(lines.Current.Slice("# Forward".Length).Trim(), Location.Snapshot, preAllocate: false);
         def.ForwardPass.Add(new InputOperation(def.Input.WithLocation(Location.Pass), def.Input));
 
         var factory = new OperationFactory(def.Registry);
@@ -76,7 +85,7 @@ internal static class LayerFileParser
             var parts = lines.Current.ToString().Split(' ');
             def.ForwardPass.Add(parts switch
             {
-                [var result, "=", "activate", var source] => def.HasActivationFunction ? new ActivationOperation(def.Registry[source], def.Registry[result], "ActivationFunction") : throw new InvalidOperationException("layer has no activation function"),
+                [var result, "=", "activate", var activationFunction, var source] => def.ActivationFunctions.Contains(activationFunction) ? new ActivationOperation(def.Registry[source], def.Registry[result], activationFunction) : throw new InvalidOperationException($"activation function {activationFunction} not defined"),
                 [var result, "=", var left, "+", var right] => new AddOperation(def.Registry[left], def.Registry[right], def.Registry[result]),
                 [var result, "+=", var other] => new AddOperation(def.Registry[result], def.Registry[other], def.Registry[result]),
                 [var result, "=", var left, "*", var right] => factory.NewMultiply(def.Registry[left], def.Registry[right], def.Registry[result], add: false),
@@ -85,6 +94,7 @@ internal static class LayerFileParser
                 [var result, "+=", var left, "⊙", var right] => factory.NewPointwiseMultiply(def.Registry[left], def.Registry[right], def.Registry[result], add: true),
                 [var result, "=", var queries, "attend", var keys] => factory.CreateAttention(def.Registry[queries], def.Registry[keys], def.Registry[result]),
                 [var result, "=", "softmax", var input] => new ActivationOperation(def.Registry[input], def.Registry[result], "SoftMaxActivation.Instance"),
+                [var result, "=", var module, "forward", var input] => new NestedLayerOperation(def.Registry.moduleLookup[module], def.Registry[input], def.Registry[result]),
                 ["recur", "over", ..] => factory.CreateRecurrence([.. parts.Skip(2).Select(p => def.Registry[p])], reversed: false),
                 ["end"] => new EndLoopOperation(contextStack.Pop()),
                 [var output] => new OutputOperation(def.Registry[output]),
@@ -157,12 +167,21 @@ internal sealed class LayerDefinition
 {
     public string Namespace { get; set; } = string.Empty;
     public required string Name { get; init; }
-    public bool HasActivationFunction { get; set; } = false;
+    public HashSet<string> ActivationFunctions { get; } = [];
     public LayerRegistry Registry { get; } = new();
     public List<DirectWeights> LearnedWeights { get; } = [];
     public List<Operation> ForwardPass { get; } = [];
     public List<Operation> BackwardPass { get; } = [];
+    public List<Module> Modules { get; } = [];
     public DirectWeights Input { get; set; } = default!;
     public Weights Output { get; set; } = default!;
     public (string id, int version)? Serializer { get; set; } = null;
+}
+
+
+internal sealed record Module(string Type, string Name, ImmutableArray<string> Args)
+{
+    public string Access(Location from) => LayerRegistry.GetAccessString(from, Location.Layer, Name);
+    public string AccessSnapshot(Location from) => LayerRegistry.GetAccessString(from, Location.Snapshot, Name);
+    public string AccessGradients(Location from) => LayerRegistry.GetAccessString(from, Location.Gradients, Name);
 }

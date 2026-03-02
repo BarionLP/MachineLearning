@@ -1,6 +1,6 @@
 # namespace MachineLearning.Mamba
 
-# Activation Function
+# Activation Function a
 # Parameters
 MaxSequenceLength
 StateDimensions
@@ -20,7 +20,7 @@ Output [MaxSequenceLength, EmbeddingDimensions]
 recur over Input Memory Alpha Output ActivatedMemory
     Memory_current = B * Input_current
     Memory_current += Memory_previous * Alpha_current
-    ActivatedMemory_current = activate Memory_current
+    ActivatedMemory_current = activate a Memory_current
     Output_current = C * ActivatedMemory_current
 end
 Output

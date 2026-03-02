@@ -11,7 +11,7 @@ internal static class AdamLayerGenerator
     {
         var sb = new StringBuilder();
 
-        var (name, @namespace, _, output, snapshot, weights) = data;
+        var (name, @namespace, _, output, snapshot, weights, modules) = data;
 
         sb.AppendLine($$"""
         using Ametrin.Guards;
@@ -37,9 +37,14 @@ internal static class AdamLayerGenerator
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\tpublic {weight.Type} FirstMoment{weight.Name} {{ get; }}");
-            sb.AppendLine($"\t\tpublic {weight.Type} SecondMoment{weight.Name} {{ get; }}");
+            sb.AppendLine($"        public {weight.Type} FirstMoment{weight.Name} {{ get; }}");
+            sb.AppendLine($"        public {weight.Type} SecondMoment{weight.Name} {{ get; }}");
             sb.AppendLine();
+        }
+
+        foreach (var module in modules)
+        {
+            sb.AppendLine($"        public {module.Type}.Adam {module.Name}Adam {{ get; }}");
         }
         #endregion
 
@@ -52,8 +57,13 @@ internal static class AdamLayerGenerator
 
         foreach (var weight in weights)
         {
-            sb.AppendLine($"\t\t\tthis.FirstMoment{weight.Name} = {weight.Type}.OfSize(layer.{weight.Name});");
-            sb.AppendLine($"\t\t\tthis.SecondMoment{weight.Name} = {weight.Type}.OfSize(layer.{weight.Name});");
+            sb.AppendLine($"            this.FirstMoment{weight.Name} = {weight.Type}.OfSize(layer.{weight.Name});");
+            sb.AppendLine($"            this.SecondMoment{weight.Name} = {weight.Type}.OfSize(layer.{weight.Name});");
+        }
+
+        foreach (var module in modules)
+        {
+            sb.AppendLine($"            this.{module.Name}Adam = new(optimizer, {module.Access(LayerFile.Location.Gradients)});");
         }
 
         sb.AppendLine($$"""
@@ -89,15 +99,21 @@ internal static class AdamLayerGenerator
         #endregion
 
         #region Apply
-        sb.Append($$"""
+        sb.AppendLine($$"""
                 public void Apply(MachineLearning.Model.Layer.Snapshot.IGradients gradients)
                 {
                     if(gradients is not {{name}}.Gradients gradient)
                     {
                         throw new Exception();
                     }
+        """);
+
+        if (weights.Any())
+        {
+            sb.Append($$"""
                     {{WeightType}} max;
         """);
+        }
 
         foreach (var weight in weights)
         {
@@ -113,6 +129,14 @@ internal static class AdamLayerGenerator
                     (SecondMoment{{weight.Name}}, gradient.{{weight.GetGradientName()}}).MapToFirst(SecondMomentEstimate);
                     NumericsDebug.AssertValidNumbers(SecondMoment{{weight.Name}});
                     Layer.{{weight.Name}}.SubtractToSelf((FirstMoment{{weight.Name}}, SecondMoment{{weight.Name}}).Map(WeightReduction));
+        """);
+        }
+
+        foreach (var module in modules)
+        {
+            sb.AppendLine($$"""
+
+                    {{module.Name}}Adam.Apply(gradient.{{module.Name}});
         """);
         }
 
@@ -138,9 +162,11 @@ internal static class AdamLayerGenerator
         sb.AppendLine($$"""
                 public void FullReset()
                 {
-                    {{string.Join("\n\t\t\t", weights.Select(w => $"FirstMoment{w.Name}.ResetZero();"))}}
+                    {{string.Join("\n            ", weights.Select(w => $"FirstMoment{w.Name}.ResetZero();"))}}
                     
-                    {{string.Join("\n\t\t\t", weights.Select(w => $"SecondMoment{w.Name}.ResetZero();"))}}
+                    {{string.Join("\n            ", weights.Select(w => $"SecondMoment{w.Name}.ResetZero();"))}}
+
+                    {{string.Join("\n            ", modules.Select(m => $"{m.Name}Adam.FullReset();"))}}
                 }
         """);
 
@@ -155,4 +181,4 @@ internal static class AdamLayerGenerator
     }
 }
 
-internal sealed record LayerData(string Name, string? Namespace, string InputType, NumberType OutputType, string SnapshotType, IEnumerable<DirectWeights> Weights);
+internal sealed record LayerData(string Name, string? Namespace, string InputType, NumberType OutputType, string SnapshotType, IEnumerable<DirectWeights> Weights, IEnumerable<Module> Modules);

@@ -16,27 +16,14 @@ internal abstract record Weights(ImmutableArray<Parameter> Dimensions)
     public abstract string Access(Location from);
 }
 
-internal sealed record DirectWeights(string Name, ImmutableArray<Parameter> Dimensions, Location Location, bool ReadOnlyProperty = true) : Weights(Dimensions)
+internal sealed record DirectWeights(string Name, ImmutableArray<Parameter> Dimensions, Location Location, bool PreAllocate = true) : Weights(Dimensions)
 {
     public override Location Location { get; } = Location;
 
-    public DirectWeights WithLocation(Location to) => new(Name, Dimensions, to, ReadOnlyProperty);
+    public DirectWeights WithLocation(Location to) => new(Name, Dimensions, to, PreAllocate);
     public override string ToString() => $"{Name} [{string.Join(", ", Dimensions.Select(d => d.Access(Location.Layer)))}]";
     public string GetGradientName() => $"{Name}Gradient";
-    public override string Access(Location from)
-    {
-        if (from == Location) return Name;
-
-        return (from, Location) switch
-        {
-            (Location.Pass, Location.Layer) => Name,
-            (Location.Pass, Location.Snapshot) => $"snapshot.{Name}",
-            (Location.Pass, Location.Gradients) => $"gradients.{Name}",
-            (Location.Gradients, Location.Layer) => $"layer.{Name}",
-            (Location.Serializer, Location.Layer) => $"layer.{Name}",
-            _ => throw new InvalidOperationException($"Cannot access {Location} {this} from {from}"),
-        };
-    }
+    public override string Access(Location from) => LayerRegistry.GetAccessString(from, Location, Name);
 }
 
 internal sealed record RowReferenceWeights(Weights Matrix, string Row) : Weights(Matrix.Type is NumberType.Matrix ? [Matrix.Dimensions[1]] : throw new InvalidOperationException($"cannot refenrence a row of {Matrix}"))

@@ -193,7 +193,7 @@ public sealed class LayerAnalyzer : DiagnosticAnalyzer, IIncrementalGenerator
 
         if (layer.GetAttributes().FirstOrDefault(a => IsGenerateOptimizersAttribute(a.AttributeClass!)) is not null)
         {
-            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.ContainingNamespace.ToString(), tin.ToString()!, ToNumberType(tout), tsnap.ToString()!, weights.Select(symbol => new DirectWeights(symbol.Name, ToDims(symbol.Type), LayerFile.Location.Layer))));
+            AdamLayerGenerator.GenerateAdam(context, new(layer.Name, layer.ContainingNamespace.ToString(), tin.ToString()!, ToNumberType(tout), tsnap.ToString()!, weights.Select(symbol => new DirectWeights(symbol.Name, ToDims(symbol.Type), LayerFile.Location.Layer)), Modules: []));
         }
 
         context.AddSource($"{layer.Name}.g.cs", sb.ToString());

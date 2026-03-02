@@ -65,7 +65,7 @@ public static class MNISTModel
 
             DumpEvaluationAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation.Dump()),
-
+            Threading = ThreadingMode.Single,
             RandomSource = random ?? Random.Shared,
         };
     }
