@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(DotNetVersion)</TargetFramework>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <NoWarn>$(NoWarn);RS1041;RS2008</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputItemType>Analyzer</OutputItemType>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <PrivateAssets>all</PrivateAssets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all"/>
+    <!-- <PackageReference Include="Ametrin.Optional" Version="0.3.1" PrivateAssets="all" GeneratePathProperty="true"/> -->
+  </ItemGroup>
+
+</Project>

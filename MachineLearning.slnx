@@ -4,4 +4,5 @@
   <Project Path="../../Packages/Ametrin.Utils/src/Ametrin.Utils.csproj" />
   <Project Path="ML.Core/ML.Core.csproj" />
   <Project Path="ML.Runner/ML.Runner.csproj" />
+  <Project Path="ML.SourceGenerator/ML.SourceGenerator.csproj" />
 </Solution>
