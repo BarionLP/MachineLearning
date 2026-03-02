@@ -142,7 +142,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     }
 
     public static void RegisterModelReader<TModel>(string key, uint version, Func<BinaryReader, Result<TModel>> reader) where TModel : IModel
-        => ModelDeserializers.Add((key, version), (br) => reader(br).Require<IModel>());
+        => ModelDeserializers.Add((key, version), (br) => reader(br).As<IModel>());
     public static void RegisterModel<TModel>(string key, uint version, Func<TModel, BinaryWriter, ErrorState> writer, Func<BinaryReader, Result<TModel>> reader) where TModel : IModel
     {
         RegisterModelReader(key, version, reader);
@@ -150,7 +150,7 @@ public sealed class ModelSerializer(FileInfo fileInfo)
     }
 
     public static void RegisterLayerReader<TLayer>(string key, uint version, Func<BinaryReader, Result<TLayer>> reader) where TLayer : ILayer
-        => LayerDeserializers.Add((key, version), (br) => reader(br).Require<ILayer>());
+        => LayerDeserializers.Add((key, version), (br) => reader(br).As<ILayer>());
     public static void RegisterLayer<TLayer>(string key, uint version, Func<TLayer, BinaryWriter, ErrorState> writer, Func<BinaryReader, Result<TLayer>> reader) where TLayer : ILayer
     {
         RegisterLayerReader(key, version, reader);
