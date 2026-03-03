@@ -50,4 +50,21 @@ public sealed class SequenceModule<TArch> : IHiddenModule<TArch, SequenceModule<
             Inner.ForEach(static m => m.Reset());
         }
     }
+
+    public sealed class Adam(Training.AdamOptimizer optimizer, SequenceModule<TArch> module) : Training.IModuleOptimizer<Gradients>
+    {
+        public ImmutableArray<Training.IModuleOptimizer> SubOptimizers { get; } = [.. module.Inner.Select(optimizer.CreateModuleOptimizer)];
+        public Training.AdamOptimizer Optimizer { get; } = optimizer;
+
+        public void Apply(Gradients gradients)
+        {
+            Debug.Assert(gradients.Inner.Length == SubOptimizers.Length);
+            SubOptimizers.Zip(gradients.Inner).ForEach(static p => p.First.Apply(p.Second));
+        }
+
+        public void FullReset()
+        {
+            SubOptimizers.ForEach(static sub => sub.FullReset());
+        }
+    }
 }

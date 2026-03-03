@@ -39,4 +39,7 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
         public Vector Activated { get; set; }
         public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
     }
+
+    [GeneratedAdam(typeof(PerceptronModule))]
+    public sealed partial class Adam;
 }

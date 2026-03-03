@@ -21,43 +21,21 @@ public sealed class ModuleGenerator : IIncrementalGenerator
     {
         var (module, compilation) = pair;
         Debug.Assert(module is not null);
-        var moduleDefinitionString = module.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
         var attribute = module.TryGetAttribute(IsGeneratedModuleAttribute);
         Debug.Assert(attribute is not null);
 
-        var moduleInfo = GetIModule(module);
+        var moduleInfo = SubModuleInfo.CreateFull(module, canGenerateDataClasses: true);
         Debug.Assert(moduleInfo is not null);
-
-        var modules = module.GetProperties().Where(static p => p.HasAttribute(IsSubModuleAttribute)).Select(SubModuleInfo.FromProperty).OfType<SubModuleInfo>().ToImmutableArray();
-        var weights = module.GetProperties().Where(static p => p.HasAttribute(IsWeightAttribute)).ToImmutableArray();
-
-        var generateDataClasses = moduleInfo.SnapshotType is null;
-        if (generateDataClasses)
-        {
-            moduleInfo = moduleInfo with
-            {
-                SnapshotTypeString = $$"""{{moduleDefinitionString}}.Snapshot""",
-                GradientsTypeString = $$"""{{moduleDefinitionString}}.Gradients""",
-            };
-        }
 
         var sb = new StringBuilder();
 
-        sb.AppendLine($$"""#nullable enable""");
-        sb.AppendLine();
-
-        if (!module.ContainingNamespace.IsGlobalNamespace)
-        {
-            sb.AppendLine($$"""namespace {{module.ContainingNamespace}};""");
-            sb.AppendLine();
-        }
-
+        var containerCount = BuildFileHeaderFor(module, sb);
 
         sb.Append($$"""
-        partial class {{moduleDefinitionString}}
+        partial class {{moduleInfo.ModuleDefinitionString}}
         """);
-        if (generateDataClasses)
+        if (moduleInfo.GenerateDataClasses)
         {
             sb.AppendLine(moduleInfo.RootModule.Name switch
             {
@@ -71,7 +49,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
             sb.AppendLine();
         }
 
-        var parameterCount = string.Join(" + ", [.. modules.Select(m => $"{m.Name}.ParameterCount"), .. weights.Select(w => $"(ulong){w.Name}.FlatCount")]);
+        var parameterCount = string.Join(" + ", [.. moduleInfo.Modules.Select(m => $"{m.Name}.ParameterCount"), .. moduleInfo.Weights.Select(w => $"(ulong){w.Name}.FlatCount")]);
         if (string.IsNullOrEmpty(parameterCount))
         {
             parameterCount = "0";
@@ -86,11 +64,11 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         
         """);
 
-        if (generateDataClasses)
+        if (moduleInfo.GenerateDataClasses)
         {
-            GenerateSnapshot(sb, moduleDefinitionString, modules, weights);
+            GenerateSnapshot(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
             sb.AppendLine();
-            GenerateGradients(sb, moduleDefinitionString, modules, weights);
+            GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
         }
 
 
@@ -98,10 +76,15 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         }
         """);
 
+        foreach (var _ in Enumerable.Range(0, containerCount))
+        {
+            sb.AppendLine("}");
+        }
+
         context.AddSource($"{module.Name}.g.cs", sb.ToString());
     }
 
-    private static void GenerateSnapshot(StringBuilder sb, string moduleDefinitionString, IEnumerable<SubModuleInfo> modules, IEnumerable<IPropertySymbol> weights)
+    private static void GenerateSnapshot(StringBuilder sb, string moduleDefinitionString, IEnumerable<ModulePropertyInfo> modules, IEnumerable<IPropertySymbol> weights)
     {
         sb.AppendLine($$"""
             public sealed partial class Snapshot({{moduleDefinitionString}} module) : IModuleSnapshot
@@ -120,7 +103,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         """);
     }
 
-    private static void GenerateGradients(StringBuilder sb, string moduleDefinitionString, IEnumerable<SubModuleInfo> modules, IEnumerable<IPropertySymbol> weights)
+    private static void GenerateGradients(StringBuilder sb, string moduleDefinitionString, IEnumerable<ModulePropertyInfo> modules, IEnumerable<IPropertySymbol> weights)
     {
         sb.AppendLine($$"""
             public sealed partial class Gradients({{moduleDefinitionString}} module) : IModuleGradients<Gradients>
