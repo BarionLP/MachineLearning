@@ -16,10 +16,10 @@ public interface IModuleOptimizer<TGradients> : IModuleOptimizer
         => Apply(Guard.Is<TGradients>(gradients));
 }
 
-public sealed class EmptyModuleOptimizer : IModuleOptimizer<EmptyModuleGradients>
+public sealed class EmptyModuleOptimizer : IModuleOptimizer<EmptyModuleData>
 {
     public static EmptyModuleOptimizer Instance { get; } = new();
 
-    public void Apply(EmptyModuleGradients gradients) { }
+    public void Apply(EmptyModuleData gradients) { }
     public void FullReset() { }
 }

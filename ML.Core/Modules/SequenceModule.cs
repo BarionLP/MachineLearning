@@ -51,6 +51,11 @@ public sealed class SequenceModule<TArch> : IHiddenModule<TArch, SequenceModule<
         }
     }
 
+    static SequenceModule()
+    {
+        Training.AdamOptimizer.Registry.Register<SequenceModule<TArch>>(static (o, module) => new Adam(o, module));
+    }
+
     public sealed class Adam(Training.AdamOptimizer optimizer, SequenceModule<TArch> module) : Training.IModuleOptimizer<Gradients>
     {
         public ImmutableArray<Training.IModuleOptimizer> SubOptimizers { get; } = [.. module.Inner.Select(optimizer.CreateModuleOptimizer)];

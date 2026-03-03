@@ -124,7 +124,7 @@ internal sealed class AdamModuleOptimizerGenerator : IIncrementalGenerator
             [System.Runtime.CompilerServices.ModuleInitializer]
             internal static void Register()
             {
-                AdamOptimizer.Registry.Register<{{moduleInfo.ModuleDefinitionString}}>(static (op, module) => new {{optimizer.Name}}(op, module));
+                global::ML.Core.Training.AdamOptimizer.Registry.Register<{{moduleInfo.ModuleDefinitionString}}>(static (op, module) => new {{optimizer.Name}}(op, module));
             }
         """);
 

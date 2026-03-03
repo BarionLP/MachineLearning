@@ -38,6 +38,7 @@ internal static class Helper
 
     }
 
+    public static bool IsEmptyModuleData(ITypeSymbol? symbol) => symbol is { Name: "EmptyModuleData", ContainingAssembly.Name: CoreAssemblyName, ContainingNamespace.Name: "Modules" };
     public static bool IsSubModuleAttribute(INamedTypeSymbol? symbol) => symbol is { Name: "SubModuleAttribute", ContainingAssembly.Name: CoreAssemblyName, ContainingNamespace.Name: "Attributes" };
     public static bool IsWeightAttribute(INamedTypeSymbol? symbol) => symbol is { Name: "WeightsAttribute", ContainingAssembly.Name: CoreAssemblyName, ContainingNamespace.Name: "Attributes" };
     public static bool IsPropertyAttribute(INamedTypeSymbol? symbol) => symbol is { Name: "PropertyAttribute", ContainingAssembly.Name: CoreAssemblyName, ContainingNamespace.Name: "Attributes" };

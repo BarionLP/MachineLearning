@@ -58,9 +58,8 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         {
             public ulong ParameterCount => {{parameterCount}};
 
-
-            public {{moduleInfo.SnapshotTypeString}} CreateSnapshot() => new(this);
-            public {{moduleInfo.GradientsTypeString}} CreateGradients() => new(this);
+            public {{moduleInfo.SnapshotTypeString}} CreateSnapshot() => {{(IsEmptyModuleData(moduleInfo.SnapshotType) ? "global::ML.Core.Modules.EmptyModuleData.Instance" : "new(this)")}};
+            public {{moduleInfo.GradientsTypeString}} CreateGradients() => {{(IsEmptyModuleData(moduleInfo.GradientsType) ? "global::ML.Core.Modules.EmptyModuleData.Instance" : "new(this)")}};
         
         """);
 
@@ -71,6 +70,17 @@ public sealed class ModuleGenerator : IIncrementalGenerator
             GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
         }
 
+        if(IsEmptyModuleData(moduleInfo.GradientsType))
+        {
+            sb.AppendLine($$"""
+
+            [global::System.Runtime.CompilerServices.ModuleInitializer]
+            internal static void Register()
+            {
+                global::ML.Core.Training.AdamOptimizer.Registry.RegisterEmpty<{{moduleInfo.ModuleDefinitionString}}>();
+            }
+        """);
+        }
 
         sb.AppendLine($$"""
         }

@@ -1,7 +1,8 @@
 namespace ML.Core.Training.Data;
 
-public interface ITrainingDataSource<TIn, TArch, TOut>
+public interface ITrainingDataSource<T>
 {
+    public IEnumerable<IEnumerable<T>> GetBatches();
     public void Reset();
 }
 

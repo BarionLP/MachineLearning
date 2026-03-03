@@ -9,7 +9,7 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
 {
     public EmbeddedModule<TIn, TArch, TOut> Module { get; }
     public TrainingConfig Config { get; }
-    public required ITrainingDataSource<TIn, TArch, TOut> TrainingData { get; init; }
+    public required ITrainingDataSource<TrainingEntry<TIn, TArch, TOut>> TrainingData { get; init; }
     public required ICostFunction<TArch> CostFunction { get; init; }
 
     private Optimizer Optimizer => Config.Optimizer;
@@ -26,12 +26,13 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
     {
         var timeStamp = Stopwatch.GetTimestamp();
 
-        var gradients = Module.CreateGradients();
+        var gradients = Module.CreateGradients(); // TODO: reuse
 
         int correctCount = 0;
         int totalCount = 0;
         Weight totalCost = 0;
 
+        // TODO: threading
         foreach (var entry in batch)
         {
             var (output, condfidence, cost) = RunEntry(entry, gradients);

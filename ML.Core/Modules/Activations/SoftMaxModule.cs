@@ -4,7 +4,7 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class SoftMaxModule(int inputNodes) : IHiddenModule<Vector, SoftMaxModule.Snapshot, EmptyModuleGradients>
+public sealed partial class SoftMaxModule(int inputNodes) : IHiddenModule<Vector, SoftMaxModule.Snapshot, EmptyModuleData>
 {
     [Property] public int InputNodes { get; } = inputNodes;
 
@@ -16,7 +16,7 @@ public sealed partial class SoftMaxModule(int inputNodes) : IHiddenModule<Vector
         return snapshot.Output;
     }
 
-    public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleGradients gradients)
+    public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients)
     {
         var input = snapshot.Input;
         var result = snapshot.Output; // TODO: can i actually reuse?
