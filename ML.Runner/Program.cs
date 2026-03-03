@@ -1,10 +1,11 @@
 ﻿using ML.Core.Modules;
+using ML.Core.Modules.Activations;
 
 var model = new SequenceModule<Vector>
 {
     Inner = [
-        new PerceptronModule(784, 256) { Activation = new SoftMaxModule(256) },
-        new PerceptronModule(256, 128) { Activation = new SoftMaxModule(128) },
+        new PerceptronModule(784, 256) { Activation = new LeakyReLUModule(256) },
+        new PerceptronModule(256, 128) { Activation = new LeakyReLUModule(128) },
         new PerceptronModule(128, 10) { Activation = new SoftMaxModule(10) },
     ],
 };

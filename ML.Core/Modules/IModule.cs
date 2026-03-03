@@ -1,12 +1,16 @@
 namespace ML.Core.Modules;
 
-public interface IModule<TArch>
+public interface IModule
 {
     public ulong ParameterCount { get; }
-    public TArch Backward(TArch outputGradient, IModuleSnapshot snapshot, IModuleGradients gradients);
 
     public IModuleSnapshot CreateSnapshot();
     public IModuleGradients CreateGradients();
+}
+
+public interface IModule<TArch> : IModule
+{
+    public TArch Backward(TArch outputGradient, IModuleSnapshot snapshot, IModuleGradients gradients);
 }
 
 public interface IModule<TArch, TSnapshot, TGradients> : IModule<TArch>
@@ -20,8 +24,8 @@ public interface IModule<TArch, TSnapshot, TGradients> : IModule<TArch>
     public new TSnapshot CreateSnapshot();
     public new TGradients CreateGradients();
 
-    IModuleSnapshot IModule<TArch>.CreateSnapshot() => CreateSnapshot();
-    IModuleGradients IModule<TArch>.CreateGradients() => CreateGradients();
+    IModuleSnapshot IModule.CreateSnapshot() => CreateSnapshot();
+    IModuleGradients IModule.CreateGradients() => CreateGradients();
 }
 
 public interface IModuleSnapshot;

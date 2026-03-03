@@ -1,13 +1,12 @@
 using System.Runtime.InteropServices;
 using ML.Core.Attributes;
 
-namespace ML.Core.Modules;
+namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class SoftMaxModule(int inputNodes, Weight alpha = 0.01f) : IHiddenModule<Vector, SoftMaxModule.Snapshot, EmptyModuleGradients>
+public sealed partial class SoftMaxModule(int inputNodes) : IHiddenModule<Vector, SoftMaxModule.Snapshot, EmptyModuleGradients>
 {
     [Property] public int InputNodes { get; } = inputNodes;
-    [Property] public Weight Alpha { get; } = alpha;
 
     public Vector Forward(Vector input, Snapshot snapshot)
     {
