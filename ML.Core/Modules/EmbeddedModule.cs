@@ -1,4 +1,5 @@
 using ML.Core.Attributes;
+using ML.Core.Modules.Initialization;
 using ML.Core.Training;
 
 namespace ML.Core.Modules;
@@ -43,6 +44,20 @@ public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>
             Input.FullReset();
             Hidden.FullReset();
             Output.FullReset();
+        }
+    }
+
+    public sealed class Initializer : IModuleInitializer<EmbeddedModule<TIn, TArch, TOut>>
+    {
+        public IModuleInitializer Input { get; init; } = EmptyModuleInitializer.Instance;
+        public IModuleInitializer Hidden { get; init; } = EmptyModuleInitializer.Instance;
+        public IModuleInitializer Output { get; init; } = EmptyModuleInitializer.Instance;
+
+        public void Init(EmbeddedModule<TIn, TArch, TOut> module)
+        {
+            Input.Init(module.Input);
+            Hidden.Init(module.Hidden);
+            Output.Init(module.Output);
         }
     }
 }

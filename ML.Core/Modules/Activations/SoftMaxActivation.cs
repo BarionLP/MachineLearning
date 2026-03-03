@@ -4,7 +4,7 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class SoftMaxModule(int inputNodes) : IHiddenModule<Vector, SoftMaxModule.Snapshot, EmptyModuleData>
+public sealed partial class SoftMaxActivation(int inputNodes) : IHiddenModule<Vector, SoftMaxActivation.Snapshot, EmptyModuleData>, IActivationModule
 {
     [Property] public int InputNodes { get; } = inputNodes;
 
@@ -19,7 +19,7 @@ public sealed partial class SoftMaxModule(int inputNodes) : IHiddenModule<Vector
     public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients)
     {
         var input = snapshot.Input;
-        var result = snapshot.Output; // TODO: can i actually reuse?
+        var result = snapshot.OutputGradient;
         var max = input.Max();
         input.SubtractPointwiseTo(max, result);
         result.PointwiseExpToSelf();
@@ -49,9 +49,10 @@ public sealed partial class SoftMaxModule(int inputNodes) : IHiddenModule<Vector
         return result;
     }
 
-    public sealed class Snapshot(SoftMaxModule module) : IModuleSnapshot
+    public sealed class Snapshot(SoftMaxActivation module) : IModuleSnapshot
     {
         public Vector Input { get; set; }
         public Vector Output { get; } = Vector.Create(module.InputNodes);
+        public Vector OutputGradient { get; } = Vector.Create(module.InputNodes);
     }
 }

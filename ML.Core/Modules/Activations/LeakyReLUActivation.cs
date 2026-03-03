@@ -3,7 +3,7 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class LeakyReLUModule(int inputNodes, Weight alpha = 0.01f) : IHiddenModule<Vector, LeakyReLUModule.Snapshot, EmptyModuleData>
+public sealed partial class LeakyReLUActivation(int inputNodes, Weight alpha = 0.01f) : IHiddenModule<Vector, LeakyReLUActivation.Snapshot, EmptyModuleData>, IActivationModule
 {
     [Property] public int InputNodes { get; } = inputNodes;
     [Property] public Weight Alpha { get; } = alpha;
@@ -24,13 +24,14 @@ public sealed partial class LeakyReLUModule(int inputNodes, Weight alpha = 0.01f
 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients)
     {
-        snapshot.Input.MapTo(Derivative, Derivative, snapshot.Output);
-        return snapshot.Output;
+        snapshot.Input.MapTo(Derivative, Derivative, snapshot.OutputGradient);
+        return snapshot.OutputGradient;
     }
 
-    public sealed class Snapshot(LeakyReLUModule module) : IModuleSnapshot
+    public sealed class Snapshot(LeakyReLUActivation module) : IModuleSnapshot
     {
         public Vector Input { get; set; }
         public Vector Output { get; } = Vector.Create(module.InputNodes);
+        public Vector OutputGradient { get; } = Vector.Create(module.InputNodes);
     }
 }

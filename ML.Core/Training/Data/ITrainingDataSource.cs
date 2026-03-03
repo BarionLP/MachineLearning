@@ -2,6 +2,8 @@ namespace ML.Core.Training.Data;
 
 public interface ITrainingDataSource<T>
 {
+    public int BatchCount { get; }
+    public int BatchSize { get; }
     public IEnumerable<IEnumerable<T>> GetBatches();
     public void Reset();
 }

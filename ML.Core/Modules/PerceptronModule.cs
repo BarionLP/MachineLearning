@@ -1,4 +1,6 @@
 using ML.Core.Attributes;
+using ML.Core.Modules.Activations;
+using ML.Core.Modules.Initialization;
 
 namespace ML.Core.Modules;
 
@@ -24,8 +26,8 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, Gradients gradients)
     {
         var biasedGradient = Activation.Backward(outputGradient, snapshot.Activation, gradients.Activation);
-        biasedGradient.PointwiseMultiplyToSelf(outputGradient); // TODO: this might be bad, we no longer own biasedGradient
-        gradients.Biases.AddToSelf(biasedGradient);
+        biasedGradient.PointwiseMultiplyTo(outputGradient, snapshot.BiasedGradient); // TODO: this might be bad, we no longer own biasedGradient
+        gradients.Biases.AddToSelf(snapshot.BiasedGradient);
         VectorHelper.MultiplyToMatrixAddTo(outputGradient, snapshot.Input, gradients.Weights);
         Weights.MultiplyTransposedTo(outputGradient, snapshot.InputGradient);
         return snapshot.InputGradient;
@@ -38,8 +40,32 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
         public Vector Biased { get; } = Vector.OfSize(module.Biases);
         public Vector Activated { get; set; }
         public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
+        public Vector BiasedGradient { get; } = Vector.OfSize(module.Biases);
     }
 
     [GeneratedAdam(typeof(PerceptronModule))]
     public sealed partial class Adam;
+
+    public sealed class Initializer : IModuleInitializer<PerceptronModule>
+    {
+        public static Initializer Instance => field ??= new();
+        public Random Random { get; init; } = Random.Shared;
+        public void Init(PerceptronModule module)
+        {
+            switch (module.Activation)
+            {
+                case LeakyReLUActivation:
+                    module.Weights.KaimingNormal((IActivationModule)module.Activation, Random);
+                    break;
+
+                case SoftMaxActivation:
+                    module.Weights.XavierUniform(Random);
+                    break;
+
+                default:
+                    throw new NotImplementedException($"no PerceptronModule init method for {module.Activation}");
+            }
+            module.Biases.Normal(0, 0.1f, Random);
+        }
+    }
 }

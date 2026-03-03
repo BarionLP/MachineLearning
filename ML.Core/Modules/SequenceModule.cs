@@ -1,3 +1,5 @@
+using ML.Core.Modules.Initialization;
+
 namespace ML.Core.Modules;
 
 public sealed class SequenceModule<TArch> : IHiddenModule<TArch, SequenceModule<TArch>.Snapshot, SequenceModule<TArch>.Gradients>
@@ -70,6 +72,16 @@ public sealed class SequenceModule<TArch> : IHiddenModule<TArch, SequenceModule<
         public void FullReset()
         {
             SubOptimizers.ForEach(static sub => sub.FullReset());
+        }
+    }
+
+    public sealed class SharedInitializer : IModuleInitializer<SequenceModule<TArch>>
+    {
+        public IModuleInitializer Inner { get; init; } = EmptyModuleInitializer.Instance;
+
+        public void Init(SequenceModule<TArch> module)
+        {
+            module.Inner.ForEach(Inner.Init);
         }
     }
 }
