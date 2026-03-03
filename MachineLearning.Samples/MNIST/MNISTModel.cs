@@ -73,7 +73,7 @@ public static class MNISTModel
     public static ModelDefinition TrainDefault(ModelDefinition? model = null, TrainingConfig? config = null, Random? random = null)
     {
         model ??= CreateModel(random);
-        var trainer = new EmbeddedModelTrainer<double[], int>(model, config ?? DefaultTrainingConfig(random), GetTrainingSet());
+        var trainer = new EmbeddedModelTrainer<double[], int>(model, config ?? DefaultTrainingConfig(random), GetTrainingSet(random));
 
         trainer.TrainConsole();
 
