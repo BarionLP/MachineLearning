@@ -14,7 +14,7 @@ public sealed class CrossEntropyLoss : ICostFunction
     public Weight Cost(Weight output, Weight expected)
     {
         output = Weight.Clamp(output, EPSILON, 1 - EPSILON); // just return 0 or 1?
-        return -(expected * float.Log(output) + (1 - expected) * float.Log(1 - output));
+        return -(expected * Weight.Log(output) + (1 - expected) * Weight.Log(1 - output));
     }
 
     public Weight Derivative(Weight output, Weight expected)

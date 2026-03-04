@@ -26,10 +26,10 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, Gradients gradients)
     {
         var biasedGradient = Activation.Backward(outputGradient, snapshot.Activation, gradients.Activation);
-        biasedGradient.PointwiseMultiplyTo(outputGradient, snapshot.BiasedGradient); // TODO: this might be bad, we no longer own biasedGradient
+        biasedGradient.PointwiseMultiplyTo(outputGradient, snapshot.BiasedGradient);
         gradients.Biases.AddToSelf(snapshot.BiasedGradient);
-        VectorHelper.MultiplyToMatrixAddTo(outputGradient, snapshot.Input, gradients.Weights);
-        Weights.MultiplyTransposedTo(outputGradient, snapshot.InputGradient);
+        VectorHelper.MultiplyToMatrixAddTo(snapshot.BiasedGradient, snapshot.Input, gradients.Weights);
+        Weights.MultiplyTransposedTo(snapshot.BiasedGradient, snapshot.InputGradient);
         return snapshot.InputGradient;
     }
 

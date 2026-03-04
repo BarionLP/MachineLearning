@@ -5,8 +5,8 @@ using ML.Core.Training;
 using ML.Core.Training.Data;
 using ML.Runner;
 
+// var random = Random.Shared;
 var random = new Random(69);
-// var random = new Random(69);
 var images = new MnistDataSource(AssetManager.MNISTArchive);
 
 var model = new SequenceModule<Vector>
