@@ -44,6 +44,8 @@ public sealed class TrainingContext : IDisposable
 {
     public int TotalCount { get; set; }
     public int CorrectCount { get; set; }
+    public float CorrectConfidenceSum { get; set; }
+    public float WrongConfidenceSum { get; set; }
     public float TotalCost { get; set; }
     public required ModuleDataPool Pool { get; init; }
     private IModuleGradients? _gradients;
@@ -53,6 +55,8 @@ public sealed class TrainingContext : IDisposable
     {
         TotalCount += other.TotalCount;
         CorrectCount += other.CorrectCount;
+        CorrectConfidenceSum += other.CorrectConfidenceSum;
+        WrongConfidenceSum += other.WrongConfidenceSum;
         TotalCost += other.TotalCost;
 
         Gradients.Add(other.Gradients);

@@ -108,9 +108,13 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
             if (EqualityComparer<TOut>.Default.Equals(output, entry.ExpectedValue))
             {
                 context.CorrectCount++;
+                context.CorrectConfidenceSum += condfidence;
+            }
+            else
+            {
+                context.WrongConfidenceSum += condfidence;
             }
 
-            // TODO: track confidence
             context.TotalCount++;
             context.TotalCost += cost;
         });
@@ -122,6 +126,8 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
         {
             TotalCount = context.TotalCount,
             CorrectCount = context.CorrectCount,
+            CorrectConfidenceSum = context.CorrectConfidenceSum,
+            WrongConfidenceSum = context.WrongConfidenceSum,
             TotalCost = context.TotalCost,
             TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };

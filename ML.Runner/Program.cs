@@ -33,7 +33,7 @@ var embeddedModel = new EmbeddedModule<double[], Vector, int>
 
 var trainingConfig = new TrainingConfig
 {
-    EpochCount = 1,
+    EpochCount = 5,
     Optimizer = new AdamOptimizer
     {
         LearningRate = 0.0046225016f,
