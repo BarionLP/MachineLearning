@@ -13,6 +13,7 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
     public TrainingConfig Config { get; }
     public required ITrainingDataSource<TrainingEntry<TIn, TArch, TOut>> TrainingData { get; init; }
     public required ICostFunction<TArch> CostFunction { get; init; }
+    public ModuleDataPool DataPool { get; }
 
     private Optimizer Optimizer => Config.Optimizer;
     private readonly IModuleOptimizer moduleOptimizer;
@@ -22,6 +23,7 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
         Module = module;
         Config = config;
         moduleOptimizer = Optimizer.CreateModuleOptimizer(module);
+        DataPool = new(module);
     }
 
     public void TrainConsole(bool cancelable = true)
@@ -47,6 +49,7 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
         Console.WriteLine($"Training {Module}");
         Console.WriteLine(GenerateTrainingOverview(Config, TrainingData.BatchCount, TrainingData.BatchSize));
         Console.WriteLine("Starting Training...");
+        Console.WriteLine(TrainingEvaluationResult.GetHeader());
         Train(cts.Token);
         cts.Cancel();
         Console.WriteLine("Training Done!");
@@ -99,40 +102,36 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
     {
         var timeStamp = Stopwatch.GetTimestamp();
 
-        var gradients = Module.CreateGradients(); // TODO: reuse
-
-        int correctCount = 0;
-        int totalCount = 0;
-        Weight totalCost = 0;
-
-        // TODO: threading
-        foreach (var entry in batch)
+        using var context = ThreadedTrainer.Train(batch, DataPool, Config.Threading, (entry, context) =>
         {
-            var (output, condfidence, cost) = RunEntry(entry, gradients);
+            var (output, condfidence, cost) = RunEntry(entry, (EmbeddedModule<TIn, TArch, TOut>.Gradients)context.Gradients);
             if (EqualityComparer<TOut>.Default.Equals(output, entry.ExpectedValue))
             {
-                correctCount++;
+                context.CorrectCount++;
             }
 
             // TODO: track confidence
-            totalCount++;
-            totalCost += cost;
-        }
+            context.TotalCount++;
+            context.TotalCost += cost;
+        });
 
-        moduleOptimizer.Apply(gradients);
+
+        moduleOptimizer.Apply(context.Gradients);
 
         return new()
         {
-            TotalCount = totalCount,
-            CorrectCount = correctCount,
-            TotalCost = totalCost,
+            TotalCount = context.TotalCount,
+            CorrectCount = context.CorrectCount,
+            TotalCost = context.TotalCost,
             TotalElapsedTime = Stopwatch.GetElapsedTime(timeStamp),
         };
     }
 
     private (TOut output, Weight confidence, Weight cost) RunEntry(TrainingEntry<TIn, TArch, TOut> entry, EmbeddedModule<TIn, TArch, TOut>.Gradients gradients)
     {
-        var snapshot = Module.CreateSnapshot(); // TODO: reuse snapshot
+        using var marker = DataPool.RentSnapshot();
+        var snapshot = (EmbeddedModule<TIn, TArch, TOut>.Snapshot)marker.Snapshot;
+        // var snapshot = Module.CreateSnapshot();
 
         var (output, condfidence, outputWeights) = Module.Forward(entry.InputValue, snapshot);
 

@@ -2,7 +2,7 @@ using ML.Core.Attributes;
 using ML.Core.Modules;
 using ML.Core.Training;
 
-namespace ML.Runner;
+namespace ML.Runner.Mnist;
 
 [GeneratedModule]
 public sealed partial class MnistInput : IInputModule<double[], Vector, EmptyModuleData, EmptyModuleData>

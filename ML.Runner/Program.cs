@@ -1,22 +1,21 @@
 ﻿using ML.Core.Evaluation;
 using ML.Core.Modules;
 using ML.Core.Modules.Activations;
+using ML.Core.Modules.Builder;
 using ML.Core.Training;
 using ML.Core.Training.Data;
 using ML.Runner;
+using ML.Runner.Mnist;
 
 // var random = Random.Shared;
 var random = new Random(69);
 var images = new MnistDataSource(AssetManager.MNISTArchive);
 
-var model = new SequenceModule<Vector>
-{
-    Inner = [
-        new PerceptronModule(784, 256) { Activation = new LeakyReLUActivation(256) },
-        new PerceptronModule(256, 128) { Activation = new LeakyReLUActivation(128) },
-        new PerceptronModule(128, 10) { Activation = new SoftMaxActivation(10) },
-    ],
-};
+var model = MultiLayerPerceptronBuilder.Create(784)
+    .AddLayer(256, (_, o) => new LeakyReLUActivation(o))
+    .AddLayer(128, (_, o) => new LeakyReLUActivation(o))
+    .AddLayer(10, (_, o) => new SoftMaxActivation(o))
+    .Build();
 
 var initializer = new SequenceModule<Vector>.SharedInitializer
 {
@@ -42,7 +41,7 @@ var trainingConfig = new TrainingConfig
 
     EvaluationCallbackAfterBatches = 8,
     EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-    Threading = ThreadingMode.Single,
+    Threading = ThreadingMode.Full,
     RandomSource = random,
 };
 

@@ -3,7 +3,7 @@ using System.IO.Compression;
 using System.Text;
 using ML.Core.Training.Data;
 
-namespace ML.Runner;
+namespace ML.Runner.Mnist;
 
 public sealed class MnistDataSet(IEnumerable<MnistImage> images) : ITrainingDataSource<TrainingEntry<double[], Vector, int>>
 {
