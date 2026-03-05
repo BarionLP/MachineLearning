@@ -1,4 +1,4 @@
-﻿using ML.Core.Evaluation;
+﻿using ML.Core.Evaluation.Cost;
 using ML.Core.Modules;
 using ML.Core.Modules.Activations;
 using ML.Core.Modules.Builder;
@@ -11,10 +11,11 @@ using ML.Runner.Mnist;
 var random = new Random(69);
 var images = new MnistDataSource(AssetManager.MNISTArchive);
 
+// TODO: build together with initer, allow auto init or custom init, when done remove EmptyModule case from PerceptronModule.Initializer
 var model = MultiLayerPerceptronBuilder.Create(784)
     .AddLayer(256, (_, o) => new LeakyReLUActivation(o))
     .AddLayer(128, (_, o) => new LeakyReLUActivation(o))
-    .AddLayer(10, (_, o) => new SoftMaxActivation(o))
+    .AddLayer(10, (_, o) => new EmptyModule())
     .Build();
 
 var initializer = new SequenceModule<Vector>.SharedInitializer
@@ -33,7 +34,7 @@ var embeddedModel = new EmbeddedModule<double[], Vector, int>
 
 var trainingConfig = new TrainingConfig
 {
-    EpochCount = 5,
+    EpochCount = 1,
     Optimizer = new AdamOptimizer
     {
         LearningRate = 0.0046225016f,
@@ -47,6 +48,7 @@ var trainingConfig = new TrainingConfig
 
 var trainer = new EmbeddedModuleTrainer<double[], Vector, int>(embeddedModel, trainingConfig)
 {
+    CostFunction = CrossEntropyCostFromLogits.Instance,
     TrainingData = new MnistDataSet(images.TrainingSet)
     {
         BatchCount = 128,
@@ -63,7 +65,6 @@ var trainer = new EmbeddedModuleTrainer<double[], Vector, int>(embeddedModel, tr
         },
         Random = random,
     },
-    CostFunction = CrossEntropyLoss.Instance,
 };
 
 trainer.TrainConsole();

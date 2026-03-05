@@ -1,4 +1,4 @@
-namespace ML.Core.Evaluation;
+namespace ML.Core.Evaluation.Cost;
 
 public interface ICostFunction<TArch>
     where TArch : ITensorLike<TArch>

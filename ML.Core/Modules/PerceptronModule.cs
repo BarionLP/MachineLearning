@@ -26,10 +26,10 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, Gradients gradients)
     {
         var biasedGradient = Activation.Backward(outputGradient, snapshot.Activation, gradients.Activation);
-        biasedGradient.PointwiseMultiplyTo(outputGradient, snapshot.BiasedGradient);
-        gradients.Biases.AddToSelf(snapshot.BiasedGradient);
-        VectorHelper.MultiplyToMatrixAddTo(snapshot.BiasedGradient, snapshot.Input, gradients.Weights);
-        Weights.MultiplyTransposedTo(snapshot.BiasedGradient, snapshot.InputGradient);
+        // biasedGradient.PointwiseMultiplyTo(outputGradient, snapshot.BiasedGradient);
+        gradients.Biases.AddToSelf(biasedGradient);
+        VectorHelper.MultiplyToMatrixAddTo(biasedGradient, snapshot.Input, gradients.Weights);
+        Weights.MultiplyTransposedTo(biasedGradient, snapshot.InputGradient);
         return snapshot.InputGradient;
     }
 
@@ -40,7 +40,6 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
         public Vector Biased { get; } = Vector.OfSize(module.Biases);
         public Vector Activated { get; set; }
         public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
-        public Vector BiasedGradient { get; } = Vector.OfSize(module.Biases);
     }
 
     [GeneratedAdam(typeof(PerceptronModule))]
@@ -58,6 +57,7 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
                     module.Weights.KaimingNormal((IActivationModule)module.Activation, Random);
                     break;
 
+                case EmptyModule:
                 case SoftMaxActivation:
                     module.Weights.XavierUniform(Random);
                     break;

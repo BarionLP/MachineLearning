@@ -24,14 +24,15 @@ public sealed partial class LeakyReLUActivation(int inputNodes, Weight alpha = 0
 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients)
     {
-        snapshot.Input.MapTo(Derivative, Derivative, snapshot.OutputGradient);
-        return snapshot.OutputGradient;
+        snapshot.Input.MapTo(Derivative, Derivative, snapshot.InputGradient);
+        snapshot.InputGradient.PointwiseMultiplyToSelf(outputGradient);
+        return snapshot.InputGradient;
     }
 
     public sealed class Snapshot(LeakyReLUActivation module) : IModuleSnapshot
     {
         public Vector Input { get; set; }
         public Vector Output { get; } = Vector.Create(module.InputNodes);
-        public Vector OutputGradient { get; } = Vector.Create(module.InputNodes);
+        public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
     }
 }
