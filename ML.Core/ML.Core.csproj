@@ -5,9 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Packages\Ametrin.Numerics\src\Ametrin.Numerics.csproj" />
     <ProjectReference Include="..\..\..\Packages\Ametrin.Utils\src\Ametrin.Utils.csproj" />
+    <ProjectReference Include="..\..\..\Packages\Ametrin.Numerics\src\Ametrin.Numerics.csproj" />
+    <ProjectReference Include="../../../Packages/Ametrin.Serializer/Ametrin.Serializer/Ametrin.Serializer.csproj" />
     <ProjectReference Include="..\ML.SourceGenerator\ML.SourceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <ProjectReference Include="../../../Packages/Ametrin.Serializer/Ametrin.Serializer.Generator/Ametrin.Serializer.Generator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>

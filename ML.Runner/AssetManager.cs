@@ -4,7 +4,7 @@ namespace ML.Runner;
 
 public static class AssetManager
 {
-    public static readonly DirectoryInfo Directory = new(@"I:\Coding\TestChamber\MachineLearning");
+    public static readonly DirectoryInfo Directory = new(@"/mnt/Projects/Coding/TestChamber/MachineLearning");
     public static readonly DirectoryInfo ModelDirectory = Directory.Directory("Model");
     public static readonly DirectoryInfo WeightMapsDirectory = Directory.Directory("Maps");
     public static readonly DirectoryInfo DataDirectory = Directory.Directory("Data");

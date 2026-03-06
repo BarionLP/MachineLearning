@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="../../Packages/Ametrin.Numerics/generator/Ametrin.Numerics.Generator.csproj" />
   <Project Path="../../Packages/Ametrin.Numerics/src/Ametrin.Numerics.csproj" />
+  <Project Path="../../Packages/Ametrin.Serializer/Ametrin.Serializer.Generator/Ametrin.Serializer.Generator.csproj" />
+  <Project Path="../../Packages/Ametrin.Serializer/Ametrin.Serializer/Ametrin.Serializer.csproj" />
   <Project Path="../../Packages/Ametrin.Utils/src/Ametrin.Utils.csproj" />
   <Project Path="ML.Core/ML.Core.csproj" />
   <Project Path="ML.Runner/ML.Runner.csproj" />
