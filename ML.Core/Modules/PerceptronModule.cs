@@ -51,7 +51,7 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
     public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<PerceptronModule>
     {
         public Random Random { get; init; } = Random.Shared;
-        private readonly Weight gain = NumericsInitializer.GetKaimingGain(activation);
+        private readonly Weight gain = InitializationHelper.GetKaimingGain(activation);
         public PerceptronModule Init(PerceptronModule module)
         {
             module.Weights.KaimingNormal(gain, Random);
