@@ -11,16 +11,22 @@ using ML.Runner.Mnist;
 var random = new Random(69);
 var images = new MnistDataSource(AssetManager.MNISTArchive);
 
-// TODO: build together with initer, allow auto init or custom init, when done remove EmptyModule case from PerceptronModule.Initializer
+// TODO: some system to simplify initializer creation
 var model = MultiLayerPerceptronBuilder.Create(784)
     .AddLayer(256, (_, o) => new LeakyReLUActivation(o))
     .AddLayer(128, (_, o) => new LeakyReLUActivation(o))
-    .AddLayer(10, (_, o) => new EmptyModule())
+    .AddLayer(10, EmptyModule.Instance)  // only when training with CrossEntropyCostFromLogits
+    // .AddLayer(10, (_, o) => new SoftMaxActivation(o)) // only when not training
     .Build();
 
-var initializer = new SequenceModule<Vector>.SharedInitializer
+var initializer = new SequenceModule<Vector>.Initializer
 {
-    Inner = new PerceptronModule.Initializer { Random = random },
+    Inner = [
+        new PerceptronModule.KaimingInitializer(((PerceptronModule)model.Inner[0]).Activation),
+        new PerceptronModule.KaimingInitializer(((PerceptronModule)model.Inner[1]).Activation),
+        PerceptronModule.XavierInitializer.Instance,
+        // EmptyModuleInitializer.Instance,
+    ],
 };
 
 initializer.Init(model);

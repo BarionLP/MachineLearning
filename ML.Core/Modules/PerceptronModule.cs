@@ -11,7 +11,7 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
     [Property] public int OutputNodes => Weights.RowCount;
     [Weights] public Matrix Weights { get; } = Matrix.Create(outputNodes, inputNodes);
     [Weights] public Vector Biases { get; } = Vector.Create(outputNodes);
-    [SubModule] public required IHiddenModule<Vector> Activation { get; init; }
+    [SubModule] public required IActivationModule<Vector> Activation { get; init; }
 
     public Vector Forward(Vector input, Snapshot snapshot)
     {
@@ -26,7 +26,6 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, Gradients gradients)
     {
         var biasedGradient = Activation.Backward(outputGradient, snapshot.Activation, gradients.Activation);
-        // biasedGradient.PointwiseMultiplyTo(outputGradient, snapshot.BiasedGradient);
         gradients.Biases.AddToSelf(biasedGradient);
         VectorHelper.MultiplyToMatrixAddTo(biasedGradient, snapshot.Input, gradients.Weights);
         Weights.MultiplyTransposedTo(biasedGradient, snapshot.InputGradient);
@@ -45,27 +44,35 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
     [GeneratedAdam(typeof(PerceptronModule))]
     public sealed partial class Adam;
 
-    public sealed class Initializer : IModuleInitializer<PerceptronModule>
+    /// <summary>
+    /// suited for (Leaky)ReLU<br/>
+    /// not suited for SoftMax/Sigmoid
+    /// </summary>
+    public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<PerceptronModule>
     {
-        public static Initializer Instance => field ??= new();
         public Random Random { get; init; } = Random.Shared;
-        public void Init(PerceptronModule module)
+        private readonly Weight gain = NumericsInitializer.GetKaimingGain(activation);
+        public PerceptronModule Init(PerceptronModule module)
         {
-            switch (module.Activation)
-            {
-                case LeakyReLUActivation:
-                    module.Weights.KaimingNormal((IActivationModule)module.Activation, Random);
-                    break;
-
-                case EmptyModule:
-                case SoftMaxActivation:
-                    module.Weights.XavierUniform(Random);
-                    break;
-
-                default:
-                    throw new NotImplementedException($"no PerceptronModule init method for {module.Activation}");
-            }
+            module.Weights.KaimingNormal(gain, Random);
             module.Biases.Normal(0, 0.1f, Random);
+            return module;
+        }
+    }
+
+    /// <summary>
+    /// suited for SoftMax/Sigmoid<br/>
+    /// not suited for (Leaky)ReLU
+    /// </summary>
+    public sealed class XavierInitializer : IModuleInitializer<PerceptronModule>
+    {
+        public static XavierInitializer Instance => field ??= new();
+        public Random Random { get; init; } = Random.Shared;
+        public PerceptronModule Init(PerceptronModule module)
+        {
+            module.Weights.XavierUniform(Random);
+            module.Biases.Normal(0, 0.1f, Random);
+            return module;
         }
     }
 }

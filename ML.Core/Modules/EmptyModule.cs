@@ -1,10 +1,12 @@
 using ML.Core.Attributes;
+using ML.Core.Modules.Activations;
 
 namespace ML.Core.Modules;
 
 [GeneratedModule]
-public sealed partial class EmptyModule() : IHiddenModule<Vector, EmptyModuleData, EmptyModuleData>
+public sealed partial class EmptyModule : IActivationModule<Vector, EmptyModuleData>
 {
+    public static EmptyModule Instance => field ??= new();
     public Vector Forward(Vector input, EmptyModuleData snapshot) => input;
     public Vector Backward(Vector outputGradient, EmptyModuleData snapshot, EmptyModuleData gradients) => outputGradient;
 }

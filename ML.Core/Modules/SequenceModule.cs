@@ -79,9 +79,21 @@ public sealed class SequenceModule<TArch> : IHiddenModule<TArch, SequenceModule<
     {
         public IModuleInitializer Inner { get; init; } = EmptyModuleInitializer.Instance;
 
-        public void Init(SequenceModule<TArch> module)
+        public SequenceModule<TArch> Init(SequenceModule<TArch> module)
         {
-            module.Inner.ForEach(Inner.Init);
+            module.Inner.ForEach(m => Inner.Init(m));
+            return module;
+        }
+    }
+
+    public sealed class Initializer : IModuleInitializer<SequenceModule<TArch>>
+    {
+        public required ImmutableArray<IModuleInitializer> Inner { get; init; }
+
+        public SequenceModule<TArch> Init(SequenceModule<TArch> module)
+        {
+            module.Inner.Zip(Inner).ForEach(static p => p.Second.Init(p.First));
+            return module;
         }
     }
 }

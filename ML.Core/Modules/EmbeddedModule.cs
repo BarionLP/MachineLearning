@@ -53,11 +53,13 @@ public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>
         public IModuleInitializer Hidden { get; init; } = EmptyModuleInitializer.Instance;
         public IModuleInitializer Output { get; init; } = EmptyModuleInitializer.Instance;
 
-        public void Init(EmbeddedModule<TIn, TArch, TOut> module)
+        public EmbeddedModule<TIn, TArch, TOut> Init(EmbeddedModule<TIn, TArch, TOut> module)
         {
             Input.Init(module.Input);
             Hidden.Init(module.Hidden);
             Output.Init(module.Output);
+
+            return module;
         }
     }
 }

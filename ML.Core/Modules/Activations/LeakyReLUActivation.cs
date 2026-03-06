@@ -3,7 +3,7 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class LeakyReLUActivation(int inputNodes, Weight alpha = 0.01f) : IHiddenModule<Vector, LeakyReLUActivation.Snapshot, EmptyModuleData>, IActivationModule
+public sealed partial class LeakyReLUActivation(int inputNodes, Weight alpha = 0.01f) : IActivationModule<Vector, LeakyReLUActivation.Snapshot>
 {
     [Property] public int InputNodes { get; } = inputNodes;
     [Property] public Weight Alpha { get; } = alpha;

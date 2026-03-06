@@ -1,10 +1,9 @@
-using System.Runtime.InteropServices;
 using ML.Core.Attributes;
 
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class SoftMaxActivation(int inputNodes) : IHiddenModule<Vector, SoftMaxActivation.Snapshot, EmptyModuleData>, IActivationModule
+public sealed partial class SoftMaxActivation(int inputNodes) : IActivationModule<Vector, SoftMaxActivation.Snapshot>
 {
     [Property] public int InputNodes { get; } = inputNodes;
 
