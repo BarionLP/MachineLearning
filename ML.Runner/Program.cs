@@ -13,8 +13,8 @@ var images = new MnistDataSource(AssetManager.MNISTArchive);
 
 // TODO: some system to simplify initializer creation
 var model = MultiLayerPerceptronBuilder.Create(784)
-    .AddLayer(256, (_, o) => new LeakyReLUActivation(o))
-    .AddLayer(128, (_, o) => new LeakyReLUActivation(o))
+    .AddLayer(256, LeakyReLUActivation.Instance)
+    .AddLayer(128, LeakyReLUActivation.Instance)
     .AddLayer(10, EmptyModule.Instance)  // only when training with CrossEntropyCostFromLogits
     // .AddLayer(10, (_, o) => new SoftMaxActivation(o)) // only when not training
     .Build();
@@ -74,3 +74,11 @@ var trainer = new EmbeddedModuleTrainer<double[], Vector, int>(embeddedModel, tr
 };
 
 trainer.TrainConsole();
+
+trainer.DataPool.Clear();
+
+
+#if DEBUG
+// forces all remaining finalizers to be called
+GC.Collect();
+#endif

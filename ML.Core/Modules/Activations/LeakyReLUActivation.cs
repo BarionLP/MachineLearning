@@ -3,9 +3,10 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class LeakyReLUActivation(int inputNodes, Weight alpha = 0.01f) : IActivationModule<Vector, LeakyReLUActivation.Snapshot>
+public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivationModule<Vector, LeakyReLUActivation.Snapshot>
 {
-    [Property] public int InputNodes { get; } = inputNodes;
+    public static LeakyReLUActivation Instance => field ??= new();
+
     [Property] public Weight Alpha { get; } = alpha;
 
     public Weight Activate(Weight input) => input > 0 ? input : Alpha * input;
@@ -29,10 +30,35 @@ public sealed partial class LeakyReLUActivation(int inputNodes, Weight alpha = 0
         return snapshot.InputGradient;
     }
 
-    public sealed class Snapshot(LeakyReLUActivation module) : IModuleSnapshot
+    public sealed class Snapshot : IModuleSnapshot
     {
-        public Vector Input { get; set; }
-        public Vector Output { get; } = Vector.Create(module.InputNodes);
-        public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
+        internal void SetCount(int newCount)
+        {
+            outputHandle.SetCount(newCount);
+            inputGradientHandle.SetCount(newCount);
+        }
+
+        private DynamicVector outputHandle = new();
+        private DynamicVector inputGradientHandle = new();
+
+        public Vector Input
+        {
+            get; 
+            set
+            {
+                field = value;
+                SetCount(field.Count);
+            }
+        }
+        public Vector Output => outputHandle.Vector;
+        public Vector InputGradient => inputGradientHandle.Vector;
+
+        internal Snapshot(LeakyReLUActivation _) { }
+
+        public void Dispose()
+        {
+            outputHandle.Dispose();
+            // inputGradientHandle.Dispose();
+        }
     }
 }

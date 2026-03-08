@@ -32,6 +32,11 @@ public sealed class SequenceModule<TArch> : IHiddenModule<TArch, SequenceModule<
     public sealed class Snapshot(SequenceModule<TArch> module) : IModuleSnapshot
     {
         public ImmutableArray<IModuleSnapshot> Inner { get; } = [.. module.Inner.Select(static m => m.CreateSnapshot())];
+
+        public void Dispose()
+        {
+            Inner.ForEach(static i => i.Dispose());
+        }
     }
 
     public sealed class Gradients(SequenceModule<TArch> module) : IModuleGradients<Gradients>

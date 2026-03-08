@@ -70,7 +70,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
             GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
         }
 
-        if(IsEmptyModuleData(moduleInfo.GradientsType))
+        if (IsEmptyModuleData(moduleInfo.GradientsType))
         {
             sb.AppendLine($$"""
 
@@ -109,6 +109,20 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         }
 
         sb.AppendLine($$"""
+        
+                public void Dispose() 
+                {
+        """);
+
+        foreach (var sub in modules)
+        {
+            sb.AppendLine($$"""
+                    {{sub.Name}}.Dispose();
+        """);
+        }
+
+        sb.AppendLine($$"""
+                }
             }
         """);
     }

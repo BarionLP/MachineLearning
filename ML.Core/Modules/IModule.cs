@@ -28,7 +28,7 @@ public interface IModule<TArch, TSnapshot, TGradients> : IModule<TArch>
     IModuleGradients IModule.CreateGradients() => CreateGradients();
 }
 
-public interface IModuleSnapshot;
+public interface IModuleSnapshot : IDisposable;
 
 public interface IModuleGradients
 {
@@ -49,4 +49,5 @@ public sealed class EmptyModuleData() : IModuleGradients<EmptyModuleData>, IModu
 
     public void Add(EmptyModuleData other) { }
     public void Reset() { }
+    public void Dispose() { }
 }

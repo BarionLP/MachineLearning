@@ -48,6 +48,10 @@ public sealed class ModuleDataPool(Func<IModuleSnapshot> snapshotGetter, Func<IM
 
     public void Clear()
     {
+        foreach(var snapshot in snaphotCache)
+        {
+            snapshot.Dispose();
+        }
         snaphotCache.Clear();
         gradientCache.Clear();
     }

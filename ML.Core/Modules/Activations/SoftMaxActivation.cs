@@ -29,5 +29,7 @@ public sealed partial class SoftMaxActivation(int inputNodes) : IActivationModul
         public Vector Input { get; set; }
         public Vector Output { get; } = Vector.Create(module.InputNodes);
         public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
+
+        public void Dispose() { }
     }
 }
