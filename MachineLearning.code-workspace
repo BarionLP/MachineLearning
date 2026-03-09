@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../../Packages/Ametrin.Numerics"
+		},
+		{
+			"path": "../../Packages/Ametrin.Serializer"
 		}
 	],
 	"settings": {},
