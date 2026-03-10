@@ -1,16 +1,31 @@
 using ML.Core.Attributes;
 using ML.Core.Modules;
-using ML.Core.Training;
 
 namespace ML.Runner.Mnist;
 
 [GeneratedModule]
-public sealed partial class MnistInput : IInputModule<double[], Vector, EmptyModuleData, EmptyModuleData>
+public sealed partial class MnistInput(int outputNodes) : IInputModule<double[], Vector, MnistInput.Snapshot, EmptyModuleData>
 {
-    public static MnistInput Instance => field ??= new MnistInput();
-    public Vector Forward(double[] input, EmptyModuleData snapshot) => Vector.Of([.. input.Select(v => (Weight)v)]);
+    public static MnistInput Instance => field ??= new MnistInput(784);
 
-    public Vector Backward(Vector outputGradient, EmptyModuleData snapshot, EmptyModuleData gradients) => outputGradient;
+    [Property] public int OutputNodes { get; } = outputNodes;
+
+    public Vector Forward(double[] input, Snapshot snapshot)
+    {
+        foreach (var i in input.IndexRange)
+        {
+            snapshot.Output[i] = (Weight)input[i];
+        }
+        return snapshot.Output;
+    }
+
+    public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients) => outputGradient;
+
+    public sealed class Snapshot(MnistInput module) : IModuleSnapshot
+    {
+        public Vector Output { get; } = Vector.Create(module.OutputNodes);
+        public void Dispose() { }
+    }
 }
 
 [GeneratedModule]
