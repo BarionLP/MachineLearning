@@ -86,11 +86,11 @@ internal sealed class AdamModuleOptimizerGenerator : IIncrementalGenerator
         {
             sb.AppendLine($$"""
         
-                (FirstMoment{{weight.Name}}, gradients.{{weight.Name}}).MapToFirst(Optimizer.FirstMomentEstimateOperation);
+                SpanOperations.MapTo(Optimizer.FirstMomentEstimateOperation, FirstMoment{{weight.Name}}.AsSpan(), gradients.{{weight.Name}}.AsSpan(), FirstMoment{{weight.Name}}.AsSpan());
                 NumericsDebug.AssertValidNumbers(FirstMoment{{weight.Name}});
-                (SecondMoment{{weight.Name}}, gradients.{{weight.Name}}).MapToFirst(Optimizer.SecondMomentEstimateOperation);
+                SpanOperations.MapTo(Optimizer.SecondMomentEstimateOperation, SecondMoment{{weight.Name}}.AsSpan(), gradients.{{weight.Name}}.AsSpan(), SecondMoment{{weight.Name}}.AsSpan());
                 NumericsDebug.AssertValidNumbers(SecondMoment{{weight.Name}});
-                Module.{{weight.Name}}.SubtractToSelf((FirstMoment{{weight.Name}}, SecondMoment{{weight.Name}}).Map(Optimizer.WeightReductionOperation));
+                SpanOperations.MapTo(Optimizer.WeightReductionOperation, Module.{{weight.Name}}.AsSpan(), FirstMoment{{weight.Name}}.AsSpan(), SecondMoment{{weight.Name}}.AsSpan(), Module.{{weight.Name}}.AsSpan());
         """);
         }
         

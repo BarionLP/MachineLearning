@@ -55,24 +55,24 @@ public sealed class AdamOptimizer : Optimizer
         public static SimdVector Invoke(in AdamSecondMomentEstimateOperation state, SimdVector lastMoment, SimdVector gradient) => state.decayRate * lastMoment + (1 - state.decayRate) * gradient * gradient;
     }
 
-    public readonly struct AdamWeightReductionOperation(AdamOptimizer context) : IBinaryOperator<AdamWeightReductionOperation>
+    public readonly struct AdamWeightReductionOperation(AdamOptimizer context) : ITernaryOperator<AdamWeightReductionOperation>
     {
         private readonly Weight learningRate = context.LearningRate;
         private readonly Weight firstMomentCorrection = context.CurrentFirstCorrection;
         private readonly Weight secondMomentCorrection = context.CurrentSecondCorrection;
         private readonly Weight epsilon = context.Epsilon;
 
-        public static Weight Invoke(in AdamWeightReductionOperation state, Weight firstMoment, Weight secondMoment)
+        public static Weight Invoke(in AdamWeightReductionOperation state, Weight currentWeight, Weight firstMoment, Weight secondMoment)
         {
             var mHat = firstMoment / state.firstMomentCorrection;
             var vHat = secondMoment / state.secondMomentCorrection;
-            return state.learningRate * mHat / (Weight.Sqrt(vHat) + state.epsilon);
+            return currentWeight - (state.learningRate * mHat / (Weight.Sqrt(vHat) + state.epsilon));
         }
-        public static SimdVector Invoke(in AdamWeightReductionOperation state, SimdVector firstMoment, SimdVector secondMoment)
+        public static SimdVector Invoke(in AdamWeightReductionOperation state, SimdVector currentWeight, SimdVector firstMoment, SimdVector secondMoment)
         {
             var mHat = firstMoment / state.firstMomentCorrection;
             var vHat = secondMoment / state.secondMomentCorrection;
-            return state.learningRate * mHat / (SimdVectorHelper.SquareRoot(vHat) + SimdVectorHelper.Create(state.epsilon));
+            return currentWeight - (state.learningRate * mHat / (SimdVectorHelper.SquareRoot(vHat) + SimdVectorHelper.Create(state.epsilon)));
         }
     }
 }
