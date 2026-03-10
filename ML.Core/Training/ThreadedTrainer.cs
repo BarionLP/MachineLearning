@@ -20,8 +20,7 @@ public sealed class ThreadedTrainer
                 _ => throw new UnreachableException()
             },
         };
-        var partitioner = Partitioner.Create(trainingSet);
-        var result = Parallel.ForEach(partitioner, options, (item, state) =>
+        var result = Parallel.ForEach(trainingSet, options, (item, state) =>
         {
             action(item, contexts.Value!);
         });

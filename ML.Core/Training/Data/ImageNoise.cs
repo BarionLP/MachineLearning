@@ -6,7 +6,7 @@ public sealed class ImageNoise : IDataNoise<double[]>
 {
     public required int Size { get; init; }
     public double NoiseStrength { get; init; } = 0;
-    public double NoiseProbability { get; init; } = 0;
+    // public double NoiseProbability { get; init; } = 0;
     public int MaxShift { get; init; } = 0;
     public double MaxAngle { get; init; } = 0;
     public double MinScale { get; init; } = 1;

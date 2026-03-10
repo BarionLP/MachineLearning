@@ -16,7 +16,7 @@ var model = MultiLayerPerceptronBuilder.Create(784)
     .AddLayer(256, LeakyReLUActivation.Instance)
     .AddLayer(128, LeakyReLUActivation.Instance)
     .AddLayer(10, EmptyModule.Instance)  // only when training with CrossEntropyCostFromLogits
-    // .AddLayer(10, (_, o) => new SoftMaxActivation(o)) // only when not training
+    // .AddLayer(10, SoftMaxActivation.Instance) // only when not training
     .Build();
 
 var initializer = new SequenceModule<Vector>.Initializer
@@ -48,7 +48,7 @@ var trainingConfig = new TrainingConfig
 
     EvaluationCallbackAfterBatches = 8,
     EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-    Threading = ThreadingMode.Full,
+    Threading = ThreadingMode.Single,
     RandomSource = random,
 };
 
@@ -62,7 +62,6 @@ var trainer = new EmbeddedModuleTrainer<double[], Vector, int>(embeddedModel, tr
         {
             Size = MnistImage.SIZE,
             NoiseStrength = 0.35,
-            NoiseProbability = 0.75,
             MaxShift = 2,
             MaxAngle = 30,
             MinScale = 0.8,
@@ -79,6 +78,6 @@ trainer.DataPool.Clear();
 
 
 #if DEBUG
-// forces all remaining finalizers to be called
+// forces all remaining finalizers to be called to make sure all have been disposed
 GC.Collect();
 #endif

@@ -3,13 +3,11 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule]
-public sealed partial class SoftMaxActivation(int inputNodes) : IActivationModule<Vector, SoftMaxActivation.Snapshot>
+public sealed partial class SoftMaxActivation : IActivationModule<Vector, SoftMaxActivation.Snapshot>
 {
-    [Property] public int InputNodes { get; } = inputNodes;
-
+    public static SoftMaxActivation Instance => field ??= new();
     public Vector Forward(Vector input, Snapshot snapshot)
     {
-        Debug.Assert(input.Count == InputNodes);
         snapshot.Input = input;
         snapshot.Input.SoftMaxTo(snapshot.Output);
         return snapshot.Output;
@@ -24,12 +22,30 @@ public sealed partial class SoftMaxActivation(int inputNodes) : IActivationModul
         return snapshot.InputGradient;
     }
 
-    public sealed class Snapshot(SoftMaxActivation module) : IModuleSnapshot
+    public sealed class Snapshot() : IModuleSnapshot
     {
-        public Vector Input { get; set; }
-        public Vector Output { get; } = Vector.Create(module.InputNodes);
-        public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
+        public Vector Input
+        {
+            get;
+            set
+            {
+                field = value;
+                outputHandle.SetCount(field.Count);
+                inputGradientHandle.SetCount(field.Count);
+            }
+        }
+        public Vector Output => outputHandle.Vector;
+        public Vector InputGradient => inputGradientHandle.Vector;
 
-        public void Dispose() { }
+        private DynamicVector outputHandle = new();
+        private DynamicVector inputGradientHandle = new();
+
+        internal Snapshot(SoftMaxActivation _) : this() { }
+
+        public void Dispose()
+        {
+            outputHandle.Dispose();
+            inputGradientHandle.Dispose();
+        }
     }
 }

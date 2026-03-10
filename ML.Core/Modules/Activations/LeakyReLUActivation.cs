@@ -30,30 +30,25 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
         return snapshot.InputGradient;
     }
 
-    public sealed class Snapshot : IModuleSnapshot
+    public sealed class Snapshot() : IModuleSnapshot
     {
-        internal void SetCount(int newCount)
-        {
-            outputHandle.SetCount(newCount);
-            inputGradientHandle.SetCount(newCount);
-        }
-
-        private DynamicVector outputHandle = new();
-        private DynamicVector inputGradientHandle = new();
-
         public Vector Input
         {
-            get; 
+            get;
             set
             {
                 field = value;
-                SetCount(field.Count);
+                outputHandle.SetCount(field.Count);
+                inputGradientHandle.SetCount(field.Count);
             }
         }
         public Vector Output => outputHandle.Vector;
         public Vector InputGradient => inputGradientHandle.Vector;
 
-        internal Snapshot(LeakyReLUActivation _) { }
+        private DynamicVector outputHandle = new();
+        private DynamicVector inputGradientHandle = new();
+
+        internal Snapshot(LeakyReLUActivation _) : this() { }
 
         public void Dispose()
         {

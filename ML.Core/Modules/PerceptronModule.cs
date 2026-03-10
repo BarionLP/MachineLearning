@@ -21,8 +21,7 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
         snapshot.Input = input;
         Weights.MultiplyTo(snapshot.Input, snapshot.Weighted);
         snapshot.Weighted.AddTo(Biases, snapshot.Biased);
-        snapshot.Activated = Activation.Forward(snapshot.Biased, snapshot.Activation);
-        return snapshot.Activated;
+        return Activation.Forward(snapshot.Biased, snapshot.Activation);
     }
 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, Gradients gradients)
@@ -39,7 +38,6 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
         public Vector Input { get; set; }
         public Vector Weighted { get; } = Vector.OfSize(module.Biases);
         public Vector Biased { get; } = Vector.OfSize(module.Biases);
-        public Vector Activated { get; set; }
         public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
     }
 
@@ -56,6 +54,7 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
         private readonly Weight gain = InitializationHelper.GetKaimingGain(activation);
         public PerceptronModule Init(PerceptronModule module)
         {
+            Debug.Assert(module.Activation is not SoftMaxActivation);
             module.Weights.KaimingNormal(gain, Random);
             module.Biases.Normal(0, 0.1f, Random);
             return module;
@@ -72,6 +71,7 @@ public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : 
         public Random Random { get; init; } = Random.Shared;
         public PerceptronModule Init(PerceptronModule module)
         {
+            Debug.Assert(module.Activation is not LeakyReLUActivation);
             module.Weights.XavierUniform(Random);
             module.Biases.Normal(0, 0.1f, Random);
             return module;
