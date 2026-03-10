@@ -4,6 +4,7 @@
   <Project Path="../../Packages/Ametrin.Serializer/Ametrin.Serializer.Generator/Ametrin.Serializer.Generator.csproj" />
   <Project Path="../../Packages/Ametrin.Serializer/Ametrin.Serializer/Ametrin.Serializer.csproj" />
   <Project Path="../../Packages/Ametrin.Utils/src/Ametrin.Utils.csproj" />
+  <Project Path="ML.Benchy/ML.Benchy.csproj" />
   <Project Path="ML.Core/ML.Core.csproj" />
   <Project Path="ML.Runner/ML.Runner.csproj" />
   <Project Path="ML.SourceGenerator/ML.SourceGenerator.csproj" />

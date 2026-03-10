@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Threading;
 using ML.Core.Evaluation;
@@ -138,11 +139,13 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
     {
         using var marker = DataPool.RentSnapshot();
         var snapshot = (EmbeddedModule<TIn, TArch, TOut>.Snapshot)marker.Snapshot;
-        // var snapshot = Module.CreateSnapshot();
 
         var (output, condfidence, outputWeights) = Module.Forward(entry.InputValue, snapshot);
 
-        var outputGradient = CostFunction.Derivative(outputWeights, entry.ExpectedWeights); // TODO: reuse Tensor
+        NumericsDebug.AssertSameDimensions(outputWeights, entry.ExpectedWeights);
+        using var outputGradientStorage = ArrayPool<Weight>.Shared.RentNumerics(outputWeights.FlatCount);
+        var outputGradient = TArch.OfSize(outputWeights, outputGradientStorage);
+        CostFunction.DerivativeTo(outputWeights, entry.ExpectedWeights, outputGradient);
 
         var inputGradient = Module.Backward(outputGradient, snapshot, gradients);
 

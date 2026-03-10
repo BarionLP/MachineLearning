@@ -58,7 +58,7 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
         public void Dispose()
         {
             outputHandle.Dispose();
-            // inputGradientHandle.Dispose();
+            inputGradientHandle.Dispose();
         }
     }
 }

@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace ML.Core.Evaluation.Cost;
 
 /// <summary>
@@ -14,8 +16,11 @@ public sealed class CrossEntropyCostFromLogits : ICostFunction<Vector>
     {
         NumericsDebug.AssertSameDimensions(logits, expected);
 
+        using var destinationStorage = ArrayPool<Weight>.Shared.RentNumerics(logits.FlatCount);
+        var destination = Vector.OfSize(logits, destinationStorage);
+
         var maxLogit = logits.Max();
-        var destination = logits.SubtractPointwise(maxLogit); // TODO: reuse
+        logits.SubtractPointwiseTo(maxLogit, destination);
         destination.PointwiseExpToSelf();
         var expSum = destination.Sum();
 
