@@ -8,24 +8,19 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
     public static LeakyReLUActivation Instance => field ??= new();
 
     [Property] public Weight Alpha { get; } = alpha;
-
-    public Weight Activate(Weight input) => input > 0 ? input : Alpha * input;
-    public SimdVector Activate(SimdVector input) => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), input, input * Alpha);
-
-    public Weight Derivative(Weight input) => input > 0 ? 1 : Alpha;
-    public SimdVector Derivative(SimdVector input) => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), SimdVector.One, new SimdVector(Alpha));
-
+    private readonly LeakyReLUOperation forwardOp = new(alpha);
+    private readonly LeakyReLUDerivativeOperation derivativeOp = new(alpha);
 
     public Vector Forward(Vector input, Snapshot snapshot)
     {
         snapshot.Input = input;
-        snapshot.Input.MapTo(Activate, Activate, snapshot.Output);
+        snapshot.Input.MapTo(forwardOp, snapshot.Output);
         return snapshot.Output;
     }
 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients)
     {
-        snapshot.Input.MapTo(Derivative, Derivative, snapshot.InputGradient);
+        snapshot.Input.MapTo(derivativeOp, snapshot.InputGradient);
         snapshot.InputGradient.PointwiseMultiplyToSelf(outputGradient);
         return snapshot.InputGradient;
     }
@@ -55,5 +50,25 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
             outputHandle.Dispose();
             inputGradientHandle.Dispose();
         }
+    }
+
+    public readonly struct LeakyReLUOperation(Weight alpha) : IUnaryOperator<LeakyReLUOperation>
+    {
+        private readonly Weight alpha = alpha;
+        // constructing an alpha vector once and reusing seems to be slower
+
+        public static Weight Invoke(in LeakyReLUOperation info, Weight input) => input > 0 ? input : info.alpha * input;
+        public static SimdVector Invoke(in LeakyReLUOperation info, SimdVector input)
+            => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), input, input * info.alpha);
+    }
+
+    private readonly struct LeakyReLUDerivativeOperation(Weight alpha) : IUnaryOperator<LeakyReLUDerivativeOperation>
+    {
+        private readonly Weight alpha = alpha;
+        // constructing an alpha vector once and reusing seems to be slower
+
+        public static Weight Invoke(in LeakyReLUDerivativeOperation info, Weight input) => input > 0 ? 1 : info.alpha;
+        public static SimdVector Invoke(in LeakyReLUDerivativeOperation info, SimdVector input)
+            => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), SimdVector.One, SimdVectorHelper.Create(info.alpha));
     }
 }
