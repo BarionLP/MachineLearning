@@ -1,23 +1,27 @@
-using Ametrin.Serializer;
 using ML.Core.Attributes;
-using ML.Core.Converters;
 using ML.Core.Modules.Activations;
 using ML.Core.Modules.Initialization;
 
 namespace ML.Core.Modules;
 
-[GeneratedModule, GenerateSerializer]
-public sealed partial class PerceptronModule(int inputNodes, int outputNodes) : IHiddenModule<Vector>
+[GeneratedModule]
+public sealed partial class PerceptronModule : IHiddenModule<Vector>
 {
     [Property] public int InputNodes => Weights.ColumnCount;
     [Property] public int OutputNodes => Weights.RowCount;
-    [Weights, Serialize(Converter: typeof(VectorConverter))] public Matrix Weights { get; } = Matrix.Create(outputNodes, inputNodes);
-    [Weights, Serialize(Converter: typeof(VectorConverter))] public Vector Biases { get; } = Vector.Create(outputNodes);
+    [Weights] public Matrix Weights { get; }
+    [Weights] public Vector Biases { get; }
     [SubModule] public required IActivationModule<Vector> Activation { get; init; }
+
+    public PerceptronModule(int inputNodes, int outputNodes)
+    {
+        Weights = Matrix.Create(outputNodes, inputNodes);
+        Biases = Vector.Create(outputNodes);
+    }
 
     public Vector Forward(Vector input, Snapshot snapshot)
     {
-        Debug.Assert(input.Count == inputNodes);
+        Debug.Assert(input.Count == InputNodes);
         snapshot.Input = input;
         Weights.MultiplyTo(snapshot.Input, snapshot.Weighted);
         snapshot.Weighted.AddTo(Biases, snapshot.Biased);
