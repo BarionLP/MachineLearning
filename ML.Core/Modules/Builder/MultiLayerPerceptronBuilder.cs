@@ -1,4 +1,5 @@
 using ML.Core.Modules.Activations;
+using ML.Core.Modules.Initialization;
 
 namespace ML.Core.Modules.Builder;
 
@@ -26,4 +27,23 @@ public sealed class MultiLayerPerceptronBuilder
     {
         Inner = [.. layers.Select(d => new PerceptronModule(d.input, d.output) { Activation = d.activation })],
     };
+
+    public SequenceModule<Vector> BuildAndInit(Random random)
+    {
+        var module = Build();
+
+        var initializer = new SequenceModule<Vector>.Initializer
+        {
+            Inner = [.. module.Inner.Cast<PerceptronModule>().Select(inner => (IModuleInitializer)(inner.Activation switch
+            {
+                SoftMaxActivation or EmptyModule => new PerceptronModule.XavierInitializer() { Random = random },
+                LeakyReLUActivation => new PerceptronModule.KaimingInitializer(inner.Activation) { Random = random },
+                _ => throw new NotImplementedException(),
+            }))],
+        };
+
+        initializer.Init(module);
+
+        return module;
+    }
 }

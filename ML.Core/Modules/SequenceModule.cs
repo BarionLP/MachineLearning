@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using Ametrin.Serializer;
 using ML.Core.Modules.Initialization;
 
 namespace ML.Core.Modules;
@@ -100,5 +102,19 @@ public sealed class SequenceModule<TArch> : IHiddenModule<TArch, SequenceModule<
             module.Inner.Zip(Inner).ForEach(static p => p.Second.Init(p.First));
             return module;
         }
+    }
+}
+
+public sealed class SequenceModuleConverter<TArch> : ISerializationConverter<SequenceModule<TArch>>
+{
+    public static Result<SequenceModule<TArch>, DeserializationError> TryReadValue(IAmetrinReader reader)
+    {
+        var modules = reader.TryReadArrayValue(AmetrinSerializer.TryReadDynamic<IHiddenModule<TArch>>);
+        return modules.Map(static modules => new SequenceModule<TArch> { Inner = ImmutableCollectionsMarshal.AsImmutableArray(modules) });
+    }
+
+    public static void WriteValue(IAmetrinWriter writer, SequenceModule<TArch> value)
+    {
+        writer.WriteArrayValue(value.Inner.AsSpan(), AmetrinSerializer.WriteDynamic);
     }
 }

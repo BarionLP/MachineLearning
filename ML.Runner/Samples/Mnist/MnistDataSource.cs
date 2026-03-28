@@ -3,9 +3,9 @@ using System.IO.Compression;
 using System.Text;
 using ML.Core.Training.Data;
 
-namespace ML.Runner.Mnist;
+namespace ML.Runner.Samples.Mnist;
 
-public sealed class MnistDataSet(IEnumerable<MnistImage> images) : ITrainingDataSource<TrainingEntry<double[], Vector, int>>
+public sealed class MnistImageSource(IEnumerable<MnistImage> images) : ITrainingDataSource<TrainingEntry<double[], Vector, int>>
 {
     public bool ShuffleOnReset { get; init; } = true;
     public Random Random { get; init; } = Random.Shared;
@@ -48,12 +48,12 @@ public sealed class MnistDataSet(IEnumerable<MnistImage> images) : ITrainingData
     private Vector Expected(int output) => _map[output];
 }
 
-public sealed class MnistDataSource
+public sealed class MnistDataSet
 {
     public MnistImage[] TrainingSet { get; }
     public MnistImage[] TestingSet { get; }
 
-    public MnistDataSource(FileInfo mnistFileInfo)
+    public MnistDataSet(FileInfo mnistFileInfo)
     {
         using var mnistStream = mnistFileInfo.OpenRead();
         using var mnistArchive = new ZipArchive(mnistStream);

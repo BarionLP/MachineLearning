@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ML.Core\ML.Core.csproj" />
-    <ProjectReference Include="..\ML.SourceGenerator\ML.SourceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+    <ProjectReference Include="..\ML.SourceGenerator\ML.SourceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>

@@ -1,30 +1,32 @@
-// using Ametrin.Serializer;
+using Ametrin.Serializer;
 
-// namespace ML.Core.Converters;
+namespace ML.Core.Converters;
 
-// public sealed class MatrixConverter : ISerializationConverter<Matrix>
-// {
-//     public static Matrix ReadProperty(IAmetrinReader reader, ReadOnlySpan<char> name)
-//         => TryReadProperty(reader, name).OrThrow();
+public sealed class MatrixConverter : ISerializationConverter<Matrix>
+{
+    static MatrixConverter()
+    {
+        AmetrinSerializer.RegisterSerializer<MatrixConverter, Matrix>();
+    }
 
-//     public static Result<Matrix, DeserializationError> TryReadProperty(IAmetrinReader reader, ReadOnlySpan<char> name)
-//     {
-//         reader.ReadPropertyName(name);
-//         using var sub = reader.ReadStartObject();
-//         var rowCount = sub.ReadInt32Property("RowCount");
-//         var storage = VectorConverter.ReadProperty(sub, "Storage");
-//         Debug.Assert(storage.Count % rowCount == 0);
-//         var columnCount = storage.Count / rowCount;
-//         reader.ReadEndObject();
-//         return Matrix.Of(rowCount, columnCount, storage);
-//     }
-
-//     public static void WriteProperty(IAmetrinWriter writer, ReadOnlySpan<char> name, Matrix value)
-//     {
-//         writer.WritePropertyName(name);
-//         writer.WriteStartObject();
-//         writer.WriteInt32Property("RowCount", value.RowCount);
-//         VectorConverter.WriteProperty(writer, "Storage", value.Storage);
-//         writer.WriteEndObject();
-//     }
-// }
+    public static Result<Matrix, DeserializationError> TryReadValue(IAmetrinReader reader)
+    {
+        using var objectReader = reader.ReadStartObject();
+        var rowCount = objectReader.ReadInt32Property("RowCount");
+        objectReader.ReadPropertyName("Storage");
+        var storage = VectorConverter.ReadValue<VectorConverter, Vector>(objectReader);
+        reader.ReadEndObject();
+        Debug.Assert(storage.Count % rowCount == 0);
+        var columnCount = storage.Count / rowCount;
+        return Matrix.Of(rowCount, columnCount, storage);
+    }
+    
+    public static void WriteValue(IAmetrinWriter writer, Matrix value)
+    {
+        using var objectWriter = writer.WriteStartObject();
+        objectWriter.WriteInt32Property("RowCount", value.RowCount);
+        objectWriter.WritePropertyName("Storage");
+        VectorConverter.WriteValue(objectWriter, value.Storage);
+        writer.WriteEndObject();
+    }
+}

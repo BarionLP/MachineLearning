@@ -1,7 +1,7 @@
 using ML.Core.Attributes;
 using ML.Core.Modules;
 
-namespace ML.Runner.Mnist;
+namespace ML.Runner.Samples.Mnist;
 
 [GeneratedModule]
 public sealed partial class MnistInput(int outputNodes) : IInputModule<double[], Vector, MnistInput.Snapshot, EmptyModuleData>

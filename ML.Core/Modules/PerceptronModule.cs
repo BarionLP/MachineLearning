@@ -1,4 +1,6 @@
+using Ametrin.Serializer;
 using ML.Core.Attributes;
+using ML.Core.Converters;
 using ML.Core.Modules.Activations;
 using ML.Core.Modules.Initialization;
 
@@ -17,6 +19,13 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
     {
         Weights = Matrix.Create(outputNodes, inputNodes);
         Biases = Vector.Create(outputNodes);
+    }
+
+    public PerceptronModule(Matrix weights, Vector biases)
+    {
+        Debug.Assert(weights.RowCount == biases.Count);
+        Weights = weights;
+        Biases = biases;
     }
 
     public Vector Forward(Vector input, Snapshot snapshot)
@@ -80,5 +89,46 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
             module.Biases.Normal(0, 0.1f, Random);
             return module;
         }
+    }
+}
+
+
+public sealed class PerceptronModuleConverter : ISerializationConverter<PerceptronModule>
+{
+    public static Result<PerceptronModule, DeserializationError> TryReadValue(IAmetrinReader reader)
+    {
+        using var objectReader = reader.ReadStartObject();
+
+        var weightsR = MatrixConverter.TryReadValue(objectReader);
+        if (!weightsR.Branch(out var weights, out var error))
+        {
+            return error;
+        }
+        var biasesR = VectorConverter.TryReadValue(objectReader);
+        if (!biasesR.Branch(out var biases, out error))
+        {
+            return error;
+        }
+
+        var activationR = AmetrinSerializer.TryReadDynamic<IActivationModule<Vector>>(objectReader);
+        if (!activationR.Branch(out var activation, out error))
+        {
+            return error;
+        }
+
+        reader.ReadEndObject();
+
+        return new PerceptronModule(weights, biases) { Activation = activation };
+    }
+
+    public static void WriteValue(IAmetrinWriter writer, PerceptronModule value)
+    {
+        using var objectWriter = writer.WriteStartObject();
+
+        MatrixConverter.WriteValue(objectWriter, value.Weights);
+        VectorConverter.WriteValue(objectWriter, value.Biases);
+        AmetrinSerializer.WriteDynamic(objectWriter, value.Activation);
+
+        writer.WriteEndObject();
     }
 }

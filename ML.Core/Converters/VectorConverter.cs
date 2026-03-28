@@ -1,24 +1,21 @@
-// using System.Runtime.InteropServices;
-// using Ametrin.Serializer;
+using Ametrin.Serializer;
 
-// namespace ML.Core.Converters;
+namespace ML.Core.Converters;
 
-// public sealed class VectorConverter : ISerializationConverter<Vector>
-// {
-//     public static Vector ReadValue(IAmetrinReader reader)
-//         => TryReadValue(reader).OrThrow();
+public sealed class VectorConverter : ISerializationConverter<Vector>
+{
+    static VectorConverter()
+    {
+        AmetrinSerializer.RegisterSerializer<VectorConverter, Vector>();
+    }
 
-//     public static Result<Vector, DeserializationError> TryReadValue(IAmetrinReader reader)
-//     {
-//         reader.readArray
-//         var bytes = reader.TryReadBytesValue().OrThrow();
-//         Debug.Assert(bytes.Length % sizeof(Weight) is 0);
-//         var floatSpan = MemoryMarshal.Cast<byte, float>(bytes);
-//         return Vector.Of([.. floatSpan]);
-//     }
+    public static Result<Vector, DeserializationError> TryReadValue(IAmetrinReader reader)
+    {
+        return reader.TryReadArrayValue(static reader => reader.TryReadSingleValue()).Map(Vector.Of);
+    }
 
-//     public static void WriteValue(IAmetrinWriter writer, Vector value)
-//     {
-//         writer.WriteArrayValue(value.AsSpan(), static (v, writer) => writer.WriteSingleValue(v));
-//     }
-// }
+    public static void WriteValue(IAmetrinWriter writer, Vector value)
+    {
+        writer.WriteArrayValue(value.AsSpan(), static (writer, v) => writer.WriteSingleValue(v));
+    }
+}

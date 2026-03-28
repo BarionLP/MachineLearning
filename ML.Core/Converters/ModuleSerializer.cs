@@ -1,0 +1,47 @@
+using System.IO;
+using Ametrin.Serializer;
+using Ametrin.Serializer.Readers;
+using Ametrin.Serializer.Writers;
+using ML.Core.Modules;
+using ML.Core.Modules.Activations;
+
+namespace ML.Core.Converters;
+
+public static class ModuleSerializer
+{
+    public const string FILE_EXTENSION = ".gmw";
+    public const uint FORMAT_VERSION = 3;
+
+    public static void Init()
+    {
+        AmetrinSerializer.RegisterSerializer<SequenceModuleConverter<Vector>, SequenceModule<Vector>>();
+        AmetrinSerializer.RegisterSerializer<PerceptronModuleConverter, PerceptronModule>();
+        AmetrinSerializer.RegisterSerializer<LeakyReLUActivationConverter, LeakyReLUActivation>();
+        AmetrinSerializer.RegisterSerializer<SoftMaxActivationConverter, SoftMaxActivation>();
+        AmetrinSerializer.RegisterSerializer<EmptyModule, EmptyModule>();
+    }
+
+    public static void Write(IModule module, FileInfo file)
+    {
+        using var stream = file.Create();
+        using var writer = new AmetrinBinaryWriter(stream);
+
+        writer.WriteStringProperty("$format", FILE_EXTENSION);
+        writer.WriteUInt32Property("$version", FORMAT_VERSION);
+
+        AmetrinSerializer.WriteDynamic(writer, module);
+    }
+
+    public static T Read<T>(FileInfo file)
+    {
+        using var stream = file.OpenRead();
+        using var reader = new AmetrinBinaryReader(stream);
+
+        var format = reader.ReadStringProperty("$format");
+        if (format is not FILE_EXTENSION) throw new InvalidOperationException();
+        var version = reader.ReadUInt32Property("$version");
+        if (version is not FORMAT_VERSION) throw new InvalidOperationException();
+
+        return AmetrinSerializer.TryReadDynamic<T>(reader).Or(e => e.Throw<T>());
+    }
+}
