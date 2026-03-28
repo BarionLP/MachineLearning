@@ -4,7 +4,7 @@ using System.Threading;
 using ML.Core.Evaluation;
 using ML.Core.Evaluation.Cost;
 using ML.Core.Modules;
-using ML.Core.Training.Data;
+using ML.Core.Data.Training;
 
 namespace ML.Core.Training;
 

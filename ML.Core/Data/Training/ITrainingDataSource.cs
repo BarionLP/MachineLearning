@@ -1,4 +1,4 @@
-namespace ML.Core.Training.Data;
+namespace ML.Core.Data.Training;
 
 public interface ITrainingDataSource<T>
 {

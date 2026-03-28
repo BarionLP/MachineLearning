@@ -1,7 +1,8 @@
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using ML.Core.Training.Data;
+using ML.Core.Data.Training;
+using ML.Core.Data.Noise;
 
 namespace ML.Runner.Samples.Mnist;
 

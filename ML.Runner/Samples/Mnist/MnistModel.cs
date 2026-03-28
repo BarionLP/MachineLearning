@@ -5,7 +5,7 @@ using ML.Core.Modules;
 using ML.Core.Modules.Activations;
 using ML.Core.Modules.Builder;
 using ML.Core.Training;
-using ML.Core.Training.Data;
+using ML.Core.Data.Noise;
 
 namespace ML.Runner.Samples.Mnist;
 

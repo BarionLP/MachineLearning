@@ -1,4 +1,4 @@
-namespace ML.Core.Training.Data;
+namespace ML.Core.Data.Noise;
 
 public interface IDataNoise<TData>
 {

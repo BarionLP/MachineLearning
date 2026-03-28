@@ -1,6 +1,6 @@
 using Ametrin.Utils.Transformation;
 
-namespace ML.Core.Training.Data;
+namespace ML.Core.Data.Noise;
 
 public sealed class ImageNoise : IDataNoise<double[]>
 {

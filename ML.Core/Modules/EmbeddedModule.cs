@@ -7,7 +7,7 @@ using ML.Core.Training;
 namespace ML.Core.Modules;
 
 [GeneratedModule(IncludeSerializer: true)]
-public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>
+public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>, IEmbeddedModule<TIn, TOut>
 {
     [SubModule] public required IInputModule<TIn, TArch> Input { get; init; }
     [SubModule] public required IHiddenModule<TArch> Hidden { get; init; }
@@ -31,6 +31,12 @@ public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>
     public TArch Backward(TArch outputGradient, Snapshot snapshot, Gradients gradients)
     {
         return Input.Backward(Hidden.Backward(Output.Backward(outputGradient, snapshot.Output, gradients.Output), snapshot.Hidden, gradients.Hidden), snapshot.Input, gradients.Input);
+    }
+
+    (TOut Output, float Confidence) IEmbeddedModule<TIn, TOut>.Forward(TIn input, IModuleSnapshot snapshot)
+    {
+        var (output, confidence, _) = Forward(input, (Snapshot)snapshot);
+        return (output, confidence);
     }
 
     static EmbeddedModule()
@@ -75,4 +81,9 @@ public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>
             return module;
         }
     }
+}
+
+public interface IEmbeddedModule<TIn, TOut> : IModule
+{
+    public (TOut Output, Weight Confidence) Forward(TIn input, IModuleSnapshot snapshot);
 }
