@@ -11,7 +11,7 @@ public sealed class WeightsAttribute : Attribute;
 public sealed class PropertyAttribute : Attribute;
 
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class GeneratedModuleAttribute : Attribute;
+public sealed class GeneratedModuleAttribute(bool IncludeSerializer = false) : Attribute;
 
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class GeneratedAdamAttribute(Type module) : Attribute;

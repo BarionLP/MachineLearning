@@ -1,9 +1,9 @@
 using System.IO;
+using System.Runtime.CompilerServices;
 using Ametrin.Serializer;
 using Ametrin.Serializer.Readers;
 using Ametrin.Serializer.Writers;
 using ML.Core.Modules;
-using ML.Core.Modules.Activations;
 
 namespace ML.Core.Converters;
 
@@ -12,13 +12,14 @@ public static class ModuleSerializer
     public const string FILE_EXTENSION = ".gmw";
     public const uint FORMAT_VERSION = 3;
 
-    public static void Init()
+#pragma warning disable CA2255
+    [ModuleInitializer]
+#pragma warning restore
+    internal static void Init()
     {
         AmetrinSerializer.RegisterSerializer<SequenceModuleConverter<Vector>, SequenceModule<Vector>>();
-        AmetrinSerializer.RegisterSerializer<PerceptronModuleConverter, PerceptronModule>();
-        AmetrinSerializer.RegisterSerializer<LeakyReLUActivationConverter, LeakyReLUActivation>();
-        AmetrinSerializer.RegisterSerializer<SoftMaxActivationConverter, SoftMaxActivation>();
-        AmetrinSerializer.RegisterSerializer<EmptyModule, EmptyModule>();
+        // AmetrinSerializer.RegisterSerializer<SequenceModuleConverter<Matrix>, SequenceModule<Matrix>>();
+        // AmetrinSerializer.RegisterSerializer<SequenceModuleConverter<Tensor>, SequenceModule<Tensor>>();
     }
 
     public static void Write(IModule module, FileInfo file)

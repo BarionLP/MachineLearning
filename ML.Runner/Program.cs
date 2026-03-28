@@ -1,7 +1,7 @@
-﻿using ML.Core.Converters;
+﻿using System.Globalization;
 using ML.Runner.Samples.Mnist;
 
-ModuleSerializer.Init();
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 // var random = Random.Shared;
 var random = new Random(69);

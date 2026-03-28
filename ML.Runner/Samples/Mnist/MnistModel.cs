@@ -18,10 +18,8 @@ public static class MnistModel
     public static SequenceModule<Vector> CreateAndInitModel(Random random) => MultiLayerPerceptronBuilder.Create(784)
         .AddLayer(256, LeakyReLUActivation.Instance)
         .AddLayer(128, LeakyReLUActivation.Instance)
-        // .AddLayer(10, EmptyModule.Instance)  // only when training with CrossEntropyCostFromLogits
-        .AddLayer(10, SoftMaxActivation.Instance) // only when not training
+        .AddLayer(10, SoftMaxActivation.Instance)
         .BuildAndInit(random);
-
 
     public static void Run(Random random)
     {
@@ -35,17 +33,20 @@ public static class MnistModel
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Single,
+            Threading = ThreadingMode.Full,
             RandomSource = random,
         };
 
-        // var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);
-        var model = CreateAndInitModel(random);
+        var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);
+        // var model = CreateAndInitModel(random);
 
+        // modify the last layer to output logit instead of probabilites
+        // so we can use the optimized version of CrossEntropyCost
+        var last = (PerceptronModule)model.Inner[^1];
         var embeddedModel = new EmbeddedModule<double[], Vector, int>
         {
             Input = MnistInput.Instance,
-            Hidden = model,
+            Hidden = new SequenceModule<Vector> { Inner = model.Inner.SetItem(model.Inner.Length - 1, new PerceptronModule(EmptyModule.Instance, last.Weights, last.Biases)) },
             Output = MnistOuput.Instance,
         };
 
@@ -55,16 +56,14 @@ public static class MnistModel
             TrainingData = GetTrainingSource(random),
         };
 
-
         trainer.TrainConsole();
 
         trainer.DataPool.Clear();
 
-        ModuleSerializer.Write(model, ModelFile);
+        // ModuleSerializer.Write(model, ModelFile);
     }
 
     public static MnistImageSource GetTrainingSource(Random random) => GetDataSourceWithNoise(DataSet.TrainingSet, random);
-
     public static MnistImageSource GetDataSourceWithNoise(IEnumerable<MnistImage> images, Random random) => new(images)
     {
         BatchCount = BatchCount,

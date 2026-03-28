@@ -10,7 +10,7 @@ public sealed class ModuleDataPool(Func<IModuleSnapshot> snapshotGetter, Func<IM
     public int UnusedItems => gradientCache.Count;
 
     public ModuleDataPool(IModule module)
-    : this(() => module.CreateSnapshot(), () => module.CreateGradients())
+    : this(module.CreateSnapshot, module.CreateGradients)
     {
 
     }

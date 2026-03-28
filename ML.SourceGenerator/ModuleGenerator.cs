@@ -25,29 +25,52 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         var attribute = module.TryGetAttribute(IsGeneratedModuleAttribute);
         Debug.Assert(attribute is not null);
 
+        var includeSerializer = (bool)attribute.ConstructorArguments[0].Value!;
+
         var moduleInfo = SubModuleInfo.CreateFull(module, canGenerateDataClasses: true);
         Debug.Assert(moduleInfo is not null);
 
         var sb = new StringBuilder();
+
+        if (includeSerializer)
+        {
+            sb.AppendLine($$"""using global::Ametrin.Serializer;""");
+            sb.AppendLine($$"""using global::ML.Core.Converters;""");
+            sb.AppendLine();
+            sb.AppendLine();
+        }
 
         var containerCount = BuildFileHeaderFor(module, sb);
 
         sb.Append($$"""
         partial class {{moduleInfo.ModuleDefinitionString}}
         """);
+
+        if (moduleInfo.GenerateDataClasses || includeSerializer)
+        {
+            sb.Append($$""" : """);
+        }
+
         if (moduleInfo.GenerateDataClasses)
         {
-            sb.AppendLine(moduleInfo.RootModule.Name switch
+            sb.Append(moduleInfo.RootModule.Name switch
             {
-                ModuleName => $$""" : {{ModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
-                HiddenModuleName => $$""" : {{HiddenModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
+                ModuleName => $$"""{{ModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
+                HiddenModuleName => $$"""{{HiddenModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
                 _ => throw new NotImplementedException($"cannot impl {moduleInfo.RootModule.Name}"),
             });
         }
-        else
+
+        if (includeSerializer)
         {
-            sb.AppendLine();
+            if (moduleInfo.GenerateDataClasses)
+            {
+                sb.Append($$""", """);
+            }
+            sb.Append($$"""ISerializationConverter<{{moduleInfo.ModuleDefinitionString}}>""");
         }
+
+        sb.AppendLine();
 
         var parameterCount = string.Join(" + ", [.. moduleInfo.Modules.Select(m => $"{m.Name}.ParameterCount"), .. moduleInfo.Weights.Select(w => $"(ulong){w.Name}.FlatCount")]);
         if (string.IsNullOrEmpty(parameterCount))
@@ -60,11 +83,11 @@ public sealed class ModuleGenerator : IIncrementalGenerator
 
             public {{moduleInfo.SnapshotTypeString}} CreateSnapshot() => {{(IsEmptyModuleData(moduleInfo.SnapshotType) ? "global::ML.Core.Modules.EmptyModuleData.Instance" : "new(this)")}};
             public {{moduleInfo.GradientsTypeString}} CreateGradients() => {{(IsEmptyModuleData(moduleInfo.GradientsType) ? "global::ML.Core.Modules.EmptyModuleData.Instance" : "new(this)")}};
-        
         """);
 
         if (moduleInfo.GenerateDataClasses)
         {
+            sb.AppendLine();
             GenerateSnapshot(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
             sb.AppendLine();
             GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
@@ -75,12 +98,19 @@ public sealed class ModuleGenerator : IIncrementalGenerator
             sb.AppendLine($$"""
 
             [global::System.Runtime.CompilerServices.ModuleInitializer]
-            internal static void Register()
+            internal static void RegisterOptimizer()
             {
                 global::ML.Core.Training.AdamOptimizer.Registry.RegisterEmpty<{{moduleInfo.ModuleDefinitionString}}>();
             }
         """);
         }
+
+        if (includeSerializer)
+        {
+            sb.AppendLine();
+            GenerateSerializer(sb, moduleInfo, moduleInfo.Modules, moduleInfo.Weights);
+        }
+
 
         sb.AppendLine($$"""
         }
@@ -193,5 +223,90 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                 }
             }
         """);
+    }
+
+    private static void GenerateSerializer(StringBuilder sb, ModuleInfo module, ImmutableArray<ModulePropertyInfo> modules, ImmutableArray<IPropertySymbol> weights)
+    {
+        if (modules.Length is 0 && weights.Length is 0)
+        {
+            sb.AppendLine($$"""
+            public static Result<{{module.ModuleDefinitionString}}, DeserializationError> TryReadValue(IAmetrinReader reader) => Instance;
+            public static void WriteValue(IAmetrinWriter writer, {{module.ModuleDefinitionString}} value) { }
+        """);
+        }
+        else
+        {
+            sb.AppendLine($$"""
+            public static Result<{{module.ModuleDefinitionString}}, DeserializationError> TryReadValue(IAmetrinReader reader)
+            {
+                using var objectReader = reader.ReadStartObject();
+                DeserializationError error = default;
+        
+        """);
+
+            foreach (var subModule in modules)
+            {
+                sb.AppendLine($$"""
+                if (!AmetrinSerializer.TryReadDynamic<{{subModule.Property.Type}}>(objectReader).Branch(out var {{subModule.Name}}, out error))
+                {
+                    return error;
+                }
+        """);
+            }
+
+            foreach (var weight in weights)
+            {
+                sb.AppendLine($$"""
+                if (!{{weight.Type.Name}}Converter.TryReadValue(objectReader).Branch(out var {{weight.Name}}, out error))
+                {
+                    return error;
+                }
+        """);
+            }
+
+            sb.AppendLine($$"""
+
+                reader.ReadEndObject();
+                return new {{module.ModuleDefinitionString}}({{string.Join(", ", modules.Select(static m => m.Name).Concat(weights.Select(static w => w.Name)))}});
+            }
+
+            public static void WriteValue(IAmetrinWriter writer, {{module.ModuleDefinitionString}} value) 
+            {
+                using var objectWriter = writer.WriteStartObject();
+
+        """);
+
+            foreach (var subModule in modules)
+            {
+                sb.AppendLine($$"""
+                AmetrinSerializer.WriteDynamic<{{subModule.Property.Type}}>(objectWriter, value.{{subModule.Name}});
+        """);
+            }
+
+            foreach (var weight in weights)
+            {
+                sb.AppendLine($$"""
+                {{weight.Type.Name}}Converter.WriteValue(objectWriter, value.{{weight.Name}});
+        """);
+            }
+
+            sb.AppendLine($$"""
+
+                writer.WriteEndObject();
+            }
+        """);
+        }
+
+        if (!module.Type.IsGenericType)
+        {
+            sb.AppendLine($$"""
+
+            [global::System.Runtime.CompilerServices.ModuleInitializer]
+            internal static void RegisterSerializer()
+            {
+                AmetrinSerializer.RegisterSerializer<{{module.ModuleDefinitionString}}, {{module.ModuleDefinitionString}}>();
+            }
+        """);
+        }
     }
 }

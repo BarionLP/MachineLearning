@@ -1,9 +1,8 @@
-using Ametrin.Serializer;
 using ML.Core.Attributes;
 
 namespace ML.Core.Modules.Activations;
 
-[GeneratedModule]
+[GeneratedModule(IncludeSerializer: true)]
 public sealed partial class SoftMaxActivation : IActivationModule<Vector, SoftMaxActivation.Snapshot>
 {
     public static SoftMaxActivation Instance => field ??= new();
@@ -48,18 +47,5 @@ public sealed partial class SoftMaxActivation : IActivationModule<Vector, SoftMa
             outputHandle.Dispose();
             inputGradientHandle.Dispose();
         }
-    }
-}
-
-public sealed class SoftMaxActivationConverter : ISerializationConverter<SoftMaxActivation>
-{
-    public static Result<SoftMaxActivation, DeserializationError> TryReadValue(IAmetrinReader reader)
-    {
-        return SoftMaxActivation.Instance;
-    }
-
-    public static void WriteValue(IAmetrinWriter writer, SoftMaxActivation value)
-    {
-
     }
 }

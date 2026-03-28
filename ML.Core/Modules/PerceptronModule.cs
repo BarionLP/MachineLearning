@@ -1,19 +1,18 @@
-using Ametrin.Serializer;
+using System.Diagnostics.CodeAnalysis;
 using ML.Core.Attributes;
-using ML.Core.Converters;
 using ML.Core.Modules.Activations;
 using ML.Core.Modules.Initialization;
 
 namespace ML.Core.Modules;
 
-[GeneratedModule]
+[GeneratedModule(IncludeSerializer: true)]
 public sealed partial class PerceptronModule : IHiddenModule<Vector>
 {
     [Property] public int InputNodes => Weights.ColumnCount;
     [Property] public int OutputNodes => Weights.RowCount;
+    [SubModule] public required IActivationModule<Vector> Activation { get; init; }
     [Weights] public Matrix Weights { get; }
     [Weights] public Vector Biases { get; }
-    [SubModule] public required IActivationModule<Vector> Activation { get; init; }
 
     public PerceptronModule(int inputNodes, int outputNodes)
     {
@@ -21,11 +20,13 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
         Biases = Vector.Create(outputNodes);
     }
 
-    public PerceptronModule(Matrix weights, Vector biases)
+    [SetsRequiredMembers]
+    public PerceptronModule(IActivationModule<Vector> activation, Matrix weights, Vector biases)
     {
         Debug.Assert(weights.RowCount == biases.Count);
         Weights = weights;
         Biases = biases;
+        Activation = activation;
     }
 
     public Vector Forward(Vector input, Snapshot snapshot)
@@ -89,46 +90,5 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
             module.Biases.Normal(0, 0.1f, Random);
             return module;
         }
-    }
-}
-
-
-public sealed class PerceptronModuleConverter : ISerializationConverter<PerceptronModule>
-{
-    public static Result<PerceptronModule, DeserializationError> TryReadValue(IAmetrinReader reader)
-    {
-        using var objectReader = reader.ReadStartObject();
-
-        var weightsR = MatrixConverter.TryReadValue(objectReader);
-        if (!weightsR.Branch(out var weights, out var error))
-        {
-            return error;
-        }
-        var biasesR = VectorConverter.TryReadValue(objectReader);
-        if (!biasesR.Branch(out var biases, out error))
-        {
-            return error;
-        }
-
-        var activationR = AmetrinSerializer.TryReadDynamic<IActivationModule<Vector>>(objectReader);
-        if (!activationR.Branch(out var activation, out error))
-        {
-            return error;
-        }
-
-        reader.ReadEndObject();
-
-        return new PerceptronModule(weights, biases) { Activation = activation };
-    }
-
-    public static void WriteValue(IAmetrinWriter writer, PerceptronModule value)
-    {
-        using var objectWriter = writer.WriteStartObject();
-
-        MatrixConverter.WriteValue(objectWriter, value.Weights);
-        VectorConverter.WriteValue(objectWriter, value.Biases);
-        AmetrinSerializer.WriteDynamic(objectWriter, value.Activation);
-
-        writer.WriteEndObject();
     }
 }

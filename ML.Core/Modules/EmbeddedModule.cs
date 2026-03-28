@@ -1,15 +1,27 @@
+using System.Diagnostics.CodeAnalysis;
+using Ametrin.Serializer;
 using ML.Core.Attributes;
 using ML.Core.Modules.Initialization;
 using ML.Core.Training;
 
 namespace ML.Core.Modules;
 
-[GeneratedModule]
+[GeneratedModule(IncludeSerializer: true)]
 public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>
 {
     [SubModule] public required IInputModule<TIn, TArch> Input { get; init; }
     [SubModule] public required IHiddenModule<TArch> Hidden { get; init; }
     [SubModule] public required IOutputModule<TArch, TOut> Output { get; init; }
+
+    public EmbeddedModule() { }
+
+    [SetsRequiredMembers]
+    public EmbeddedModule(IInputModule<TIn, TArch> input, IHiddenModule<TArch> hidden, IOutputModule<TArch, TOut> output)
+    {
+        Input = input;
+        Hidden = hidden;
+        Output = output;
+    }
 
     public (TOut Output, Weight Confidence, TArch Weights) Forward(TIn input, Snapshot snapshot)
     {
@@ -24,6 +36,7 @@ public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>
     static EmbeddedModule()
     {
         AdamOptimizer.Registry.Register<EmbeddedModule<TIn, TArch, TOut>>(static (o, module) => new Adam(o, module));
+        AmetrinSerializer.RegisterSerializer<EmbeddedModule<TIn, TArch, TOut>, EmbeddedModule<TIn, TArch, TOut>>();
     }
 
     public sealed class Adam(AdamOptimizer optimizer, EmbeddedModule<TIn, TArch, TOut> module) : IModuleOptimizer<Gradients>

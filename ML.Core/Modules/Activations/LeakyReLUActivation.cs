@@ -1,9 +1,8 @@
-using Ametrin.Serializer;
 using ML.Core.Attributes;
 
 namespace ML.Core.Modules.Activations;
 
-[GeneratedModule]
+[GeneratedModule(IncludeSerializer: true)]
 public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivationModule<Vector, LeakyReLUActivation.Snapshot>
 {
     public static LeakyReLUActivation Instance => field ??= new();
@@ -71,18 +70,5 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
         public static Weight Invoke(in LeakyReLUDerivativeOperation info, Weight input) => input > 0 ? 1 : info.alpha;
         public static SimdVector Invoke(in LeakyReLUDerivativeOperation info, SimdVector input)
             => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), SimdVector.One, SimdVectorHelper.Create(info.alpha));
-    }
-}
-
-public sealed class LeakyReLUActivationConverter : ISerializationConverter<LeakyReLUActivation>
-{
-    public static Result<LeakyReLUActivation, DeserializationError> TryReadValue(IAmetrinReader reader)
-    {
-        return LeakyReLUActivation.Instance;
-    }
-
-    public static void WriteValue(IAmetrinWriter writer, LeakyReLUActivation value)
-    {
-        
     }
 }
