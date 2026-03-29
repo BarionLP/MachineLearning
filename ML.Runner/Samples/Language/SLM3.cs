@@ -53,17 +53,20 @@ public static class SLM3
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Full,
+            Threading = ThreadingMode.Half, // half seems to be faster than full
             RandomSource = random,
         };
 
         var model = ModuleSerializer.Read<EmbeddedModule<int[], Vector, int>>(ModelFile);
         // var model = CreateAndInitModel(random);
 
+        var trainingSource = GetTrainingSource(random);
+        // using var trainingSource = GetC4DataSet();
+
         var trainer = new EmbeddedModuleTrainer<int[], Vector, int>(model, trainingConfig)
         {
             CostFunction = CrossEntropyCostFromProbabilities.Instance,
-            TrainingData = GetTrainingSource(random),
+            TrainingData = trainingSource,
         };
 
         trainer.TrainConsole();
@@ -72,7 +75,7 @@ public static class SLM3
 
         ModuleSerializer.Write(model, ModelFile);
 
-        // LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
+        LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
     }
 
     public static TrainingDataSource<TrainingEntry<int[], Vector, int>> GetTrainingSource(Random random)
@@ -95,6 +98,11 @@ public static class SLM3
             BatchCount = 256,
             Random = random ?? Random.Shared,
         };
+    }
+
+    public static C4DataSet GetC4DataSet()
+    {
+        return new(Tokenizer, CONTEXT_SIZE) { BatchSize = 512 };
     }
 }
 
