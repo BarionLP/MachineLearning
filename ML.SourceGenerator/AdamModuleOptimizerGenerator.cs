@@ -81,18 +81,29 @@ internal sealed class AdamModuleOptimizerGenerator : IIncrementalGenerator
         """);
         }
 
-
-        foreach (var weight in moduleInfo.Weights)
+        if(moduleInfo.Weights.Length > 0)
         {
             sb.AppendLine($$"""
-        
-                SpanOperations.MapTo(Optimizer.FirstMomentEstimateOperation, FirstMoment{{weight.Name}}.AsSpan(), gradients.{{weight.Name}}.AsSpan(), FirstMoment{{weight.Name}}.AsSpan());
-                NumericsDebug.AssertValidNumbers(FirstMoment{{weight.Name}});
-                SpanOperations.MapTo(Optimizer.SecondMomentEstimateOperation, SecondMoment{{weight.Name}}.AsSpan(), gradients.{{weight.Name}}.AsSpan(), SecondMoment{{weight.Name}}.AsSpan());
-                NumericsDebug.AssertValidNumbers(SecondMoment{{weight.Name}});
-                SpanOperations.MapTo(Optimizer.WeightReductionOperation, Module.{{weight.Name}}.AsSpan(), FirstMoment{{weight.Name}}.AsSpan(), SecondMoment{{weight.Name}}.AsSpan(), Module.{{weight.Name}}.AsSpan());
+                var firstMomentEstimateOperation = Optimizer.FirstMomentEstimateOperation;
+                var secondMomentEstimateOperation = Optimizer.SecondMomentEstimateOperation;
+                var weightReductionOperation = Optimizer.WeightReductionOperation;
         """);
+
+
+            foreach (var weight in moduleInfo.Weights)
+            {
+                sb.AppendLine($$"""
+            
+                SpanOperations.MapTo(in firstMomentEstimateOperation, FirstMoment{{weight.Name}}.AsSpan(), gradients.{{weight.Name}}.AsSpan(), FirstMoment{{weight.Name}}.AsSpan());
+                NumericsDebug.AssertValidNumbers(FirstMoment{{weight.Name}});
+                SpanOperations.MapTo(in secondMomentEstimateOperation, SecondMoment{{weight.Name}}.AsSpan(), gradients.{{weight.Name}}.AsSpan(), SecondMoment{{weight.Name}}.AsSpan());
+                NumericsDebug.AssertValidNumbers(SecondMoment{{weight.Name}});
+                SpanOperations.MapTo(in weightReductionOperation, Module.{{weight.Name}}.AsSpan(), FirstMoment{{weight.Name}}.AsSpan(), SecondMoment{{weight.Name}}.AsSpan(), Module.{{weight.Name}}.AsSpan());
+        """);
+            }
         }
+
+
         
         sb.AppendLine($$"""
             }

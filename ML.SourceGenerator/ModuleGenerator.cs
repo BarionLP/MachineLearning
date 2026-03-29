@@ -89,7 +89,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         if (moduleInfo.GenerateDataClasses)
         {
             sb.AppendLine();
-            GenerateSnapshot(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
+            GenerateSnapshot(sb, moduleInfo, moduleInfo.Modules, moduleInfo.Weights);
             sb.AppendLine();
             GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
         }
@@ -125,10 +125,10 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         context.AddSource($"{module.Name}.g.cs", sb.ToString());
     }
 
-    private static void GenerateSnapshot(StringBuilder sb, string moduleDefinitionString, IEnumerable<ModulePropertyInfo> modules, IEnumerable<IPropertySymbol> weights)
+    private static void GenerateSnapshot(StringBuilder sb, ModuleInfo moduleInfo, IEnumerable<ModulePropertyInfo> modules, IEnumerable<IPropertySymbol> weights)
     {
         sb.AppendLine($$"""
-            public sealed partial class Snapshot({{moduleDefinitionString}} module) : IModuleSnapshot
+            public sealed partial class Snapshot({{moduleInfo.ModuleDefinitionString}} module) : IModuleSnapshot
             {
         """);
 
@@ -141,7 +141,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
 
         sb.AppendLine($$"""
         
-                public void Dispose() 
+                public void Dispose()
                 {
         """);
 
@@ -151,6 +151,25 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                     {{sub.Name}}.Dispose();
         """);
         }
+
+        if (moduleInfo.Type.GetTypeMembers().FirstOrDefault(static t => t is { Name: "Snapshot" }) is { } snapshotType)
+        {
+            var fields = snapshotType.GetMembers().OfType<IFieldSymbol>().Where(static f => f.AssociatedSymbol is null && f.Type.AllInterfaces.Any(IsIDisposable));
+            var properties = snapshotType.GetMembers().OfType<IPropertySymbol>().Where(static p => p.Type.AllInterfaces.Any(IsIDisposable));
+            foreach (var field in fields)
+            {
+                sb.AppendLine($$"""
+                        {{field.Name}}.Dispose();
+            """);
+            }
+            foreach (var property in properties)
+            {
+                sb.AppendLine($$"""
+                        {{property.Name}}.Dispose();
+            """);
+            }
+        }
+
 
         sb.AppendLine($$"""
                 }

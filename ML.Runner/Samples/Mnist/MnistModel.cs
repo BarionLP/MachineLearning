@@ -33,7 +33,7 @@ public static class MnistModel
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Full,
+            Threading = ThreadingMode.Single,
             RandomSource = random,
         };
 
