@@ -14,5 +14,4 @@ public sealed record TrainingConfig
     public bool EpochEvaluationEnabled => EvaluationCallbackEnabled && !BatchEvaluationEnabled;
     public int EvaluationCallbackAfterBatches { get; init; } = -1;
     public bool BatchEvaluationEnabled => EvaluationCallbackEnabled && EvaluationCallbackAfterBatches > 0;
-    public Random RandomSource { get; init; } = Random.Shared;
 }

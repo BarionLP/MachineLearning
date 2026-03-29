@@ -14,8 +14,8 @@ public static class SLM3
 {
     public static readonly HashSet<string> WORD_TOKENS = ["the", "and", "to", "of", "in", "is", "for", "that", "you", "with", "on", "it", "are", "as", "this", "be", "your", "or", "have", "at", "was", "from", "we", "by", "will", "not", "can", "an", "but", "all", "they", "if", "has", "our", "my", "more", "their", "one", "so", "he", "about", "which", "when", "what", "also", "out", "his", "up", "there", "time", "new", "do", "who", "like", "some", "other", "been", "just", "get", "how", "her", "would", "had", "them", "were", "any", "no", "these", "into", "me", "than", "people", "its", "make", "most", "only", "may", "she", "us", "first", "over", "use", "work", "very", "after", "well", "then", "now", "many", "need", "even", "through", "way", "two", "good", "best", "because", "see", "years", "know", "where", "day", "should", "much", "could", "such", "great", "here", "while", "take", "help", "home", "said", "back", "want", "it's", "being", "before", "year", "those", "find", "each", "made", "right", "used", "life", "go", "world", "free", "information", "business", "really", "every", "love", "think", "own", "both", "still", "around", "him", "last", "going", "off", "same", "different", "look", "place", "part", "between", "too", "did", "down", "service", "am", "during", "does", "since", "using", "high", "things", "company", "always", "another", "few", "set", "little", "available", "long", "services", "without", "online", "don't", "system", "family", "experience", "something", "come", "data", "next", "school", "why", "better", "sure", "under", "give", "however", "must", "including", "support", "can't"];
     public const string SYMBOLS = "\0 ?!\"#$%&'()*+,-./0123456789:;=?_abcdefghijklmnopqrstuvwxyz|ßäöü€";
-    public const int CONTEXT_SIZE = 128 + 64;
-    public const int EMBEDDING_SIZE = 64;
+    public const int CONTEXT_SIZE = 128;
+    public const int EMBEDDING_SIZE = 48;
     public static StringTokenizer Tokenizer { get; } = new(WORD_TOKENS, SYMBOLS, [("“", "\""), ("”", "\""), ("\n", " "), ("–", "-"), ("—", "-"), ("’", "'"), ("it’s", "it's"), ("don’t", "don't"), ("can’t", "can't")]);
     public static FileInfo ModelFile { get; } = AssetManager.GetModelFile("slm3");
 
@@ -48,13 +48,12 @@ public static class SLM3
             EpochCount = 1,
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.0002f,
+                LearningRate = 0.0003f,
             },
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
             Threading = ThreadingMode.Half, // half seems to be faster than full
-            RandomSource = random,
         };
 
         var model = ModuleSerializer.Read<EmbeddedModule<int[], Vector, int>>(ModelFile);
@@ -121,6 +120,7 @@ internal sealed partial class MatrixToFixedVectorModule(int contextSize, int emb
         Debug.Assert(matrix.RowCount <= ContextSize);
         Debug.Assert(matrix.ColumnCount == EmbeddingSize);
 
+        snapshot.Output.ResetZero();
         matrix.AsSpan().CopyTo(snapshot.Output.AsSpan()[^matrix.FlatCount..]);
 
         return snapshot.Output;

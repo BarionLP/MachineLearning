@@ -1,11 +1,11 @@
 using System.IO;
 using ML.Core.Converters;
+using ML.Core.Data.Noise;
 using ML.Core.Evaluation.Cost;
 using ML.Core.Modules;
 using ML.Core.Modules.Activations;
 using ML.Core.Modules.Builder;
 using ML.Core.Training;
-using ML.Core.Data.Noise;
 
 namespace ML.Runner.Samples.Mnist;
 
@@ -34,7 +34,6 @@ public static class MnistModel
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
             Threading = ThreadingMode.Single,
-            RandomSource = random,
         };
 
         var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);
@@ -47,7 +46,7 @@ public static class MnistModel
         {
             Input = MnistInput.Instance,
             Hidden = new SequenceModule<Vector> { Inner = model.Inner.SetItem(model.Inner.Length - 1, new PerceptronModule(EmptyModule.Instance, last.Weights, last.Biases)) },
-            Output = MnistOuput.Instance,
+            Output = new IndexOutputLayer(tokenCount: 10, weightedRandom: false),
         };
 
         var trainer = new EmbeddedModuleTrainer<double[], Vector, int>(embeddedModel, trainingConfig)
