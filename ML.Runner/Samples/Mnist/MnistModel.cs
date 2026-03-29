@@ -1,6 +1,7 @@
 using System.IO;
 using ML.Core.Converters;
 using ML.Core.Data.Noise;
+using ML.Core.Data.Training;
 using ML.Core.Evaluation.Cost;
 using ML.Core.Modules;
 using ML.Core.Modules.Activations;
@@ -57,9 +58,42 @@ public static class MnistModel
 
         trainer.TrainConsole();
 
+        // ModuleSerializer.Write(model, ModelFile);
+
         trainer.DataPool.Clear();
 
-        // ModuleSerializer.Write(model, ModelFile);
+        var inferenceModel = new EmbeddedModule<double[], Vector, int>
+        {
+            Input = MnistInput.Instance,
+            Hidden = model,
+            Output = embeddedModel.Output,
+        };
+
+        Benchmark(inferenceModel, GetTestImages());
+    }
+
+    public static void Benchmark(IEmbeddedModule<double[], int> model, IEnumerable<(double[] Image, int Digit)> dataSource)
+    {
+        var correctCounter = 0;
+        var counter = 0;
+        var previousColor = Console.ForegroundColor;
+        using var snapshot = model.CreateSnapshot();
+
+        foreach (var (image, digit) in dataSource)
+        {
+            var (prediction, confidence) = model.Forward(image, snapshot);
+
+            if (prediction == digit)
+            {
+                correctCounter++;
+            }
+
+            Console.ForegroundColor = prediction == digit ? ConsoleColor.Green : ConsoleColor.Red;
+            Console.WriteLine($"Predicted: {prediction} ({confidence:P})\tActual: {digit}");
+            counter++;
+        }
+        Console.ForegroundColor = previousColor;
+        Console.WriteLine($"Correct: {(double)correctCounter / counter:P0}");
     }
 
     public static MnistImageSource GetTrainingSource(Random random) => GetDataSourceWithNoise(DataSet.TrainingSet, random);
@@ -78,4 +112,7 @@ public static class MnistModel
         },
         Random = random,
     };
+
+    public static IEnumerable<(double[], int)> GetTestImages() 
+        => AssetManager.CustomDigits.EnumerateFiles("*.png").Select(f => (ImageLoader.LoadGrayScale(f), f.NameWithoutExtension.Parse<int>()));
 }
