@@ -14,8 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all"/>
-    <!-- <PackageReference Include="Ametrin.Optional" Version="0.3.1" PrivateAssets="all" GeneratePathProperty="true"/> -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
