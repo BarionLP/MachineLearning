@@ -7,7 +7,7 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
 {
     public static LeakyReLUActivation Instance => field ??= new();
 
-    [Property] public Weight Alpha { get; } = alpha;
+    public Weight Alpha { get; } = alpha;
     private readonly LeakyReLUOperation forwardOp = new(alpha);
     private readonly LeakyReLUDerivativeOperation derivativeOp = new(alpha);
 
@@ -22,6 +22,7 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
     {
         snapshot.Input.MapTo(derivativeOp, snapshot.InputGradient);
         snapshot.InputGradient.PointwiseMultiplyToSelf(outputGradient);
+        NumericsDebug.AssertValidNumbers(snapshot.InputGradient);
         return snapshot.InputGradient;
     }
 

@@ -52,7 +52,7 @@ internal sealed class AdamModuleOptimizerGenerator : IIncrementalGenerator
 
         """);
 
-        foreach (var submodule in moduleInfo.Modules)
+        foreach (var submodule in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
             public IModuleOptimizer {{submodule.Name}}Optimizer { get; } = optimizer.CreateModuleOptimizer(module.{{submodule.Name}});
@@ -74,7 +74,7 @@ internal sealed class AdamModuleOptimizerGenerator : IIncrementalGenerator
             {
         """);
 
-        foreach (var submodule in moduleInfo.Modules)
+        foreach (var submodule in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
                 {{submodule.Name}}Optimizer.Apply(gradients.{{submodule.Name}});
@@ -112,7 +112,7 @@ internal sealed class AdamModuleOptimizerGenerator : IIncrementalGenerator
             {
         """);
 
-        foreach (var submodule in moduleInfo.Modules)
+        foreach (var submodule in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
                 {{submodule.Name}}Optimizer.FullReset();

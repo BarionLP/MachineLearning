@@ -42,7 +42,6 @@ public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>, I
     static EmbeddedModule()
     {
         AdamOptimizer.Registry.Register<EmbeddedModule<TIn, TArch, TOut>>(static (o, module) => new Adam(o, module));
-        AmetrinSerializer.RegisterSerializer<EmbeddedModule<TIn, TArch, TOut>, EmbeddedModule<TIn, TArch, TOut>>();
     }
 
     public sealed class Adam(AdamOptimizer optimizer, EmbeddedModule<TIn, TArch, TOut> module) : IModuleOptimizer<Gradients>

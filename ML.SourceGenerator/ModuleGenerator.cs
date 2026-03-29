@@ -36,6 +36,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         {
             sb.AppendLine($$"""using global::Ametrin.Serializer;""");
             sb.AppendLine($$"""using global::ML.Core.Converters;""");
+            sb.AppendLine($$"""using global::ML.Core.Modules;""");
             sb.AppendLine();
             sb.AppendLine();
         }
@@ -58,6 +59,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                 ModuleName => $$"""{{ModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
                 HiddenModuleName => $$"""{{HiddenModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
                 InputModuleName => $$"""{{InputModuleName}}<{{moduleInfo.RootModule.TypeArguments[0]}}, {{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
+                OutputModuleName => $$"""{{InputModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.RootModule.TypeArguments[1]}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
                 _ => throw new NotImplementedException($"cannot impl {moduleInfo.RootModule.Name}"),
             });
         }
@@ -73,7 +75,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
 
         sb.AppendLine();
 
-        var parameterCount = string.Join(" + ", [.. moduleInfo.Modules.Select(m => $"{m.Name}.ParameterCount"), .. moduleInfo.Weights.Select(w => $"(ulong){w.Name}.FlatCount")]);
+        var parameterCount = string.Join(" + ", [.. moduleInfo.SubModules.Select(m => $"{m.Name}.ParameterCount"), .. moduleInfo.Weights.Select(w => $"(ulong){w.Name}.FlatCount")]);
         if (string.IsNullOrEmpty(parameterCount))
         {
             parameterCount = "0";
@@ -89,9 +91,9 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         if (moduleInfo.GenerateDataClasses)
         {
             sb.AppendLine();
-            GenerateSnapshot(sb, moduleInfo, moduleInfo.Modules, moduleInfo.Weights);
+            GenerateSnapshot(sb, moduleInfo, moduleInfo.SubModules, moduleInfo.Weights);
             sb.AppendLine();
-            GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.Modules, moduleInfo.Weights);
+            GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.SubModules, moduleInfo.Weights);
         }
 
         if (IsEmptyModuleData(moduleInfo.GradientsType))
@@ -109,7 +111,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         if (includeSerializer)
         {
             sb.AppendLine();
-            GenerateSerializer(sb, moduleInfo, moduleInfo.Modules, moduleInfo.Weights);
+            GenerateSerializer(sb, moduleInfo);
         }
 
 
@@ -245,9 +247,9 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         """);
     }
 
-    private static void GenerateSerializer(StringBuilder sb, ModuleInfo module, ImmutableArray<ModulePropertyInfo> modules, ImmutableArray<IPropertySymbol> weights)
+    private static void GenerateSerializer(StringBuilder sb, ModuleInfo module)
     {
-        if (modules.Length is 0 && weights.Length is 0)
+        if (module.SubModules.Length is 0 && module.Weights.Length is 0 && module.Properties.Length is 0)
         {
             sb.AppendLine($$"""
             public static Result<{{module.ModuleDefinitionString}}, DeserializationError> TryReadValue(IAmetrinReader reader) => Instance;
@@ -264,7 +266,17 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         
         """);
 
-            foreach (var subModule in modules)
+            foreach (var property in module.Properties)
+            {
+                sb.AppendLine($$"""
+                if (!objectReader.TryRead{{property.Type.Name}}Value().Branch(out var {{property.Name}}, out error))
+                {
+                    return error;
+                }
+        """);
+            }
+
+            foreach (var subModule in module.SubModules)
             {
                 sb.AppendLine($$"""
                 if (!AmetrinSerializer.TryReadDynamic<{{subModule.Property.Type}}>(objectReader).Branch(out var {{subModule.Name}}, out error))
@@ -274,7 +286,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         """);
             }
 
-            foreach (var weight in weights)
+            foreach (var weight in module.Weights)
             {
                 sb.AppendLine($$"""
                 if (!{{weight.Type.Name}}Converter.TryReadValue(objectReader).Branch(out var {{weight.Name}}, out error))
@@ -287,7 +299,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
             sb.AppendLine($$"""
 
                 reader.ReadEndObject();
-                return new {{module.ModuleDefinitionString}}({{string.Join(", ", modules.Select(static m => m.Name).Concat(weights.Select(static w => w.Name)))}});
+                return new {{module.ModuleDefinitionString}}({{string.Join(", ", [..module.Properties.Select(static p => p.Name), ..module.SubModules.Select(static m => m.Name), ..module.Weights.Select(static w => w.Name)])}});
             }
 
             public static void WriteValue(IAmetrinWriter writer, {{module.ModuleDefinitionString}} value) 
@@ -296,14 +308,21 @@ public sealed class ModuleGenerator : IIncrementalGenerator
 
         """);
 
-            foreach (var subModule in modules)
+            foreach (var property in module.Properties)
+            {
+                sb.AppendLine($$"""
+                objectWriter.Write{{property.Type.Name}}Value(value.{{property.Name}});
+        """);
+            }
+
+            foreach (var subModule in module.SubModules)
             {
                 sb.AppendLine($$"""
                 AmetrinSerializer.WriteDynamic<{{subModule.Property.Type}}>(objectWriter, value.{{subModule.Name}});
         """);
             }
 
-            foreach (var weight in weights)
+            foreach (var weight in module.Weights)
             {
                 sb.AppendLine($$"""
                 {{weight.Type.Name}}Converter.WriteValue(objectWriter, value.{{weight.Name}});

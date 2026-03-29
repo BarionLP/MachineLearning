@@ -21,7 +21,7 @@ public sealed class MnistImageSource(IEnumerable<MnistImage> images) : ITraining
         var batchSize = BatchSize;
         foreach (var i in ..BatchCount)
         {
-            yield return Batch.Create(data, i * batchSize, batchSize).Select(d => new TrainingEntry<double[], Vector, int>(Noise.Apply(d.Image), Expected(d.Digit), d.Digit));
+            yield return BatchHelper.Create(data, i * batchSize, batchSize).Select(d => new TrainingEntry<double[], Vector, int>(Noise.Apply(d.Image), Expected(d.Digit), d.Digit));
         }
     }
 

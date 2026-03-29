@@ -48,7 +48,7 @@ public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
             });
         }
 
-        Console.WriteLine($"Training {Module}");
+        Console.WriteLine($"Training {Module} ({Module.ParameterCount})");
         Console.WriteLine(GenerateTrainingOverview(Config, TrainingData.BatchCount, TrainingData.BatchSize));
         Console.WriteLine("Starting Training...");
         Console.WriteLine(TrainingEvaluationResult.GetHeader());

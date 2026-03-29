@@ -8,14 +8,30 @@ public interface ITrainingDataSource<T>
     public void Reset();
 }
 
-public static class Batch
+
+public sealed class TrainingDataSource<T>(IEnumerable<T> data) : ITrainingDataSource<T>
 {
-    public static IEnumerable<T> Create<T>(IEnumerable<T> source, int startIndex, int batchSize)
-        => Create(source.Skip(startIndex), batchSize);
+    public bool ShuffleOnReset { get; init; } = true;
+    public Random Random { get; init; } = Random.Shared;
+    public required int BatchCount { get; init; }
+    public int BatchSize => data.Length / BatchCount;
 
-    public static IEnumerable<T> Create<T>(IEnumerable<T> source, int batchSize)
-        => source.Take(batchSize);
+    private readonly T[] data = [.. data];
 
-    public static IEnumerable<T> CreateRandom<T>(ICollection<T> source, int batchSize, Random? random = null)
-        => source.GetRandomElements(batchSize, random);
+    public IEnumerable<IEnumerable<T>> GetBatches()
+    {
+        var batchSize = BatchSize;
+        foreach (var i in ..BatchCount)
+        {
+            yield return BatchHelper.Create(data, i * batchSize, batchSize);
+        }
+    }
+
+    public void Reset()
+    {
+        if (ShuffleOnReset)
+        {
+            Random.Shuffle(data);
+        }
+    }
 }

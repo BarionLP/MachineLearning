@@ -113,7 +113,7 @@ public sealed record ModulePropertyInfo(IPropertySymbol Property, SubModuleInfo 
 }
 
 
-public sealed record ModuleInfo(INamedTypeSymbol Type, ImmutableArray<ModulePropertyInfo> Modules, ImmutableArray<IPropertySymbol> Weights, INamedTypeSymbol RootModule, string ModuleDefinitionString, ITypeSymbol ArchType, bool GenerateDataClasses, ITypeSymbol? SnapshotType, ITypeSymbol? GradientsType)
+public sealed record ModuleInfo(INamedTypeSymbol Type, ImmutableArray<IPropertySymbol> Properties, ImmutableArray<ModulePropertyInfo> SubModules, ImmutableArray<IPropertySymbol> Weights, INamedTypeSymbol RootModule, string ModuleDefinitionString, ITypeSymbol ArchType, bool GenerateDataClasses, ITypeSymbol? SnapshotType, ITypeSymbol? GradientsType)
     : SubModuleInfo(RootModule, ModuleDefinitionString, ArchType, GenerateDataClasses, SnapshotType, GradientsType);
 public record SubModuleInfo(INamedTypeSymbol RootModule, string ModuleDefinitionString, ITypeSymbol ArchType, bool GenerateDataClasses, ITypeSymbol? SnapshotType, ITypeSymbol? GradientsType)
 {
@@ -161,8 +161,9 @@ public record SubModuleInfo(INamedTypeSymbol RootModule, string ModuleDefinition
 
         var modules = type.GetProperties().Where(static p => p.HasAttribute(IsSubModuleAttribute)).Select(ModulePropertyInfo.FromProperty).OfType<ModulePropertyInfo>().ToImmutableArray();
         var weights = type.GetProperties().Where(static p => p.HasAttribute(IsWeightAttribute)).ToImmutableArray();
+        var properties = type.GetProperties().Where(static p => p.HasAttribute(IsPropertyAttribute)).ToImmutableArray();
 
-        return new(type, modules, weights, sub.RootModule, sub.ModuleDefinitionString, sub.ArchType, sub.GenerateDataClasses, sub.SnapshotType, sub.GradientsType)
+        return new(type, properties, modules, weights, sub.RootModule, sub.ModuleDefinitionString, sub.ArchType, sub.GenerateDataClasses, sub.SnapshotType, sub.GradientsType)
         {
             SnapshotTypeString = sub.SnapshotTypeString,
             GradientsTypeString = sub.GradientsTypeString,

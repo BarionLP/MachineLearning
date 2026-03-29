@@ -5,7 +5,7 @@ using ML.Core.Training;
 namespace ML.Core.Modules;
 
 [GeneratedModule(IncludeSerializer: true)]
-public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInputModule<int[], Vector>
+public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInputModule<int[], Matrix>
 {
     [Weights] public Matrix EmbeddingMatrix { get; } = embeddingMatrix;
 
@@ -15,32 +15,29 @@ public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInpu
     public IndexEmbeddingModule(int tokenCount, int embeddingSize)
         : this(Matrix.Create(tokenCount, embeddingSize)) { }
 
-    public Vector Forward(int[] input, Snapshot snapshot)
+    public Matrix Forward(int[] input, Snapshot snapshot)
     {
         snapshot.Input = input;
-        var output = Matrix.Of(input.Length, EmbeddingSize, snapshot.Output);
-        Debug.Assert(output.FlatCount == snapshot.Output.Count);
 
         foreach (var i in ..input.Length)
         {
-            GetEmbedding(input[i]).CopyTo(output.RowSpan(i));
+            GetEmbedding(input[i]).CopyTo(snapshot.Output.RowSpan(i));
         }
 
         return snapshot.Output;
     }
 
-    public Vector Backward(Vector outputGradients, Snapshot snapshot, Gradients gradients)
+    public Matrix Backward(Matrix outputGradients, Snapshot snapshot, Gradients gradients)
     {
-        var outputGradientsMatrix = Matrix.Of(snapshot.Input.Length, EmbeddingSize, outputGradients);
         foreach (var i in ..snapshot.Input.Length)
         {
             var token = snapshot.Input[i];
             gradients.TouchedTokens.Add(token);
             var embeddingGradient = gradients.EmbeddingMatrix.RowSpan(token);
-            TensorPrimitives.Add(embeddingGradient, outputGradientsMatrix.RowSpan(i), embeddingGradient);
+            TensorPrimitives.Add(embeddingGradient, outputGradients.RowSpan(i), embeddingGradient);
         }
 
-        return Vector.Empty;
+        return Matrix.Empty;
     }
 
     private Span<Weight> GetEmbedding(int index)
@@ -68,12 +65,14 @@ public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInpu
             {
                 field = value;
                 OutputStorage.SetCount(field.Length * module.EmbeddingSize);
+                Output = Matrix.Of(field.Length, module.EmbeddingSize, OutputStorage.Vector);
             }
         } = [];
-        public Vector Output => OutputStorage.Vector;
 
+        // TODO: dispose hook to set Output to Empty
+        public Matrix Output { get; private set; }
 
-        private DynamicVector OutputStorage { get; }
+        private DynamicVector OutputStorage { get; } = new();
     }
 
     partial class Gradients

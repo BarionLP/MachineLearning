@@ -8,8 +8,8 @@ namespace ML.Core.Modules;
 [GeneratedModule(IncludeSerializer: true)]
 public sealed partial class PerceptronModule : IHiddenModule<Vector>
 {
-    [Property] public int InputNodes => Weights.ColumnCount;
-    [Property] public int OutputNodes => Weights.RowCount;
+    public int InputNodes => Weights.ColumnCount;
+    public int OutputNodes => Weights.RowCount;
     [SubModule] public required IActivationModule<Vector> Activation { get; init; }
     [Weights] public Matrix Weights { get; }
     [Weights] public Vector Biases { get; }
@@ -44,6 +44,7 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
         gradients.Biases.AddToSelf(biasedGradient);
         VectorHelper.MultiplyToMatrixAddTo(biasedGradient, snapshot.Input, gradients.Weights);
         Weights.MultiplyTransposedTo(biasedGradient, snapshot.InputGradient);
+        NumericsDebug.AssertValidNumbers(snapshot.InputGradient);
         return snapshot.InputGradient;
     }
 
