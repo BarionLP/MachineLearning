@@ -34,7 +34,7 @@ public static class MnistModel
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Single,
+            Threading = ThreadingMode.Full,
         };
 
         var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);

@@ -91,9 +91,9 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         if (moduleInfo.GenerateDataClasses)
         {
             sb.AppendLine();
-            GenerateSnapshot(sb, moduleInfo, moduleInfo.SubModules, moduleInfo.Weights);
+            GenerateSnapshot(sb, moduleInfo);
             sb.AppendLine();
-            GenerateGradients(sb, moduleInfo.ModuleDefinitionString, moduleInfo.SubModules, moduleInfo.Weights);
+            GenerateGradients(sb, moduleInfo);
         }
 
         if (IsEmptyModuleData(moduleInfo.GradientsType))
@@ -127,14 +127,14 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         context.AddSource($"{module.Name}.g.cs", sb.ToString());
     }
 
-    private static void GenerateSnapshot(StringBuilder sb, ModuleInfo moduleInfo, IEnumerable<ModulePropertyInfo> modules, IEnumerable<IPropertySymbol> weights)
+    private static void GenerateSnapshot(StringBuilder sb, ModuleInfo moduleInfo)
     {
         sb.AppendLine($$"""
             public sealed partial class Snapshot({{moduleInfo.ModuleDefinitionString}} module) : IModuleSnapshot
             {
         """);
 
-        foreach (var sub in modules)
+        foreach (var sub in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
                 public {{sub.Module.SnapshotTypeString}} {{sub.Name}} { get; } = module.{{sub.Name}}.CreateSnapshot();
@@ -147,7 +147,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                 {
         """);
 
-        foreach (var sub in modules)
+        foreach (var sub in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
                     {{sub.Name}}.Dispose();
@@ -170,6 +170,13 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                         {{property.Name}}.Dispose();
             """);
             }
+
+            if (snapshotType.GetMembers().Any(m => m is IMethodSymbol { Name: "OnDispose" }))
+            {
+                sb.AppendLine("""
+                        OnDispose();
+            """);
+            }
         }
 
 
@@ -179,21 +186,21 @@ public sealed class ModuleGenerator : IIncrementalGenerator
         """);
     }
 
-    private static void GenerateGradients(StringBuilder sb, string moduleDefinitionString, IEnumerable<ModulePropertyInfo> modules, IEnumerable<IPropertySymbol> weights)
+    private static void GenerateGradients(StringBuilder sb, ModuleInfo moduleInfo)
     {
         sb.AppendLine($$"""
-            public sealed partial class Gradients({{moduleDefinitionString}} module) : IModuleGradients<Gradients>
+            public sealed partial class Gradients({{moduleInfo.ModuleDefinitionString}} module) : IModuleGradients<Gradients>
             {
         """);
 
-        foreach (var sub in modules)
+        foreach (var sub in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
                 public {{sub.Module.GradientsTypeString}} {{sub.Name}} { get; } = module.{{sub.Name}}.CreateGradients();
         """);
         }
 
-        foreach (var weight in weights)
+        foreach (var weight in moduleInfo.Weights)
         {
             sb.AppendLine($$"""
                 public {{weight.Type}} {{weight.Name}} { get; } = {{weight.Type}}.OfSize(module.{{weight.Name}});
@@ -206,14 +213,14 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                 {
         """);
 
-        foreach (var module in modules)
+        foreach (var module in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
                     {{module.Name}}.Add(other.{{module.Name}});
         """);
         }
 
-        foreach (var weight in weights)
+        foreach (var weight in moduleInfo.Weights)
         {
             sb.AppendLine($$"""
                     {{weight.Name}}.AddToSelf(other.{{weight.Name}});
@@ -227,18 +234,28 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                 {
         """);
 
-        foreach (var module in modules)
+        foreach (var module in moduleInfo.SubModules)
         {
             sb.AppendLine($$"""
                     {{module.Name}}.Reset();
         """);
         }
 
-        foreach (var weight in weights)
+        foreach (var weight in moduleInfo.Weights)
         {
             sb.AppendLine($$"""
                     {{weight.Name}}.ResetZero();
         """);
+        }
+
+        if (moduleInfo.Type.GetTypeMembers().FirstOrDefault(static t => t is { Name: "Gradients" }) is { } gradientsType)
+        {
+            if (gradientsType.GetMembers().Any(static m => m is IMethodSymbol { Name: "OnReset" }))
+            {
+                sb.AppendLine("""
+                    OnReset();
+        """);
+            }
         }
 
         sb.AppendLine($$"""
@@ -299,7 +316,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
             sb.AppendLine($$"""
 
                 reader.ReadEndObject();
-                return new {{module.ModuleDefinitionString}}({{string.Join(", ", [..module.Properties.Select(static p => p.Name), ..module.SubModules.Select(static m => m.Name), ..module.Weights.Select(static w => w.Name)])}});
+                return new {{module.ModuleDefinitionString}}({{string.Join(", ", [.. module.Properties.Select(static p => p.Name), .. module.SubModules.Select(static m => m.Name), .. module.Weights.Select(static w => w.Name)])}});
             }
 
             public static void WriteValue(IAmetrinWriter writer, {{module.ModuleDefinitionString}} value) 

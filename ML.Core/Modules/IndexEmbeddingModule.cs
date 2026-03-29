@@ -69,16 +69,24 @@ public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInpu
             }
         } = [];
 
-        // TODO: dispose hook to set Output to Empty
         public Matrix Output { get; private set; }
 
         private DynamicVector OutputStorage { get; } = new();
+
+        private void OnDispose()
+        {
+            Output = Matrix.Empty;
+        }
     }
 
     partial class Gradients
     {
-        // TODO: clear in reset (remove clear call from Adam.Apply)
         public HashSet<int> TouchedTokens { get; } = [];
+
+        private void OnReset()
+        {
+            TouchedTokens.Clear();
+        }
     }
 
     public partial class Adam(AdamOptimizer optimizer, IndexEmbeddingModule module) : IModuleOptimizer<Gradients>
@@ -105,8 +113,6 @@ public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInpu
 
             NumericsDebug.AssertValidNumbers(FirstMomentEmbeddingMatrix);
             NumericsDebug.AssertValidNumbers(SecondMomentEmbeddingMatrix);
-
-            gradients.TouchedTokens.Clear(); // TODO: this should happen in Gradients.FullReset();
         }
 
         public void FullReset()

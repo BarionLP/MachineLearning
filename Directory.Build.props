@@ -4,9 +4,4 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="**\*.layer" />
-  </ItemGroup>
-
 </Project>
