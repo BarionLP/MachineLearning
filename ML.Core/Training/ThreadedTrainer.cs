@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Threading;
 using ML.Core.Modules;
 
@@ -6,14 +5,26 @@ namespace ML.Core.Training;
 
 public sealed class ThreadedTrainer
 {
-    public static TrainingContext Train<T>(IEnumerable<T> trainingSet, ModuleDataPool contextPool, ThreadingMode threading, Action<T, TrainingContext> action)
+    public static TrainingContext Train<T>(IEnumerable<T> trainingSet, ModuleDataPool dataPool, ThreadingMode threading, Action<T, TrainingContext> action)
     {
-        using var contexts = new ThreadLocal<TrainingContext>(() => new() { Pool = contextPool }, trackAllValues: true);
+        if (threading is ThreadingMode.Single)
+        {
+            var localContext = new TrainingContext { Pool = dataPool };
+
+            foreach (var item in trainingSet)
+            {
+                action(item, localContext);
+            }
+
+            return localContext;
+        }
+
+        using var contexts = new ThreadLocal<TrainingContext>(() => new() { Pool = dataPool }, trackAllValues: true);
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = threading switch
             {
-                ThreadingMode.Single => 1,
+                // ThreadingMode.Single => 1,
                 ThreadingMode.Half => Environment.ProcessorCount / 2,
                 ThreadingMode.AlmostFull => Environment.ProcessorCount > 1 ? Environment.ProcessorCount - 1 : 1,
                 ThreadingMode.Full => Environment.ProcessorCount, // setting MaxDegreeOfParallelism explicitly prevents too many presceduled tasks
