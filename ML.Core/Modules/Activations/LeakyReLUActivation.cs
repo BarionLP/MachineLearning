@@ -3,7 +3,7 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules.Activations;
 
 [GeneratedModule(IncludeSerializer: true)]
-public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivationModule<Vector, LeakyReLUActivation.Snapshot>
+public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivationModule<Vector, LeakyReLUActivation.Snapshot>, IActivationModule<Matrix, LeakyReLUActivation.Snapshot>
 {
     public static LeakyReLUActivation Instance => field ??= new();
 
@@ -26,6 +26,9 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
         return snapshot.InputGradient;
     }
 
+    public Matrix Forward(Matrix input, Snapshot snapshot) => Matrix.OfSize(input, Forward(input.Storage, snapshot));
+    public Matrix Backward(Matrix outputGradient, Snapshot snapshot, EmptyModuleData gradients) => Matrix.OfSize(outputGradient, Backward(outputGradient.Storage, snapshot, gradients));
+    
     public sealed class Snapshot() : IModuleSnapshot
     {
         public Vector Input
@@ -72,4 +75,8 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
         public static SimdVector Invoke(in LeakyReLUDerivativeOperation info, SimdVector input)
             => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), SimdVector.One, SimdVectorHelper.Create(info.alpha));
     }
+
+    IModuleSnapshot IModule.CreateSnapshot() => CreateSnapshot();
+    IModuleGradients IModule.CreateGradients() => CreateGradients();
+
 }

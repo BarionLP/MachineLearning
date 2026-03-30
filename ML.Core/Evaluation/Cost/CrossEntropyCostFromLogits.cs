@@ -8,7 +8,7 @@ namespace ML.Core.Evaluation.Cost;
 /// requires expected.Sum() == 1<para/>
 /// parts of softmax and cross entropy cancel out in the backwards pass reducing operations, also stabilizes gradients because less divisions
 /// </summary>
-public sealed class CrossEntropyCostFromLogits : ICostFunction<Vector>
+public sealed class CrossEntropyCostFromLogits : ICostFunction<Vector>, ICostFunction<Matrix>
 {
     public static readonly CrossEntropyCostFromLogits Instance = new();
 
@@ -31,4 +31,8 @@ public sealed class CrossEntropyCostFromLogits : ICostFunction<Vector>
         logits.SoftMaxTo(destination);
         destination.SubtractToSelf(expected);
     }
+
+    // TODO: probably needs to be done row-wise
+    public Weight TotalCost(Matrix output, Matrix expected) => TotalCost(output.Storage, expected.Storage);
+    public void DerivativeTo(Matrix output, Matrix expected, Matrix destination) => DerivativeTo(output.Storage, expected.Storage, destination.Storage);
 }
