@@ -25,25 +25,35 @@ public sealed class MultiLayerPerceptronBuilder
 
     public SequenceModule<Vector> Build() => new()
     {
-        Inner = [.. layers.Select(d => new PerceptronModule(d.input, d.output) { Activation = d.activation })],
+        Inner = [.. layers.SelectMany(d => (IEnumerable<IHiddenModule<Vector>>)[new LinearModule(d.input, d.output), d.activation])],
     };
 
     public SequenceModule<Vector> BuildAndInit(Random random)
     {
         var module = Build();
 
-        var initializer = new SequenceModule<Vector>.Initializer
+        new SequenceModule<Vector>.Initializer
         {
-            Inner = [.. module.Inner.Cast<PerceptronModule>().Select(inner => (IModuleInitializer)(inner.Activation switch
-            {
-                SoftMaxActivation or EmptyModule => new PerceptronModule.XavierInitializer() { Random = random },
-                LeakyReLUActivation => new PerceptronModule.KaimingInitializer(inner.Activation) { Random = random },
-                _ => throw new NotImplementedException(),
-            }))],
-        };
-
-        initializer.Init(module);
+            Inner = [.. GetIniters()],
+        }.Init(module);
 
         return module;
+
+        IEnumerable<IModuleInitializer> GetIniters()
+        {
+            foreach (var i in module.Inner.IndexRange)
+            {
+                var subModule = module.Inner[i];
+                var nextSubModule = i < (module.Inner.Length - 1) ? module.Inner[i + 1] : null;
+
+                yield return (subModule, nextSubModule) switch
+                {
+                    (IActivationModule, _) => EmptyModuleInitializer.Instance,
+                    (LinearModule, SoftMaxActivation) => new LinearModule.XavierInitializer() { Random = random },
+                    (LinearModule, LeakyReLUActivation) => new LinearModule.KaimingInitializer((IActivationModule)nextSubModule) { Random = random },
+                    _ => throw new NotImplementedException(),
+                };
+            }
+        }
     }
 }

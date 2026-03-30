@@ -53,7 +53,7 @@ public static class SLM3
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Half, // half seems to be faster than full
+            Threading = ThreadingMode.Full, // half seems to be faster than full
         };
 
         var model = ModuleSerializer.Read<EmbeddedModule<int[], Vector, int>>(ModelFile);
@@ -62,9 +62,18 @@ public static class SLM3
         var trainingSource = GetTrainingSource(random);
         // using var trainingSource = GetC4DataSet();
 
-        var trainer = new EmbeddedModuleTrainer<int[], Vector, int>(model, trainingConfig)
+        // remove the last activation to output logits instead of probabilities
+        // so we can use the optimized version of CrossEntropyCost
+        Debug.Assert(model.Hidden is SequenceModule<Vector> { Inner: [.., IActivationModule] });
+        var trainingModel = new EmbeddedModule<int[], Vector, int>
         {
-            CostFunction = CrossEntropyCostFromProbabilities.Instance,
+            Input = model.Input,
+            Hidden = new SequenceModule<Vector> { Inner = ((SequenceModule<Vector>)model.Hidden).Inner[..^1] },
+            Output = model.Output,
+        };
+        var trainer = new EmbeddedModuleTrainer<int[], Vector, int>(trainingModel, trainingConfig)
+        {
+            CostFunction = CrossEntropyCostFromLogits.Instance,
             TrainingData = trainingSource,
         };
 
@@ -72,7 +81,7 @@ public static class SLM3
 
         trainer.DataPool.Clear();
 
-        ModuleSerializer.Write(model, ModelFile);
+        // ModuleSerializer.Write(model, ModelFile);
 
         LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
     }

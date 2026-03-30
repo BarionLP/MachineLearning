@@ -40,13 +40,13 @@ public static class MnistModel
         var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);
         // var model = CreateAndInitModel(random);
 
-        // modify the last layer to output logit instead of probabilites
+        // remove the last activation to output logits instead of probabilities
         // so we can use the optimized version of CrossEntropyCost
-        var last = (PerceptronModule)model.Inner[^1];
+        Debug.Assert(model.Inner[^1] is IActivationModule);
         var embeddedModel = new EmbeddedModule<double[], Vector, int>
         {
             Input = MnistInput.Instance,
-            Hidden = new SequenceModule<Vector> { Inner = model.Inner.SetItem(model.Inner.Length - 1, new PerceptronModule(EmptyModule.Instance, last.Weights, last.Biases)) },
+            Hidden = new SequenceModule<Vector> { Inner = model.Inner[..^1] },
             Output = new IndexOutputLayer(tokenCount: 10, weightedRandom: false),
         };
 

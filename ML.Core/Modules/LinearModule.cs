@@ -6,27 +6,25 @@ using ML.Core.Modules.Initialization;
 namespace ML.Core.Modules;
 
 [GeneratedModule(IncludeSerializer: true)]
-public sealed partial class PerceptronModule : IHiddenModule<Vector>
+public sealed partial class LinearModule : IHiddenModule<Vector>
 {
     public int InputNodes => Weights.ColumnCount;
     public int OutputNodes => Weights.RowCount;
-    [SubModule] public required IActivationModule<Vector> Activation { get; init; }
     [Weights] public Matrix Weights { get; }
     [Weights] public Vector Biases { get; }
 
-    public PerceptronModule(int inputNodes, int outputNodes)
+    public LinearModule(int inputNodes, int outputNodes)
     {
         Weights = Matrix.Create(outputNodes, inputNodes);
         Biases = Vector.Create(outputNodes);
     }
 
     [SetsRequiredMembers]
-    public PerceptronModule(IActivationModule<Vector> activation, Matrix weights, Vector biases)
+    public LinearModule(Matrix weights, Vector biases)
     {
         Debug.Assert(weights.RowCount == biases.Count);
         Weights = weights;
         Biases = biases;
-        Activation = activation;
     }
 
     public Vector Forward(Vector input, Snapshot snapshot)
@@ -35,15 +33,14 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
         snapshot.Input = input;
         Weights.MultiplyTo(snapshot.Input, snapshot.Weighted);
         snapshot.Weighted.AddTo(Biases, snapshot.Biased);
-        return Activation.Forward(snapshot.Biased, snapshot.Activation);
+        return snapshot.Biased;
     }
 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, Gradients gradients)
     {
-        var biasedGradient = Activation.Backward(outputGradient, snapshot.Activation, gradients.Activation);
-        gradients.Biases.AddToSelf(biasedGradient);
-        VectorHelper.MultiplyToMatrixAddTo(biasedGradient, snapshot.Input, gradients.Weights);
-        Weights.MultiplyTransposedTo(biasedGradient, snapshot.InputGradient);
+        gradients.Biases.AddToSelf(outputGradient);
+        VectorHelper.MultiplyToMatrixAddTo(outputGradient, snapshot.Input, gradients.Weights);
+        Weights.MultiplyTransposedTo(outputGradient, snapshot.InputGradient);
         NumericsDebug.AssertValidNumbers(snapshot.InputGradient);
         return snapshot.InputGradient;
     }
@@ -56,20 +53,20 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
         public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
     }
 
-    [GeneratedAdam(typeof(PerceptronModule))]
+    [GeneratedAdam(typeof(LinearModule))]
     public sealed partial class Adam;
 
     /// <summary>
     /// suited for (Leaky)ReLU<br/>
     /// not suited for SoftMax/Sigmoid
     /// </summary>
-    public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<PerceptronModule>
+    public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<LinearModule>
     {
         public Random Random { get; init; } = Random.Shared;
         private readonly Weight gain = InitializationHelper.GetKaimingGain(activation);
-        public PerceptronModule Init(PerceptronModule module)
+        public LinearModule Init(LinearModule module)
         {
-            Debug.Assert(module.Activation is not SoftMaxActivation);
+            // Debug.Assert(module.Activation is not SoftMaxActivation);
             module.Weights.KaimingNormal(gain, Random);
             module.Biases.Normal(0, 0.1f, Random);
             return module;
@@ -80,13 +77,13 @@ public sealed partial class PerceptronModule : IHiddenModule<Vector>
     /// suited for SoftMax/Sigmoid<br/>
     /// not suited for (Leaky)ReLU
     /// </summary>
-    public sealed class XavierInitializer : IModuleInitializer<PerceptronModule>
+    public sealed class XavierInitializer : IModuleInitializer<LinearModule>
     {
         public static XavierInitializer Instance => field ??= new();
         public Random Random { get; init; } = Random.Shared;
-        public PerceptronModule Init(PerceptronModule module)
+        public LinearModule Init(LinearModule module)
         {
-            Debug.Assert(module.Activation is not LeakyReLUActivation);
+            // Debug.Assert(module.Activation is not LeakyReLUActivation);
             module.Weights.XavierUniform(Random);
             module.Biases.Normal(0, 0.1f, Random);
             return module;
