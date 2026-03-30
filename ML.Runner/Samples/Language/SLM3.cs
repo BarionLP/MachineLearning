@@ -37,7 +37,7 @@ public static class SLM3
         {
             Input = new MatrixToFixedVectorModule(CONTEXT_SIZE, EMBEDDING_SIZE, input),
             Hidden = innerModel,
-            Output = new IndexOutputLayer(Tokenizer.TokenCount, weightedRandom: false, random),
+            Output = new IndexOutputModule(Tokenizer.TokenCount, weightedRandom: false, random),
         };
     }
 

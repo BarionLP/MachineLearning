@@ -6,21 +6,22 @@ using ML.Core.Modules.Initialization;
 namespace ML.Core.Modules;
 
 [GeneratedModule(IncludeSerializer: true)]
-public sealed partial class LinearModule : IHiddenModule<Vector>
+public sealed partial class LinearVectorModule : IHiddenModule<Vector>
 {
-    public int InputNodes => Weights.ColumnCount;
-    public int OutputNodes => Weights.RowCount;
     [Weights] public Matrix Weights { get; }
     [Weights] public Vector Biases { get; }
 
-    public LinearModule(int inputNodes, int outputNodes)
+    public int InputNodes => Weights.ColumnCount;
+    public int OutputNodes => Weights.RowCount;
+
+    public LinearVectorModule(int inputNodes, int outputNodes)
     {
         Weights = Matrix.Create(outputNodes, inputNodes);
         Biases = Vector.Create(outputNodes);
     }
 
     [SetsRequiredMembers]
-    public LinearModule(Matrix weights, Vector biases)
+    public LinearVectorModule(Matrix weights, Vector biases)
     {
         Debug.Assert(weights.RowCount == biases.Count);
         Weights = weights;
@@ -53,18 +54,18 @@ public sealed partial class LinearModule : IHiddenModule<Vector>
         public Vector InputGradient { get; } = Vector.Create(module.InputNodes);
     }
 
-    [GeneratedAdam(typeof(LinearModule))]
+    [GeneratedAdam(typeof(LinearVectorModule))]
     public sealed partial class Adam;
 
     /// <summary>
     /// suited for (Leaky)ReLU<br/>
     /// not suited for SoftMax/Sigmoid
     /// </summary>
-    public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<LinearModule>
+    public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<LinearVectorModule>
     {
         public Random Random { get; init; } = Random.Shared;
         private readonly Weight gain = InitializationHelper.GetKaimingGain(activation);
-        public LinearModule Init(LinearModule module)
+        public LinearVectorModule Init(LinearVectorModule module)
         {
             // Debug.Assert(module.Activation is not SoftMaxActivation);
             module.Weights.KaimingNormal(gain, Random);
@@ -77,11 +78,11 @@ public sealed partial class LinearModule : IHiddenModule<Vector>
     /// suited for SoftMax/Sigmoid<br/>
     /// not suited for (Leaky)ReLU
     /// </summary>
-    public sealed class XavierInitializer : IModuleInitializer<LinearModule>
+    public sealed class XavierInitializer : IModuleInitializer<LinearVectorModule>
     {
         public static XavierInitializer Instance => field ??= new();
         public Random Random { get; init; } = Random.Shared;
-        public LinearModule Init(LinearModule module)
+        public LinearVectorModule Init(LinearVectorModule module)
         {
             // Debug.Assert(module.Activation is not LeakyReLUActivation);
             module.Weights.XavierUniform(Random);

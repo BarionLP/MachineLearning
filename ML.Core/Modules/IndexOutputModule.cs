@@ -3,7 +3,7 @@ using ML.Core.Attributes;
 namespace ML.Core.Modules;
 
 [GeneratedModule(IncludeSerializer: true)]
-public sealed partial class IndexOutputLayer(int tokenCount, bool weightedRandom, Random? random = null) : IOutputModule<Vector, int, EmptyModuleData, EmptyModuleData>
+public sealed partial class IndexOutputModule(int tokenCount, bool weightedRandom, Random? random = null) : IOutputModule<Vector, int, EmptyModuleData, EmptyModuleData>
 {
     [Property] public int TokenCount { get; } = tokenCount;
     [Property] public bool WeightedRandom { get; } = weightedRandom;

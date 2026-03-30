@@ -25,7 +25,7 @@ public sealed class MultiLayerPerceptronBuilder
 
     public SequenceModule<Vector> Build() => new()
     {
-        Inner = [.. layers.SelectMany(d => (IEnumerable<IHiddenModule<Vector>>)[new LinearModule(d.input, d.output), d.activation])],
+        Inner = [.. layers.SelectMany(d => (IEnumerable<IHiddenModule<Vector>>)[new LinearVectorModule(d.input, d.output), d.activation])],
     };
 
     public SequenceModule<Vector> BuildAndInit(Random random)
@@ -49,8 +49,8 @@ public sealed class MultiLayerPerceptronBuilder
                 yield return (subModule, nextSubModule) switch
                 {
                     (IActivationModule, _) => EmptyModuleInitializer.Instance,
-                    (LinearModule, SoftMaxActivation) => new LinearModule.XavierInitializer() { Random = random },
-                    (LinearModule, LeakyReLUActivation) => new LinearModule.KaimingInitializer((IActivationModule)nextSubModule) { Random = random },
+                    (LinearVectorModule, SoftMaxActivation) => new LinearVectorModule.XavierInitializer() { Random = random },
+                    (LinearVectorModule, LeakyReLUActivation) => new LinearVectorModule.KaimingInitializer((IActivationModule)nextSubModule) { Random = random },
                     _ => throw new NotImplementedException(),
                 };
             }

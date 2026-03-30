@@ -47,7 +47,7 @@ public static class MnistModel
         {
             Input = MnistInput.Instance,
             Hidden = new SequenceModule<Vector> { Inner = model.Inner[..^1] },
-            Output = new IndexOutputLayer(tokenCount: 10, weightedRandom: false),
+            Output = new IndexOutputModule(tokenCount: 10, weightedRandom: false),
         };
 
         var trainer = new EmbeddedModuleTrainer<double[], Vector, int>(embeddedModel, trainingConfig)

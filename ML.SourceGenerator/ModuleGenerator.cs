@@ -59,7 +59,7 @@ public sealed class ModuleGenerator : IIncrementalGenerator
                 ModuleName => $$"""{{ModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
                 HiddenModuleName => $$"""{{HiddenModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
                 InputModuleName => $$"""{{InputModuleName}}<{{moduleInfo.RootModule.TypeArguments[0]}}, {{moduleInfo.ArchType}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
-                OutputModuleName => $$"""{{InputModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.RootModule.TypeArguments[1]}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
+                OutputModuleName => $$"""{{OutputModuleName}}<{{moduleInfo.ArchType}}, {{moduleInfo.RootModule.TypeArguments[1]}}, {{moduleInfo.SnapshotTypeString}}, {{moduleInfo.GradientsTypeString}}>""",
                 _ => throw new NotImplementedException($"cannot impl {moduleInfo.RootModule.Name}"),
             });
         }
