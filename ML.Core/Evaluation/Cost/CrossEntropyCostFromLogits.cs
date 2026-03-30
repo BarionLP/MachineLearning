@@ -17,16 +17,11 @@ public sealed class CrossEntropyCostFromLogits : ICostFunction<Vector>
         NumericsDebug.AssertSameDimensions(logits, expected);
 
         using var destinationStorage = ArrayPool<Weight>.Shared.RentNumerics(logits.FlatCount);
-        var destination = Vector.OfSize(logits, destinationStorage);
+        var probabilities = Vector.OfSize(logits, destinationStorage);
 
-        var maxLogit = logits.Max();
-        logits.SubtractPointwiseTo(maxLogit, destination);
-        destination.PointwiseExpToSelf();
-        var expSum = destination.Sum();
+        logits.SoftMaxTo(probabilities);
 
-        var logSumExp = maxLogit + Weight.Log(expSum);
-        var expectedDotLogits = expected.Dot(logits);
-        return -expectedDotLogits + logSumExp;
+        return ((ICostFunction<Vector>)CrossEntropyCostFromProbabilities.Instance).TotalCost(probabilities, expected);
     }
 
     public void DerivativeTo(Vector logits, Vector expected, Vector destination)
