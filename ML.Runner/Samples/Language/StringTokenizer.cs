@@ -13,12 +13,14 @@ public sealed class StringTokenizer : ITokenizer<string>
 
     public int TokenCount => fallbackTokens.Length + textToToken.Count;
 
-    public StringTokenizer(HashSet<string> tokens, string fallbackTokens, IEnumerable<(string alt, string original)> altTokens)
+    // TODO: instead of altTokens use a char replace map to clean the input data, preferably at the data loading side instead of the tokenizer
+
+    public StringTokenizer(HashSet<string> tokens, string fallbackTokens, IEnumerable<(string alt, string original)> altTokens, IEqualityComparer<string> comparer)
     {
         this.fallbackTokens = fallbackTokens;
-        this.textToToken = tokens.Select((token, i) => new KeyValuePair<string, int>(token, fallbackTokens.Length + i)).ToFrozenDictionary(StringComparer.InvariantCultureIgnoreCase);
+        this.textToToken = tokens.Select((token, i) => new KeyValuePair<string, int>(token, fallbackTokens.Length + i)).ToFrozenDictionary(comparer);
         this.tokenToText = tokens.Select((token, i) => new KeyValuePair<int, string>(fallbackTokens.Length + i, token)).ToFrozenDictionary();
-        this.altTokens = altTokens.Select(t => new KeyValuePair<string, int>(t.alt, TokenizeSingle(t.original))).ToFrozenDictionary(StringComparer.InvariantCultureIgnoreCase);
+        this.altTokens = altTokens.Select(t => new KeyValuePair<string, int>(t.alt, TokenizeSingle(t.original))).ToFrozenDictionary(comparer);
 
         Debug.Assert(textToToken.Count == tokenToText.Count);
         Debug.Assert(this.altTokens.All(p => tokenToText.ContainsKey(p.Value) || p.Value < fallbackTokens.Length));

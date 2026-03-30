@@ -16,7 +16,7 @@ public static class SLM3
     public const string SYMBOLS = "\0 ?!\"#$%&'()*+,-./0123456789:;=?_abcdefghijklmnopqrstuvwxyz|ßäöü€";
     public const int CONTEXT_SIZE = 128;
     public const int EMBEDDING_SIZE = 48;
-    public static StringTokenizer Tokenizer { get; } = new(WORD_TOKENS, SYMBOLS, [("“", "\""), ("”", "\""), ("\n", " "), ("–", "-"), ("—", "-"), ("’", "'"), ("it’s", "it's"), ("don’t", "don't"), ("can’t", "can't")]);
+    public static StringTokenizer Tokenizer { get; } = new(WORD_TOKENS, SYMBOLS, [("“", "\""), ("”", "\""), ("\n", " "), ("–", "-"), ("—", "-"), ("’", "'"), ("it’s", "it's"), ("don’t", "don't"), ("can’t", "can't")], StringComparer.InvariantCultureIgnoreCase);
     public static FileInfo ModelFile { get; } = AssetManager.GetModelFile("slm3");
 
     public static EmbeddedModule<int[], Vector, int> CreateAndInitModel(Random random)
@@ -53,14 +53,13 @@ public static class SLM3
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Full, // half seems to be faster than full
+            Threading = ThreadingMode.Half, // half seems to be faster than full
         };
 
         var model = ModuleSerializer.Read<EmbeddedModule<int[], Vector, int>>(ModelFile);
         // var model = CreateAndInitModel(random);
 
         var trainingSource = GetTrainingSource(random);
-        // using var trainingSource = GetC4DataSet();
 
         // remove the last activation to output logits instead of probabilities
         // so we can use the optimized version of CrossEntropyCost
@@ -106,11 +105,6 @@ public static class SLM3
             BatchCount = 256,
             Random = random ?? Random.Shared,
         };
-    }
-
-    public static C4DataSet GetC4DataSet()
-    {
-        return new(Tokenizer, CONTEXT_SIZE) { BatchSize = 512 };
     }
 }
 

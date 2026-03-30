@@ -7,12 +7,14 @@ using ML.Core.Data.Training;
 
 namespace ML.Runner.Samples.Language;
 
-public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int initalFile = 0) : ITrainingDataSource<TrainingEntry<int[], Vector, int>>, IDisposable
+public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int initalFile = 0) : ITrainingDataSource<TrainingEntry<int[], Matrix, int>>, IDisposable
 {
     public int BatchCount { get; } = int.MaxValue;
     public required int BatchSize { get; init; }
     public int CurrentFile => nextFile - 1;
     public int CurrentLinesRead => currentFile?.LinesRead ?? 0;
+    private readonly int endToken = tokenizer.TokenizeSingle("\0");
+    private readonly FrozenDictionary<int, Vector> expectedWeights = LanguageDataHelper.BuildExpectedWeightCache(tokenizer.TokenCount);
     private int nextFile = initalFile;
     private C4FileReader? currentFile;
 
@@ -21,7 +23,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
     private Task<FileInfo> downloadTask = Download(initalFile);
 
 
-    public IEnumerable<IEnumerable<TrainingEntry<int[], Vector, int>>> GetBatches()
+    public IEnumerable<IEnumerable<TrainingEntry<int[], Matrix, int>>> GetBatches()
     {
         while (true)
         {
@@ -29,27 +31,9 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
         }
     }
 
-    private IEnumerator<TrainingEntry<int[], Vector, int>>? dataEnumerator;
-    public IEnumerable<TrainingEntry<int[], Vector, int>> GetTrainingData()
-    {
-        while (true)
-        {
-            while (dataEnumerator is null)
-            {
-                try
-                {
-                    dataEnumerator = tokenizer.Tokenize(NextLine()).ToArray().SlidingWindow(tokenizer.TokenizeSingle("\0"), contextSize).ToTrainingData(tokenizer.TokenCount).GetEnumerator();
-                }
-                catch (Exception) { /* Console.WriteLine(e.Message); */ }
-            }
-
-            while (dataEnumerator.MoveNext())
-            {
-                yield return dataEnumerator.Current;
-            }
-            dataEnumerator = null;
-        }
-    }
+    // private IEnumerator<TrainingEntry<int[], Matrix, int>>? dataEnumerator;
+    public IEnumerable<TrainingEntry<int[], Matrix, int>> GetTrainingData()
+        => GetTokenizedLines().Select(tokens => LanguageDataHelper.ToTrainingDataMatrix(tokens, endToken, expectedWeights, tokenizer.TokenCount));
 
     public IEnumerable<int[]> GetTokenizedLines()
         => GetLines().TokenizeSkipInvalid(tokenizer);
@@ -117,7 +101,7 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
 
     public void Reset()
     {
-        
+
     }
 
     private sealed class C4FileReader : IDisposable
