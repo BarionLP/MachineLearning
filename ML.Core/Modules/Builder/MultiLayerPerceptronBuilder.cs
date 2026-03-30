@@ -49,8 +49,8 @@ public sealed class MultiLayerPerceptronBuilder
                 yield return (subModule, nextSubModule) switch
                 {
                     (IActivationModule, _) => EmptyModuleInitializer.Instance,
-                    (LinearVectorModule, SoftMaxActivation) => new LinearVectorModule.XavierInitializer() { Random = random },
-                    (LinearVectorModule, LeakyReLUActivation) => new LinearVectorModule.KaimingInitializer((IActivationModule)nextSubModule) { Random = random },
+                    (LinearVectorModule, SoftMaxActivation) => new LinearModule.XavierInitializer() { Random = random },
+                    (LinearVectorModule, LeakyReLUActivation) => new LinearModule.KaimingInitializer((IActivationModule)nextSubModule) { Random = random },
                     _ => throw new NotImplementedException(),
                 };
             }

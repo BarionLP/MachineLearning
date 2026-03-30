@@ -32,7 +32,7 @@ public static class MnistModel
                 LearningRate = 0.0046225016f,
             },
 
-            EvaluationCallbackAfterBatches = 8,
+            EvaluationCallbackAfterBatches = 16,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
             Threading = ThreadingMode.Half,
         };

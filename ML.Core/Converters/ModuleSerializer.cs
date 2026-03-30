@@ -20,7 +20,8 @@ public static class ModuleSerializer
         AmetrinSerializer.RegisterSerializer<SequenceModuleConverter<Vector>, SequenceModule<Vector>>();
         AmetrinSerializer.RegisterSerializer<SequenceModuleConverter<Matrix>, SequenceModule<Matrix>>();
         AmetrinSerializer.RegisterSerializer<SequenceModuleConverter<Tensor>, SequenceModule<Tensor>>();
-        AmetrinSerializer.RegisterSerializer<EmbeddedModule<int[], Vector, int>, EmbeddedModule<int[], Vector, int>>();
+        AmetrinSerializer.RegisterSerializer<EmbeddedModule<int[], Vector, int>>();
+        AmetrinSerializer.RegisterSerializer<EmbeddedModule<int[], Matrix, int>>();
     }
 
     public static void Write(IModule module, FileInfo file)

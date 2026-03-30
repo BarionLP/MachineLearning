@@ -16,7 +16,7 @@ public sealed class CrossEntropyCostFromLogits : ICostFunction<Vector>, ICostFun
     {
         NumericsDebug.AssertSameDimensions(logits, expected);
 
-        using var destinationStorage = ArrayPool<Weight>.Shared.RentNumerics(logits.FlatCount);
+        using var destinationStorage = ArrayPool<Weight>.Shared.RentNumerics(logits.Count);
         var probabilities = Vector.OfSize(logits, destinationStorage);
 
         logits.SoftMaxTo(probabilities);
@@ -32,7 +32,25 @@ public sealed class CrossEntropyCostFromLogits : ICostFunction<Vector>, ICostFun
         destination.SubtractToSelf(expected);
     }
 
-    // TODO: probably needs to be done row-wise
-    public Weight TotalCost(Matrix output, Matrix expected) => TotalCost(output.Storage, expected.Storage);
-    public void DerivativeTo(Matrix output, Matrix expected, Matrix destination) => DerivativeTo(output.Storage, expected.Storage, destination.Storage);
+    public Weight TotalCost(Matrix output, Matrix expected)
+    {
+        NumericsDebug.AssertSameDimensions(output, expected);
+
+        Weight sum = 0;
+        foreach(var rowIndex in ..output.RowCount)
+        {
+            sum += TotalCost(output.RowRef(rowIndex), expected.RowRef(rowIndex));
+        }
+        return sum;
+    }
+
+    public void DerivativeTo(Matrix output, Matrix expected, Matrix destination)
+    {
+        NumericsDebug.AssertSameDimensions(output, expected, destination);
+
+        foreach (var rowIndex in ..output.RowCount)
+        {
+            DerivativeTo(output.RowRef(rowIndex), expected.RowRef(rowIndex), destination.RowRef(rowIndex));
+        }
+    }
 }

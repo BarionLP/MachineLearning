@@ -56,38 +56,68 @@ public sealed partial class LinearVectorModule : IHiddenModule<Vector>
 
     [GeneratedAdam(typeof(LinearVectorModule))]
     public sealed partial class Adam;
+}
 
+public static class LinearModule
+{
     /// <summary>
     /// suited for (Leaky)ReLU<br/>
     /// not suited for SoftMax/Sigmoid
     /// </summary>
-    public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<LinearVectorModule>
+    public sealed class KaimingInitializer(IActivationModule activation) : IModuleInitializer<LinearVectorModule>, IModuleInitializer<LinearMatrixModule>
     {
         public Random Random { get; init; } = Random.Shared;
         private readonly Weight gain = InitializationHelper.GetKaimingGain(activation);
         public LinearVectorModule Init(LinearVectorModule module)
         {
-            // Debug.Assert(module.Activation is not SoftMaxActivation);
-            module.Weights.KaimingNormal(gain, Random);
-            module.Biases.Normal(0, 0.1f, Random);
+            Init(module.Weights, module.Biases);
             return module;
         }
+
+        public LinearMatrixModule Init(LinearMatrixModule module)
+        {
+            Init(module.Weights, module.Biases);
+            return module;
+        }
+
+        public void Init(Matrix weights, Vector biases)
+        {
+            // Debug.Assert(module.Activation is not SoftMaxActivation);
+            weights.KaimingNormal(gain, Random);
+            biases.Normal(0, 0.1f, Random);
+        }
+
+        IModule IModuleInitializer.Init(IModule module)
+            => module is LinearVectorModule vector ? Init(vector) : module is LinearMatrixModule matrix ? Init(matrix) : throw new UnreachableException();
     }
 
     /// <summary>
     /// suited for SoftMax/Sigmoid<br/>
     /// not suited for (Leaky)ReLU
     /// </summary>
-    public sealed class XavierInitializer : IModuleInitializer<LinearVectorModule>
+    public sealed class XavierInitializer : IModuleInitializer<LinearVectorModule>, IModuleInitializer<LinearMatrixModule>
     {
         public static XavierInitializer Instance => field ??= new();
         public Random Random { get; init; } = Random.Shared;
         public LinearVectorModule Init(LinearVectorModule module)
         {
-            // Debug.Assert(module.Activation is not LeakyReLUActivation);
-            module.Weights.XavierUniform(Random);
-            module.Biases.Normal(0, 0.1f, Random);
+            Init(module.Weights, module.Biases);
             return module;
         }
+
+        public LinearMatrixModule Init(LinearMatrixModule module)
+        {
+            Init(module.Weights, module.Biases);
+            return module;
+        }
+
+        public void Init(Matrix weights, Vector biases)
+        {
+            weights.XavierUniform(Random);
+            biases.Normal(0, 0.1f, Random);
+        }
+
+        IModule IModuleInitializer.Init(IModule module)
+            => module is LinearVectorModule vector ? Init(vector) : module is LinearMatrixModule matrix ? Init(matrix) : throw new UnreachableException();
     }
 }

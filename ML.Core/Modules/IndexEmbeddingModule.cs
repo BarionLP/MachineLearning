@@ -71,7 +71,7 @@ public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInpu
 
         public Matrix Output { get; private set; }
 
-        private DynamicVector OutputStorage { get; } = new();
+        private readonly DynamicVector OutputStorage = new();
 
         private void OnDispose()
         {

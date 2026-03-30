@@ -21,19 +21,14 @@ public static class LanguageDataHelper
 
         TrainingEntry<int[], Vector, int> MapData((int[] Input, int Expected) e)
         {
-            return new (e.Input, cache[e.Expected], e.Expected);
+            return new(e.Input, cache[e.Expected], e.Expected);
         }
     }
 
 
     public static IEnumerable<TrainingEntry<int[], Matrix, int>> ToTrainingDataMatrix(this IEnumerable<(int[] Input, int Expected)> source, int tokenCount, int contextSize, int? fillerToken)
     {
-        var cache = Enumerable.Range(0, tokenCount).Select(i =>
-        {
-            var vector = Vector.Create(tokenCount);
-            vector[i] = 1;
-            return new KeyValuePair<int, Vector>(i, vector);
-        }).ToFrozenDictionary();
+        var cache = BuildExpectedWeightCache(tokenCount);
 
         return source.Where(static e => e.Input.Length > 0).Select(MapData);
 
@@ -86,6 +81,27 @@ public static class LanguageDataHelper
             }
         }
     }
+
+    public static TrainingEntry<int[], Matrix, int> ToTrainingDataMatrix(int[] input, int expected, FrozenDictionary<int, Vector> cache, int tokenCount)
+    {
+        var expectedWeights = Matrix.Create(input.Length, tokenCount);
+
+        foreach (var i in 1..input.Length)
+        {
+            cache[input[i]].CopyTo(expectedWeights.RowRef(i - 1));
+        }
+
+        cache[expected].CopyTo(expectedWeights.RowRef(input.Length - 1));
+
+        return new(input, expectedWeights, expected);
+    }
+
+    public static FrozenDictionary<int, Vector> BuildExpectedWeightCache(int tokenCount) => Enumerable.Range(0, tokenCount).Select(i =>
+    {
+        var vector = Vector.Create(tokenCount);
+        vector[i] = 1;
+        return new KeyValuePair<int, Vector>(i, vector);
+    }).ToFrozenDictionary();
 
     public static IEnumerable<IEnumerable<int>> Tokenize(this IEnumerable<string> source, ITokenizer<string> tokenizer)
         => source.Select(tokenizer.Tokenize);
