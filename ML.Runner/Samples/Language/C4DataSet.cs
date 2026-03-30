@@ -7,7 +7,7 @@ using ML.Core.Data.Training;
 
 namespace ML.Runner.Samples.Language;
 
-public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int initalFile = 0) : ITrainingDataSource<TrainingEntry<int[], Matrix, int>>, IDisposable
+public sealed class C4DataSet(ITokenizer<string> tokenizer, int initalFile = 0) : ITrainingDataSource<TrainingEntry<int[], Matrix, int>>, IDisposable
 {
     public int BatchCount { get; } = int.MaxValue;
     public required int BatchSize { get; init; }
@@ -19,7 +19,6 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
     private C4FileReader? currentFile;
 
     private readonly ITokenizer<string> tokenizer = tokenizer;
-    private readonly int contextSize = contextSize;
     private Task<FileInfo> downloadTask = Download(initalFile);
 
 
@@ -79,6 +78,8 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int contextSize, int
         downloadTask = Download(nextFile);
         goto label;
     }
+
+    public (int, int?) GetState() => (CurrentFile, currentFile?.LinesRead);
 
     public void Dispose()
     {
