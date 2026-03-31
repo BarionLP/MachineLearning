@@ -19,7 +19,7 @@ public static class SLM4
 
     public static EmbeddedModule<int[], Matrix, int> CreateAndInitModel(Random random)
     {
-        const int EMBEDDING_SIZE = 92;
+        const int EMBEDDING_SIZE = 128;
         const int HIDDEN_SIZE = 512;
         var innerModel = new SequenceModule<Matrix>
         {
@@ -63,23 +63,25 @@ public static class SLM4
     {
         var trainingConfig = new TrainingConfig
         {
-            EpochCount = 2,
+            EpochCount = 1,
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.001f,
+                LearningRate = 0.003f,
             },
 
-            EvaluationCallbackAfterBatches = 8,
+            EvaluationCallbackAfterBatches = 1,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
             Threading = threading, // half seems to be faster than full
         };
 
-        // var model = ModuleSerializer.Read<EmbeddedModule<int[], Matrix, int>>(ModelFile);
-        var model = CreateAndInitModel(random);
+        var model = ModuleSerializer.Read<EmbeddedModule<int[], Matrix, int>>(ModelFile);
+        // var model = CreateAndInitModel(random);
 
         using var dataSet = new C4DataSource(initalFile: 0);
         // var dataSet = AssetManager.Sentences;
         var trainingSource = GetTrainingSource(dataSet, random);
+
+        dataSet.GetLines().Take(835).ForEach(s => {});
 
         var trainer = new EmbeddedModuleTrainer<int[], Matrix, int>(model, trainingConfig)
         {
@@ -89,7 +91,7 @@ public static class SLM4
 
         ((IndexUnembeddingModule)model.Output).OuputLogits = true;
         trainer.TrainConsole();
-        // Console.WriteLine(dataSet.GetState());
+        Console.WriteLine(dataSet.GetState());
 
         trainer.DataPool.Clear();
 
@@ -106,7 +108,7 @@ public static class SLM4
 
     public static SequenceTrainingDataSource<TrainingEntry> GetTrainingSource(C4DataSource dataSource, Random? random = null)
     {
-        return new(Prepare(dataSource.GetLines(), stride: 92)) { BatchSize = 512 };
+        return new(Prepare(dataSource.GetLines(), stride: 92)) { BatchSize = 256 };
     }
 
     public static IEnumerable<TrainingEntry> Prepare(IEnumerable<string> data, int stride)

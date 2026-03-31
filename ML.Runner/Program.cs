@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using ML.Runner.Samples.Language;
+using ML.Runner.Samples.Mnist;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
