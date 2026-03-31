@@ -1,13 +1,12 @@
 ﻿using System.Globalization;
 using ML.Runner.Samples.Language;
-using ML.Runner.Samples.Mnist;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 // var random = Random.Shared;
 var random = new Random(69);
 
-MnistModel.Run(random);
+SLM4.Run(ThreadingMode.Half, random);
 
 #if DEBUG
 // forces all remaining finalizers to be called to make sure all have been disposed

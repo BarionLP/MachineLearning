@@ -22,7 +22,7 @@ public static class MnistModel
         .AddLayer(10, SoftMaxActivation.Instance)
         .BuildAndInit(random);
 
-    public static void Run(Random random)
+    public static void Run(ThreadingMode threadingMode, Random random)
     {
         var trainingConfig = new TrainingConfig
         {
@@ -34,7 +34,7 @@ public static class MnistModel
 
             EvaluationCallbackAfterBatches = 16,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Half,
+            Threading = threadingMode,
         };
 
         var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);
