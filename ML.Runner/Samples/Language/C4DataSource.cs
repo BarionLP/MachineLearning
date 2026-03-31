@@ -2,40 +2,25 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Text.Json;
-using ML.Core.Data;
-using ML.Core.Data.Training;
+using System.Threading;
 
 namespace ML.Runner.Samples.Language;
 
-public sealed class C4DataSet(ITokenizer<string> tokenizer, int initalFile = 0) : ITrainingDataSource<TrainingEntry<int[], Matrix, int>>, IDisposable
+public sealed class C4DataSource : IDisposable
 {
-    public int BatchCount { get; } = int.MaxValue;
-    public required int BatchSize { get; init; }
     public int CurrentFile => nextFile - 1;
     public int CurrentLinesRead => currentFile?.LinesRead ?? 0;
-    private readonly int endToken = tokenizer.TokenizeSingle("\0");
-    private readonly FrozenDictionary<int, Vector> expectedWeights = LanguageDataHelper.BuildExpectedWeightCache(tokenizer.TokenCount);
-    private int nextFile = initalFile;
+
+    private int nextFile;
     private C4FileReader? currentFile;
+    private Task<FileInfo> downloadTask;
+    private readonly CancellationTokenSource cts = new();
 
-    private readonly ITokenizer<string> tokenizer = tokenizer;
-    private Task<FileInfo> downloadTask = Download(initalFile);
-
-
-    public IEnumerable<IEnumerable<TrainingEntry<int[], Matrix, int>>> GetBatches()
+    public C4DataSource(int initalFile = 0)
     {
-        while (true)
-        {
-            yield return GetTrainingData().Take(BatchSize);
-        }
+        nextFile = initalFile;
+        downloadTask = DownloadAsync(initalFile, cts.Token);
     }
-
-    // private IEnumerator<TrainingEntry<int[], Matrix, int>>? dataEnumerator;
-    public IEnumerable<TrainingEntry<int[], Matrix, int>> GetTrainingData()
-        => GetTokenizedLines().Select(tokens => LanguageDataHelper.ToTrainingDataMatrix(tokens, endToken, expectedWeights, tokenizer.TokenCount));
-
-    public IEnumerable<int[]> GetTokenizedLines()
-        => GetLines().TokenizeSkipInvalid(tokenizer);
 
     public IEnumerable<string> GetLines()
     {
@@ -75,35 +60,34 @@ public sealed class C4DataSet(ITokenizer<string> tokenizer, int initalFile = 0) 
         Task.WaitAll(downloadTask);
         currentFile = new C4FileReader(downloadTask.Result);
         nextFile++;
-        downloadTask = Download(nextFile);
+        downloadTask = DownloadAsync(nextFile, cts.Token);
         goto label;
     }
 
-    public (int, int?) GetState() => (CurrentFile, currentFile?.LinesRead);
+    public (int, int?) GetState() => (CurrentFile, CurrentLinesRead);
 
     public void Dispose()
     {
         currentFile?.Dispose();
+        cts.Cancel();
+        cts.Dispose();
     }
 
-    public static async Task<FileInfo> Download(int fileIndex)
+    public static async Task<FileInfo> DownloadAsync(int fileIndex, CancellationToken token)
     {
         var file = AssetManager.GetDataFile($"c4-train_noblock/{fileIndex:D5}-of-01024.json.gz");
         if (!file.Exists)
         {
             Console.WriteLine($"Downloading file {fileIndex:D5}...");
             using var client = new HttpClient();
-            using var stream = await client.GetStreamAsync($"https://huggingface.co/datasets/allenai/c4/resolve/main/en.noblocklist/c4-train.{fileIndex:D5}-of-01024.json.gz");
+            using var stream = await client.GetStreamAsync($"https://huggingface.co/datasets/allenai/c4/resolve/main/en.noblocklist/c4-train.{fileIndex:D5}-of-01024.json.gz", token);
             using var fileStream = file.Create();
-            await stream.CopyToAsync(fileStream);
+            await stream.CopyToAsync(fileStream, token);
         }
         return file;
     }
 
-    public void Reset()
-    {
-
-    }
+    public IEnumerator<string> GetEnumerator() => GetLines().GetEnumerator();
 
     private sealed class C4FileReader : IDisposable
     {

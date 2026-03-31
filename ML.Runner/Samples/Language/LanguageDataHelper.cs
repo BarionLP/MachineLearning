@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Text;
 using ML.Core.Data;
@@ -25,12 +24,16 @@ public static class LanguageDataHelper
     {
         var cache = BuildExpectedWeightCache(tokenCount);
 
-        return source.Where(static e => e.Input.Length > 0).Select(p => ToTrainingDataMatrix(p.Input, p.Expected, cache, tokenCount));
+        return source.ToTrainingDataMatrix(cache);
     }
 
-    public static TrainingEntry<int[], Matrix, int> ToTrainingDataMatrix(int[] input, int expected, FrozenDictionary<int, Vector> cache, int tokenCount)
+
+    public static IEnumerable<TrainingEntry<int[], Matrix, int>> ToTrainingDataMatrix(this IEnumerable<(int[] Input, int Expected)> source, FrozenDictionary<int, Vector> cache)
+        => source.Where(static e => e.Input.Length > 0).Select(p => ToTrainingDataMatrix(p.Input, p.Expected, cache));
+
+    public static TrainingEntry<int[], Matrix, int> ToTrainingDataMatrix(int[] input, int expected, FrozenDictionary<int, Vector> cache)
     {
-        var expectedWeights = Matrix.Create(input.Length, tokenCount);
+        var expectedWeights = Matrix.Create(input.Length, cache.Count);
 
         foreach (var i in 1..input.Length)
         {
@@ -96,26 +99,50 @@ public static class LanguageDataHelper
         }
     }
 
-    public static IEnumerable<(int[] Input, int Expected)> SlidingWindow(this IEnumerable<IEnumerable<int>> data, int? endToken, int contextSize)
-        => data.Select(Enumerable.ToArray).SlidingWindow(endToken, contextSize);
-    public static IEnumerable<(int[] Input, int Expected)> SlidingWindow(this IEnumerable<int[]> data, int? endToken, int contextSize)
-        => data.SelectMany(d => d.SlidingWindow(endToken, contextSize));
-    public static IEnumerable<(int[] Input, int Expected)> SlidingWindow(this int[] data, int? endToken, int contextSize)
+    public static IEnumerable<(int[] Input, int Expected)> SlidingWindow(this IEnumerable<IEnumerable<int>> data, int? endToken, int contextSize, int stride = 1)
+        => data.Select(Enumerable.ToArray).SlidingWindow(endToken, contextSize, stride);
+    public static IEnumerable<(int[] Input, int Expected)> SlidingWindow(this IEnumerable<int[]> data, int? endToken, int contextSize, int stride = 1)
+        => data.SelectMany(d => d.SlidingWindow(endToken, contextSize, stride));
+    public static IEnumerable<(T[] Input, T Expected)> SlidingWindow<T>(this T[] data, T? endToken, int contextSize, int stride = 1)
+        where T : struct
     {
-        var start = 0;
-        for (var i = 0; i < data.Length; i++)
+        var useEndToken = endToken.HasValue && !EqualityComparer<T>.Default.Equals(data[^1], endToken.Value);
+
+        int lastIndexCovered = -1;
+
+        for (var i = 0; i < data.Length; i += stride)
         {
+            var start = Math.Max(0, i - contextSize);
+            lastIndexCovered = i;
             yield return (data[start..i], data[i]);
-            if (i - start >= contextSize)
-            {
-                start++;
-            }
         }
 
-        if (endToken.HasValue && data[^1] != endToken.Value)
+
+        if (useEndToken)
         {
-            yield return (data[^Math.Min(contextSize, data.Length)..], endToken.Value);
+            yield return (data[^Math.Min(data.Length, contextSize)..], endToken!.Value);
         }
+        else if (lastIndexCovered != data.Length - 1)
+        {
+            yield return (data[^Math.Min(data.Length - 1, contextSize)..^1], data[^1]);
+        }
+    }
+
+    public static string[] GetLinesPrintStatsToConsole(FileInfo fileInfo)
+    {
+        Console.WriteLine("Analyzing Trainings Data...");
+        var lines = GetLines(fileInfo).ToArray();
+        Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} chars");
+        var tokensUsedBySource = new string([.. lines.SelectMany(s => s).Distinct().Order()]);
+        Console.WriteLine($"Source uses '{tokensUsedBySource}'");
+
+        Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
+
+        // var words = lines.SelectMany(l => l.Split([' ', '.', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        // var usages = words.CountBy(w => w).OrderByDescending(g => g.Value).Select(g => $"{g.Key}: {g.Value}");
+        // Console.WriteLine(string.Join('\n', usages.Take(50)));
+
+        return lines;
     }
 
     public static IEnumerable<string> GetLines(FileInfo fileInfo) => GetLines(fileInfo.FullName);

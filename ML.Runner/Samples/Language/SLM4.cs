@@ -5,6 +5,7 @@ using ML.Core.Evaluation.Cost;
 using ML.Core.Modules;
 using ML.Core.Modules.Activations;
 using ML.Core.Training;
+using TrainingEntry = ML.Core.Data.Training.TrainingEntry<int[], Ametrin.Numerics.Matrix, int>;
 
 namespace ML.Runner.Samples.Language;
 
@@ -19,20 +20,21 @@ public static class SLM4
     public static EmbeddedModule<int[], Matrix, int> CreateAndInitModel(Random random)
     {
         const int EMBEDDING_SIZE = 92;
+        const int HIDDEN_SIZE = 512;
         var innerModel = new SequenceModule<Matrix>
         {
             Inner = [
-                new LinearMatrixModule(EMBEDDING_SIZE, EMBEDDING_SIZE),
+                new LinearMatrixModule(EMBEDDING_SIZE, HIDDEN_SIZE),
                 LeakyReLUActivation.Instance,
-                new LinearMatrixModule(EMBEDDING_SIZE, EMBEDDING_SIZE),
+                new LinearMatrixModule(HIDDEN_SIZE, HIDDEN_SIZE),
                 LeakyReLUActivation.Instance,
-                new LinearMatrixModule(EMBEDDING_SIZE, EMBEDDING_SIZE),
+                new LinearMatrixModule(HIDDEN_SIZE, HIDDEN_SIZE),
                 LeakyReLUActivation.Instance,
-                new LinearMatrixModule(EMBEDDING_SIZE, EMBEDDING_SIZE),
+                new LinearMatrixModule(HIDDEN_SIZE, HIDDEN_SIZE),
                 LeakyReLUActivation.Instance,
-                new LinearMatrixModule(EMBEDDING_SIZE, EMBEDDING_SIZE),
+                new LinearMatrixModule(HIDDEN_SIZE, HIDDEN_SIZE),
                 LeakyReLUActivation.Instance,
-                new LinearMatrixModule(EMBEDDING_SIZE, EMBEDDING_SIZE),
+                new LinearMatrixModule(HIDDEN_SIZE, EMBEDDING_SIZE),
                 LeakyReLUActivation.Instance,
             ],
         };
@@ -57,28 +59,28 @@ public static class SLM4
         };
     }
 
-    public static void Run(Random random)
+    public static void Run(ThreadingMode threading, Random random)
     {
         var trainingConfig = new TrainingConfig
         {
-            EpochCount = 1,
+            EpochCount = 2,
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.0002f,
+                LearningRate = 0.001f,
             },
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Full, // half seems to be faster than full
+            Threading = threading, // half seems to be faster than full
         };
 
-        var model = ModuleSerializer.Read<EmbeddedModule<int[], Matrix, int>>(ModelFile);
-        // var model = CreateAndInitModel(random);
+        // var model = ModuleSerializer.Read<EmbeddedModule<int[], Matrix, int>>(ModelFile);
+        var model = CreateAndInitModel(random);
 
-        // var trainingSource = GetTrainingSource(random);
-        using var trainingSource = GetC4DataSet();
+        using var dataSet = new C4DataSource(initalFile: 0);
+        // var dataSet = AssetManager.Sentences;
+        var trainingSource = GetTrainingSource(dataSet, random);
 
-        // IndexUnembeddingModule always output logits (for now)
         var trainer = new EmbeddedModuleTrainer<int[], Matrix, int>(model, trainingConfig)
         {
             CostFunction = CrossEntropyCostFromLogits.Instance,
@@ -87,42 +89,30 @@ public static class SLM4
 
         ((IndexUnembeddingModule)model.Output).OuputLogits = true;
         trainer.TrainConsole();
-        Console.WriteLine(trainingSource.GetState());
-
-        trainingSource.ToString();
+        // Console.WriteLine(dataSet.GetState());
 
         trainer.DataPool.Clear();
 
-        ModuleSerializer.Write(model, ModelFile);
+        // ModuleSerializer.Write(model, ModelFile);
 
         ((IndexUnembeddingModule)model.Output).OuputLogits = false;
         LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
     }
 
-    public static TrainingDataSource<TrainingEntry<int[], Matrix, int>> GetTrainingSource(Random random)
+    public static MemoryTrainingDataSource<TrainingEntry> GetTrainingSource(FileInfo fileInfo, Random random)
     {
-        Console.WriteLine("Analyzing Trainings Data...");
-        var lines = LanguageDataHelper.GetLines(AssetManager.Sentences).ToArray();
-        Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} chars");
-        var tokensUsedBySource = new string([.. lines.SelectMany(s => s).Distinct().Order()]);
-        Console.WriteLine($"Source uses '{tokensUsedBySource}'");
-
-        Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
-
-        // var words = lines.SelectMany(l => l.Split([' ', '.', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-        // var usages = words.CountBy(w => w).OrderByDescending(g => g.Value).Select(g => $"{g.Key}: {g.Value}");
-        // Console.WriteLine(string.Join('\n', usages.Take(50)));
-        var endToken = Tokenizer.TokenizeSingle("\0");
-
-        return new(lines.Tokenize(Tokenizer).Select(input => (input.ToArray(), endToken)).ToTrainingDataMatrix(Tokenizer.TokenCount))
-        {
-            BatchCount = 256,
-            Random = random ?? Random.Shared,
-        };
+        return new(Prepare(LanguageDataHelper.GetLinesPrintStatsToConsole(fileInfo), stride: 8)) { BatchCount = 64, Random = random };
     }
 
-    public static C4DataSet GetC4DataSet()
+    public static SequenceTrainingDataSource<TrainingEntry> GetTrainingSource(C4DataSource dataSource, Random? random = null)
     {
-        return new(Tokenizer, initalFile: 0) { BatchSize = 512 };
+        return new(Prepare(dataSource.GetLines(), stride: 92)) { BatchSize = 512 };
+    }
+
+    public static IEnumerable<TrainingEntry> Prepare(IEnumerable<string> data, int stride)
+    {
+        return data.TokenizeSkipInvalid(Tokenizer)
+            .SlidingWindow(Tokenizer.TokenizeSingle("\0"), CONTEXT_SIZE, stride)
+            .ToTrainingDataMatrix(Tokenizer.TokenCount);
     }
 }

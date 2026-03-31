@@ -7,6 +7,7 @@ using ML.Core.Modules;
 using ML.Core.Modules.Activations;
 using ML.Core.Modules.Builder;
 using ML.Core.Training;
+using TrainingEntry = ML.Core.Data.Training.TrainingEntry<int[], Ametrin.Numerics.Vector, int>;
 
 namespace ML.Runner.Samples.Language;
 
@@ -41,25 +42,25 @@ public static class SLM3
         };
     }
 
-    public static void Run(Random random)
+    public static void Run(ThreadingMode threading, Random random)
     {
         var trainingConfig = new TrainingConfig
         {
             EpochCount = 1,
             Optimizer = new AdamOptimizer
             {
-                LearningRate = 0.0003f,
+                LearningRate = 0.001f,
             },
 
             EvaluationCallbackAfterBatches = 8,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
-            Threading = ThreadingMode.Half, // half seems to be faster than full
+            Threading = threading,
         };
 
         var model = ModuleSerializer.Read<EmbeddedModule<int[], Vector, int>>(ModelFile);
         // var model = CreateAndInitModel(random);
 
-        var trainingSource = GetTrainingSource(random);
+        var trainingSource = GetTrainingSource(AssetManager.Sentences, random);
 
         // remove the last activation to output logits instead of probabilities
         // so we can use the optimized version of CrossEntropyCost
@@ -85,26 +86,21 @@ public static class SLM3
         LMHelper.StartChat(model, CONTEXT_SIZE, Tokenizer);
     }
 
-    public static TrainingDataSource<TrainingEntry<int[], Vector, int>> GetTrainingSource(Random random)
+    public static MemoryTrainingDataSource<TrainingEntry> GetTrainingSource(FileInfo fileInfo, Random random)
     {
-        Console.WriteLine("Analyzing Trainings Data...");
-        var lines = LanguageDataHelper.GetLines(AssetManager.Sentences).ToArray();
-        Console.WriteLine($"Longest sentence {lines.Max(s => s.Length)} chars");
-        var tokensUsedBySource = new string([.. lines.SelectMany(s => s).Distinct().Order()]);
-        Console.WriteLine($"Source uses '{tokensUsedBySource}'");
+        return new(Prepare(LanguageDataHelper.GetLinesPrintStatsToConsole(fileInfo))) { BatchCount = 256, Random = random };
+    }
 
-        Console.WriteLine(lines.SelectDuplicates().Dump('\n'));
+    public static SequenceTrainingDataSource<TrainingEntry> GetTrainingSource(C4DataSource dataSource, Random? random = null)
+    {
+        return new(Prepare(dataSource.GetLines())) { BatchSize = 512 };
+    }
 
-        // var words = lines.SelectMany(l => l.Split([' ', '.', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-        // var usages = words.CountBy(w => w).OrderByDescending(g => g.Value).Select(g => $"{g.Key}: {g.Value}");
-        // Console.WriteLine(string.Join('\n', usages.Take(50)));
-        var endToken = Tokenizer.TokenizeSingle("\0");
-
-        return new(lines.Tokenize(Tokenizer).ExpandPerToken(endToken, CONTEXT_SIZE).ToTrainingData(Tokenizer.TokenCount))
-        {
-            BatchCount = 256,
-            Random = random ?? Random.Shared,
-        };
+    public static IEnumerable<TrainingEntry> Prepare(IEnumerable<string> data)
+    {
+        return data.TokenizeSkipInvalid(Tokenizer)
+            .ExpandPerToken(Tokenizer.TokenizeSingle("\0"), CONTEXT_SIZE)
+            .ToTrainingData(Tokenizer.TokenCount);
     }
 }
 
