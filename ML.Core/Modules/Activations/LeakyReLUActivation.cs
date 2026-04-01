@@ -8,21 +8,17 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
     public static LeakyReLUActivation Instance => field ??= new();
 
     public Weight Alpha { get; } = alpha;
-    private readonly LeakyReLUOperation forwardOp = new(alpha);
-    private readonly LeakyReLUDerivativeOperation derivativeOp = new(alpha);
 
     public Vector Forward(Vector input, Snapshot snapshot)
     {
         snapshot.Input = input;
-        snapshot.Input.MapTo(forwardOp, snapshot.Output);
+        SpanOperations.MapTo<LeakyReLUOp, Weight>(Alpha, snapshot.Input.AsSpan(), snapshot.Output.AsSpan());
         return snapshot.Output;
     }
 
     public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients)
     {
-        snapshot.Input.MapTo(derivativeOp, snapshot.InputGradient);
-        snapshot.InputGradient.PointwiseMultiplyToSelf(outputGradient);
-        NumericsDebug.AssertValidNumbers(snapshot.InputGradient);
+        SpanOperations.MapTo<LeakyReLUGradientOp, Weight>(Alpha, snapshot.Input.AsSpan(), outputGradient.AsSpan(), snapshot.InputGradient.AsSpan());
         return snapshot.InputGradient;
     }
 
@@ -44,8 +40,8 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
         public Vector Output => outputHandle.Vector;
         public Vector InputGradient => inputGradientHandle.Vector;
 
-        private DynamicVector outputHandle = new();
-        private DynamicVector inputGradientHandle = new();
+        private readonly DynamicVector outputHandle = new();
+        private readonly DynamicVector inputGradientHandle = new();
 
         internal Snapshot(LeakyReLUActivation _) : this() { }
 
@@ -56,27 +52,20 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
         }
     }
 
-    public readonly struct LeakyReLUOperation(Weight alpha) : IUnaryOperator<LeakyReLUOperation>
+    private readonly ref struct LeakyReLUOp : IUnaryOperator<Weight>
     {
-        private readonly Weight alpha = alpha;
-        // constructing an alpha vector once and reusing seems to be slower
-
-        public static Weight Invoke(in LeakyReLUOperation info, Weight input) => input > 0 ? input : info.alpha * input;
-        public static SimdVector Invoke(in LeakyReLUOperation info, SimdVector input)
-            => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), input, input * info.alpha);
+        public static Weight Invoke(in Weight alpha, Weight input) => input > 0 ? input : alpha * input;
+        public static SimdVector Invoke(in Weight alpha, SimdVector input)
+            => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), input, input * alpha);
     }
 
-    private readonly struct LeakyReLUDerivativeOperation(Weight alpha) : IUnaryOperator<LeakyReLUDerivativeOperation>
+    private readonly ref struct LeakyReLUGradientOp : IBinaryOperator<Weight>
     {
-        private readonly Weight alpha = alpha;
-        // constructing an alpha vector once and reusing seems to be slower
-
-        public static Weight Invoke(in LeakyReLUDerivativeOperation info, Weight input) => input > 0 ? 1 : info.alpha;
-        public static SimdVector Invoke(in LeakyReLUDerivativeOperation info, SimdVector input)
-            => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), SimdVector.One, SimdVectorHelper.Create(info.alpha));
+        public static Weight Invoke(in Weight alpha, Weight input, Weight gradient) => input > 0 ? gradient : gradient * alpha;
+        public static SimdVector Invoke(in Weight alpha, SimdVector input, SimdVector gradient)
+            => SimdVectorHelper.ConditionalSelect(SimdVectorHelper.GreaterThan(input, SimdVector.Zero), gradient, gradient * alpha);
     }
 
     IModuleSnapshot IModule.CreateSnapshot() => CreateSnapshot();
     IModuleGradients IModule.CreateGradients() => CreateGradients();
-
 }
