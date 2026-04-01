@@ -9,7 +9,7 @@ using ML.Core.Data.Training;
 namespace ML.Core.Training;
 
 public sealed class EmbeddedModuleTrainer<TIn, TArch, TOut>
-    where TArch : ITensorLike<TArch>
+    where TArch : struct, ITensorLike<TArch>
 {
     public EmbeddedModule<TIn, TArch, TOut> Module { get; }
     public TrainingConfig Config { get; }

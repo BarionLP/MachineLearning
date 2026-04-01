@@ -69,7 +69,7 @@ public static class SLM4
                 LearningRate = 0.003f,
             },
 
-            EvaluationCallbackAfterBatches = 1,
+            EvaluationCallbackAfterBatches = 6,
             EvaluationCallback = evaluation => Console.WriteLine(evaluation),
             Threading = threading, // half seems to be faster than full
         };

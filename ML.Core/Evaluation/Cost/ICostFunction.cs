@@ -1,7 +1,7 @@
 namespace ML.Core.Evaluation.Cost;
 
 public interface ICostFunction<TArch>
-    where TArch : ITensorLike<TArch>
+    where TArch : struct, ITensorLike<TArch>
 {
     public Weight TotalCost(TArch output, TArch expected);
     public void DerivativeTo(TArch output, TArch expected, TArch destination);
