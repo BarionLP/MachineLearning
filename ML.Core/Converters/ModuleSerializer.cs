@@ -33,6 +33,7 @@ public static class ModuleSerializer
         writer.WriteUInt32Property("$version", FORMAT_VERSION);
 
         AmetrinSerializer.WriteDynamic(writer, module);
+        Console.WriteLine($"Module saved to {file}");
     }
 
     public static T Read<T>(FileInfo file)
@@ -45,6 +46,7 @@ public static class ModuleSerializer
         var version = reader.ReadUInt32Property("$version");
         if (version is not FORMAT_VERSION) throw new InvalidOperationException();
 
+        Console.WriteLine($"Module loaded from {file}");
         return AmetrinSerializer.TryReadDynamic<T>(reader).Or(e => e.Throw<T>());
     }
 }

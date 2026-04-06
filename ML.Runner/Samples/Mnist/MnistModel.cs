@@ -17,8 +17,8 @@ public static class MnistModel
     public static FileInfo ModelFile { get; } = AssetManager.GetModelFile("mnist");
 
     public static SequenceModule<Vector> CreateAndInitModel(Random random) => MultiLayerPerceptronBuilder.Create(784)
-        .AddLayer(256, LeakyReLUActivation.Instance)
-        .AddLayer(128, LeakyReLUActivation.Instance)
+        .AddLayer(256, GeLUActivation.Instance)
+        .AddLayer(128, GeLUActivation.Instance)
         .AddLayer(10, SoftMaxActivation.Instance)
         .BuildAndInit(random);
 

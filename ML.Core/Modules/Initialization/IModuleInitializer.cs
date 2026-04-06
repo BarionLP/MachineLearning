@@ -29,7 +29,7 @@ public static class InitializationHelper
         // TanhActivation => 5 / 3,
         // ReLUActivation => Weight.Sqrt(2f),
         LeakyReLUActivation l => Weight.Sqrt(2 / (1 + l.Alpha * l.Alpha)),
-        // Nonlinearity.GELU => Weight.Sqrt(2.0),   // common approx
+        GeLUActivation => Weight.Sqrt(2),   // common approximation
         // Nonlinearity.Swish => Weight.Sqrt(2.0),  // reasonable default
         _ => throw new NotImplementedException(),
     };
