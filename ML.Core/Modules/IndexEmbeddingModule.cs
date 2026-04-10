@@ -64,19 +64,13 @@ public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInpu
             set
             {
                 field = value;
-                OutputStorage.SetCount(field.Length * module.EmbeddingSize);
-                Output = Matrix.Of(field.Length, module.EmbeddingSize, OutputStorage.Vector);
+                OutputStorage.SetCount(field.Length, module.EmbeddingSize);
             }
         } = [];
 
-        public Matrix Output { get; private set; }
+        public Matrix Output => OutputStorage.Tensor;
 
-        private readonly DynamicVector OutputStorage = new();
-
-        private void OnDispose()
-        {
-            Output = Matrix.Empty;
-        }
+        private readonly Dynamic<Matrix> OutputStorage = new();
     }
 
     partial class Gradients

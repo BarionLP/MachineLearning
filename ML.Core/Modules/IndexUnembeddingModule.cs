@@ -34,7 +34,7 @@ public sealed partial class IndexUnembeddingModule(IndexOutputModule output, Mat
                 snapshot.Unembedded.RowRef(rowIndex).SoftMaxToSelf();
             }
         }
-        
+
         var (index, confidence, _) = Output.Forward(snapshot.Unembedded.RowRef(^1), snapshot.Output);
         return (index, confidence, snapshot.Unembedded);
     }
@@ -61,24 +61,16 @@ public sealed partial class IndexUnembeddingModule(IndexOutputModule output, Mat
             set
             {
                 field = value;
-                UnembeddedStorage.SetCount(field.RowCount * module.TokenCount);
-                Unembedded = Matrix.Of(field.RowCount, module.TokenCount, UnembeddedStorage.Vector);
-                
-                InputGradientStorage.SetCount(field.FlatCount);
-                InputGradient = Matrix.OfSize(field, InputGradientStorage.Vector);
+
+                UnembeddedStorage.SetCount(field.RowCount, module.TokenCount);
+                InputGradientStorage.OfSize(field);
             }
         }
-        public Matrix Unembedded { get; private set; }
-        public Matrix InputGradient { get; private set; }
+        public Matrix Unembedded => UnembeddedStorage.Tensor;
+        public Matrix InputGradient => InputGradientStorage.Tensor;
 
-        private readonly DynamicVector UnembeddedStorage = new();
-        private readonly DynamicVector InputGradientStorage = new();
-    
-        private void OnDispose()
-        {
-            Unembedded = Matrix.Empty;
-            InputGradient = Matrix.Empty;
-        }
+        private readonly Dynamic<Matrix> UnembeddedStorage = new();
+        private readonly Dynamic<Matrix> InputGradientStorage = new();
     }
 
     [GeneratedAdam(typeof(IndexUnembeddingModule))]

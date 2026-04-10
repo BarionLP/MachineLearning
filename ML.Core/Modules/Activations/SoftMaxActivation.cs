@@ -34,11 +34,11 @@ public sealed partial class SoftMaxActivation : IActivationModule<Vector, SoftMa
                 inputGradientHandle.SetCount(field.Count);
             }
         }
-        public Vector Output => outputHandle.Vector;
-        public Vector InputGradient => inputGradientHandle.Vector;
+        public Vector Output => outputHandle.Tensor;
+        public Vector InputGradient => inputGradientHandle.Tensor;
 
-        private DynamicVector outputHandle = new();
-        private DynamicVector inputGradientHandle = new();
+        private Dynamic<Vector> outputHandle = new();
+        private Dynamic<Vector> inputGradientHandle = new();
 
         internal Snapshot(SoftMaxActivation _) : this() { }
 

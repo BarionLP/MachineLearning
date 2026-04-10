@@ -35,11 +35,11 @@ public sealed partial class GeLUActivation : IActivationModule<Vector, GeLUActiv
                 inputGradientHandle.SetCount(field.Count);
             }
         }
-        public Vector Output => outputHandle.Vector;
-        public Vector InputGradient => inputGradientHandle.Vector;
+        public Vector Output => outputHandle.Tensor;
+        public Vector InputGradient => inputGradientHandle.Tensor;
 
-        private readonly DynamicVector outputHandle = new();
-        private readonly DynamicVector inputGradientHandle = new();
+        private readonly Dynamic<Vector> outputHandle = new();
+        private readonly Dynamic<Vector> inputGradientHandle = new();
 
         internal Snapshot(GeLUActivation _) : this() { }
 

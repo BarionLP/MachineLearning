@@ -49,31 +49,19 @@ public sealed partial class LinearMatrixModule(Matrix weights, Vector biases) : 
             {
                 field = value;
 
-                WeightedStorage.SetCount(field.RowCount * module.OutputColumnCount);
-                Weighted = Matrix.Of(field.RowCount, module.OutputColumnCount, WeightedStorage.Vector);
-
-                BiasedStorage.SetCount(field.RowCount * module.OutputColumnCount);
-                Biased = Matrix.Of(field.RowCount, module.OutputColumnCount, BiasedStorage.Vector);
-
-                InputGradientStorage.SetCount(field.FlatCount);
-                InputGradient = Matrix.OfSize(field, InputGradientStorage.Vector);
+                WeightedStorage.SetCount(field.RowCount, module.OutputColumnCount);
+                BiasedStorage.SetCount(field.RowCount, module.OutputColumnCount);
+                InputGradientStorage.OfSize(field);
             }
         }
 
-        public Matrix Weighted { get; private set; }
-        public Matrix Biased { get; private set; }
-        public Matrix InputGradient { get; private set; }
+        public Matrix Weighted => WeightedStorage.Tensor;
+        public Matrix Biased => BiasedStorage.Tensor;
+        public Matrix InputGradient => InputGradientStorage.Tensor;
 
-        private readonly DynamicVector WeightedStorage = new();
-        private readonly DynamicVector BiasedStorage = new();
-        private readonly DynamicVector InputGradientStorage = new();
-
-        private void OnDispose()
-        {
-            Weighted = Matrix.Empty;
-            Biased = Matrix.Empty;
-            InputGradient = Matrix.Empty;
-        }
+        private readonly Dynamic<Matrix> WeightedStorage = new();
+        private readonly Dynamic<Matrix> BiasedStorage = new();
+        private readonly Dynamic<Matrix> InputGradientStorage = new();
     }
 
     [GeneratedAdam(typeof(LinearMatrixModule))]
