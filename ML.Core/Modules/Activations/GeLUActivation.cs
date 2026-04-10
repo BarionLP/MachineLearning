@@ -6,48 +6,21 @@ namespace ML.Core.Modules.Activations;
 /// Gaussian Error Linear Unit
 /// </summary>
 [GeneratedModule(IncludeSerializer: true)]
-public sealed partial class GeLUActivation : IActivationModule<Vector, GeLUActivation.Snapshot>
+public sealed partial class GeLUActivation : IActivationModule<Vector, SimpleModuleSnapshot>
 {
     public static GeLUActivation Instance => field ??= new();
 
-    public Vector Forward(Vector input, Snapshot snapshot)
+    public Vector Forward(Vector input, SimpleModuleSnapshot snapshot)
     {
         snapshot.Input = input;
         SpanOperations.MapTo<GeLUOp, Empty>(default, input.AsSpan(), snapshot.Output.AsSpan());
         return snapshot.Output;
     }
 
-    public Vector Backward(Vector outputGradient, Snapshot snapshot, EmptyModuleData gradients)
+    public Vector Backward(Vector outputGradient, SimpleModuleSnapshot snapshot, EmptyModuleData gradients)
     {
         SpanOperations.MapTo<GeLUGradientOp, Empty>(default, snapshot.Input.AsSpan(), outputGradient.AsSpan(), snapshot.InputGradient.AsSpan());
         return snapshot.InputGradient;
-    }
-
-    public sealed class Snapshot() : IModuleSnapshot
-    {
-        public Vector Input
-        {
-            get;
-            set
-            {
-                field = value;
-                outputHandle.SetSize(field);
-                inputGradientHandle.SetSize(field);
-            }
-        }
-        public Vector Output => outputHandle.Tensor;
-        public Vector InputGradient => inputGradientHandle.Tensor;
-
-        private readonly Dynamic<Vector> outputHandle = new();
-        private readonly Dynamic<Vector> inputGradientHandle = new();
-
-        internal Snapshot(GeLUActivation _) : this() { }
-
-        public void Dispose()
-        {
-            outputHandle.Dispose();
-            inputGradientHandle.Dispose();
-        }
     }
 
     private const Weight Coeff = (Weight)0.7978845608028654; // Weight.Sqrt(2 / Weight.Pi);

@@ -51,3 +51,30 @@ public sealed class EmptyModuleData() : IModuleGradients<EmptyModuleData>, IModu
     public void Reset() { }
     public void Dispose() { }
 }
+
+public sealed class SimpleModuleSnapshot() : IModuleSnapshot
+{
+    public Vector Input
+    {
+        get;
+        set
+        {
+            field = value;
+            outputHandle.SetSize(field);
+            inputGradientHandle.SetSize(field);
+        }
+    }
+    public Vector Output => outputHandle;
+    public Vector InputGradient => inputGradientHandle;
+
+    private readonly Dynamic<Vector> outputHandle = new();
+    private readonly Dynamic<Vector> inputGradientHandle = new();
+
+    internal SimpleModuleSnapshot(IModule _) : this() { }
+
+    public void Dispose()
+    {
+        outputHandle.Dispose();
+        inputGradientHandle.Dispose();
+    }
+}

@@ -28,6 +28,7 @@ public class Benchmarks
     private IHiddenModule<Vector> module = default!;
     private IModuleSnapshot snapshot = default!;
     private IModuleGradients gradients = default!;
+    private InputNode<Vector> inputNode = default!;
     private IOperationNode<Vector> node = default!;
 
     [GlobalSetup]
@@ -50,19 +51,20 @@ public class Benchmarks
         snapshot = module.CreateSnapshot();
         gradients = module.CreateGradients();
 
-        node = new UnaryOperation<LeakyReLUOperation, float, Vector>
+        inputNode = new InputNode<Vector>();
+        node = new UnaryOperationNode<LeakyReLUOperation, float, Vector>
         {
             State = 0.01f,
-            Source = new BinaryOperation<AddTensorsOperator<Vector>, Ametrin.Numerics.Operations.Empty, Vector, Vector, Vector>
+            Source = new BinaryOperationNode<AddTensorsOperator<Vector>, Ametrin.Numerics.Operations.Empty, Vector, Vector, Vector>
             {
                 State = default,
-                LeftSource = new BinaryOperation<MatrixVectorMultiplyOperation, Ametrin.Numerics.Operations.Empty, Matrix, Vector, Vector>
+                LeftSource = new BinaryOperationNode<MatrixVectorMultiplyOperation, Ametrin.Numerics.Operations.Empty, Matrix, Vector, Vector>
                 {
                     State = default,
-                    LeftSource = new WeightsSource<Matrix> { Tensor = weights },
-                    RightSource = new WeightsSource<Vector> { Tensor = input }
+                    LeftSource = new LearnableWeightsNode<Matrix>(weights),
+                    RightSource = inputNode,
                 },
-                RightSource = new WeightsSource<Vector> { Tensor = biases },
+                RightSource = new LearnableWeightsNode<Vector>(biases),
             },
         };
     }
@@ -78,6 +80,7 @@ public class Benchmarks
     [Benchmark]
     public Vector Node()
     {
+        inputNode.Set(input);
         var output = node.Evaluate();
         node.Backward(output);
         return output;
