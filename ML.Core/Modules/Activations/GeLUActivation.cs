@@ -31,8 +31,8 @@ public sealed partial class GeLUActivation : IActivationModule<Vector, GeLUActiv
             set
             {
                 field = value;
-                outputHandle.SetCount(field.Count);
-                inputGradientHandle.SetCount(field.Count);
+                outputHandle.SetSize(field);
+                inputGradientHandle.SetSize(field);
             }
         }
         public Vector Output => outputHandle.Tensor;

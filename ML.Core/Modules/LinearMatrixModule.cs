@@ -49,9 +49,9 @@ public sealed partial class LinearMatrixModule(Matrix weights, Vector biases) : 
             {
                 field = value;
 
-                WeightedStorage.SetCount(field.RowCount, module.OutputColumnCount);
-                BiasedStorage.SetCount(field.RowCount, module.OutputColumnCount);
-                InputGradientStorage.OfSize(field);
+                WeightedStorage.SetSize(field.RowCount, module.OutputColumnCount);
+                BiasedStorage.SetSize(field.RowCount, module.OutputColumnCount);
+                InputGradientStorage.SetSize(field);
             }
         }
 

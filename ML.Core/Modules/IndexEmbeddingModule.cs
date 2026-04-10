@@ -64,7 +64,7 @@ public sealed partial class IndexEmbeddingModule(Matrix embeddingMatrix) : IInpu
             set
             {
                 field = value;
-                OutputStorage.SetCount(field.Length, module.EmbeddingSize);
+                OutputStorage.SetSize(field.Length, module.EmbeddingSize);
             }
         } = [];
 

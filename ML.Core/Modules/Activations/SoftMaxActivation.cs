@@ -30,8 +30,8 @@ public sealed partial class SoftMaxActivation : IActivationModule<Vector, SoftMa
             set
             {
                 field = value;
-                outputHandle.SetCount(field.Count);
-                inputGradientHandle.SetCount(field.Count);
+                outputHandle.SetSize(field);
+                inputGradientHandle.SetSize(field);
             }
         }
         public Vector Output => outputHandle.Tensor;

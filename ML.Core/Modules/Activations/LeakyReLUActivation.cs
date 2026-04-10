@@ -33,8 +33,8 @@ public sealed partial class LeakyReLUActivation(Weight alpha = 0.01f) : IActivat
             set
             {
                 field = value;
-                outputHandle.SetCount(field.Count);
-                inputGradientHandle.SetCount(field.Count);
+                outputHandle.SetSize(field);
+                inputGradientHandle.SetSize(field);
             }
         }
         public Vector Output => outputHandle.Tensor;

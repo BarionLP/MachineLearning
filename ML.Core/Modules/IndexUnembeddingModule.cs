@@ -62,8 +62,8 @@ public sealed partial class IndexUnembeddingModule(IndexOutputModule output, Mat
             {
                 field = value;
 
-                UnembeddedStorage.SetCount(field.RowCount, module.TokenCount);
-                InputGradientStorage.OfSize(field);
+                UnembeddedStorage.SetSize(field.RowCount, module.TokenCount);
+                InputGradientStorage.SetSize(field);
             }
         }
         public Matrix Unembedded => UnembeddedStorage.Tensor;
