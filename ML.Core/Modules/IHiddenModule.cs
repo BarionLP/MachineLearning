@@ -8,5 +8,5 @@ public interface IHiddenModule<TArch, TSnapshot, TGradients> : IHiddenModule<TAr
 {
     public TArch Forward(TArch input, TSnapshot snapshot);
     TArch IInputModule<TArch, TArch>.Forward(TArch input, IModuleSnapshot snapshot)
-        => Forward(input, Guard.Is<TSnapshot>(snapshot));
+        => Forward(input, ThrowIf.Not<TSnapshot>(snapshot));
 }

@@ -19,7 +19,7 @@ public interface IModule<TArch, TSnapshot, TGradients> : IModule<TArch>
 {
     public TArch Backward(TArch outputGradient, TSnapshot snapshot, TGradients gradients);
     TArch IModule<TArch>.Backward(TArch outputGradient, IModuleSnapshot snapshot, IModuleGradients gradients)
-        => Backward(outputGradient, Guard.Is<TSnapshot>(snapshot), Guard.Is<TGradients>(gradients));
+        => Backward(outputGradient, ThrowIf.Not<TSnapshot>(snapshot), ThrowIf.Not<TGradients>(gradients));
 
     public new TSnapshot CreateSnapshot();
     public new TGradients CreateGradients();
@@ -39,7 +39,7 @@ public interface IModuleGradients
 public interface IModuleGradients<TSelf> : IModuleGradients where TSelf : IModuleGradients
 {
     public void Add(TSelf other);
-    void IModuleGradients.Add(IModuleGradients other) => Add(Guard.Is<TSelf>(other));
+    void IModuleGradients.Add(IModuleGradients other) => Add(ThrowIf.Not<TSelf>(other));
 }
 
 public sealed class EmptyModuleData() : IModuleGradients<EmptyModuleData>, IModuleSnapshot

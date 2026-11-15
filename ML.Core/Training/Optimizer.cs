@@ -26,7 +26,7 @@ public class ModuleOptimizerRegistry : Dictionary<Type, Func<Optimizer, IModule,
 public sealed class ModuleOptimizerRegistry<TOptimizer> : ModuleOptimizerRegistry
 {
     public void Register<TModule>(Func<TOptimizer, TModule, IModuleOptimizer> factory) where TModule : IModule
-        => Add(typeof(TModule), (op, layer) => factory(Guard.Is<TOptimizer>(op), Guard.Is<TModule>(layer)));
+        => Add(typeof(TModule), (op, layer) => factory(ThrowIf.Not<TOptimizer>(op), ThrowIf.Not<TModule>(layer)));
 
     public void RegisterEmpty<TModule>() where TModule : IModule
         => Add(typeof(TModule), static (_, _) => EmptyModuleOptimizer.Instance);

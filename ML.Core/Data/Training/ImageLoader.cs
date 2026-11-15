@@ -1,6 +1,5 @@
 using System.IO;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using StbImageSharp;
 
 namespace ML.Core.Data.Training;
 
@@ -9,16 +8,13 @@ public static class ImageLoader
     public static double[] LoadGrayScale(FileInfo file)
     {
         using var stream = file.OpenRead();
-        using var image = Image.Load<L16>(stream);
-        
-        var grayscaleValues = new double[image.Width * image.Height];
+        var image = ImageResult.FromStream(stream, ColorComponents.Grey);
 
-        for (int y = 0; y < image.Height; y++)
+        var grayscaleValues = new double[image.Data.Length];
+
+        for (int i = 0; i < image.Data.Length; i++)
         {
-            for (int x = 0; x < image.Width; x++)
-            {
-                grayscaleValues[y * image.Width + x] = image[x, y].PackedValue / (double)ushort.MaxValue;
-            }
+            grayscaleValues[i] = image.Data[i] / 255.0;
         }
 
         return grayscaleValues;

@@ -12,7 +12,7 @@ public interface IModuleInitializer<TModule> : IModuleInitializer
 {
     public TModule Init(TModule module);
     IModule IModuleInitializer.Init(IModule module)
-        => Init(Guard.Is<TModule>(module));
+        => Init(ThrowIf.Not<TModule>(module));
 }
 
 public sealed class EmptyModuleInitializer : IModuleInitializer

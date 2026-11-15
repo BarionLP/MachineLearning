@@ -11,5 +11,5 @@ public interface IOutputModule<TArch, TOut, TSnapshot, TGradients> : IOutputModu
 {
     public (TOut Output, Weight Confidence, TArch Weights) Forward(TArch input, TSnapshot snapshot);
     (TOut Output, Weight Confidence, TArch Weights) IOutputModule<TArch, TOut>.Forward(TArch input, IModuleSnapshot snapshot)
-        => Forward(input, Guard.Is<TSnapshot>(snapshot));
+        => Forward(input, ThrowIf.Not<TSnapshot>(snapshot));
 }

@@ -11,5 +11,5 @@ public interface IInputModule<TIn, TArch, TSnapshot, TGradients> : IInputModule<
 {
     public TArch Forward(TIn input, TSnapshot snapshot);
     TArch IInputModule<TIn, TArch>.Forward(TIn input, IModuleSnapshot snapshot)
-        => Forward(input, Guard.Is<TSnapshot>(snapshot));
+        => Forward(input, ThrowIf.Not<TSnapshot>(snapshot));
 }

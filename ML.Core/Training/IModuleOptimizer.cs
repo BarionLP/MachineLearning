@@ -13,7 +13,7 @@ public interface IModuleOptimizer<TGradients> : IModuleOptimizer
 {
     public void Apply(TGradients gradients);
     void IModuleOptimizer.Apply(IModuleGradients gradients)
-        => Apply(Guard.Is<TGradients>(gradients));
+        => Apply(ThrowIf.Not<TGradients>(gradients));
 }
 
 public sealed class EmptyModuleOptimizer : IModuleOptimizer<EmptyModuleData>
