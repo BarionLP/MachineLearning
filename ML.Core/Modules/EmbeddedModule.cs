@@ -33,7 +33,7 @@ public sealed partial class EmbeddedModule<TIn, TArch, TOut> : IModule<TArch>, I
         return Input.Backward(Hidden.Backward(Output.Backward(outputGradient, snapshot.Output, gradients.Output), snapshot.Hidden, gradients.Hidden), snapshot.Input, gradients.Input);
     }
 
-    (TOut Output, float Confidence) IEmbeddedModule<TIn, TOut>.Forward(TIn input, IModuleSnapshot snapshot)
+    (TOut Output, Weight Confidence) IEmbeddedModule<TIn, TOut>.Forward(TIn input, IModuleSnapshot snapshot)
     {
         var (output, confidence, _) = Forward(input, (Snapshot)snapshot);
         return (output, confidence);

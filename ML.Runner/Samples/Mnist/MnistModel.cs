@@ -37,8 +37,8 @@ public static class MnistModel
             Threading = threadingMode,
         };
 
-        var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);
-        // var model = CreateAndInitModel(random);
+        // var model = ModuleSerializer.Read<SequenceModule<Vector>>(ModelFile);
+        var model = CreateAndInitModel(random);
 
         // remove the last activation to output logits instead of probabilities
         // so we can use the optimized version of CrossEntropyCost
